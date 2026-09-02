@@ -11,7 +11,7 @@
 
 - [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
 - [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md) - 人类与 AI 代理的规则
-- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
+- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -65,19 +65,19 @@ cargo test
 
 ### 允许的类型
 
-| 类型       | 含义                                     |
-| ---------- | ---------------------------------------- |
-| `feat`     | 新功能                                   |
-| `fix`      | 缺陷修复                                 |
-| `docs`     | 仅文档变更                               |
-| `style`    | 格式调整,不改变逻辑                     |
-| `refactor` | 既非修复也非新功能的代码变更             |
-| `perf`     | 性能改进                                 |
-| `test`     | 添加或修复测试                           |
-| `build`    | 构建系统或依赖项                         |
-| `ci`       | CI 配置                                  |
-| `chore`    | 维护任务                                 |
-| `revert`   | 回滚之前的提交                           |
+| 类型       | 含义                         |
+| ---------- | ---------------------------- |
+| `feat`     | 新功能                       |
+| `fix`      | 缺陷修复                     |
+| `docs`     | 仅文档变更                   |
+| `style`    | 格式调整,不改变逻辑          |
+| `refactor` | 既非修复也非新功能的代码变更 |
+| `perf`     | 性能改进                     |
+| `test`     | 添加或修复测试               |
+| `build`    | 构建系统或依赖项             |
+| `ci`       | CI 配置                      |
+| `chore`    | 维护任务                     |
+| `revert`   | 回滚之前的提交               |
 
 ### 示例
 
@@ -103,11 +103,11 @@ BREAKING CHANGE: the public type `Handle` was renamed to `BffiHandle`.
 
 ### 分支模型
 
-| 分支            | 用途                                                            |
-| --------------- | --------------------------------------------------------------- |
-| `main`          | 生产分支。仅包含稳定、可发布的代码。                            |
-| `dev/main`      | 集成分支。所有功能工作都通过 PR 汇入此处。                      |
-| `dev/<feature>` | 功能分支(`dev/ffi-handles`、`dev/error-mapping` 等)。          |
+| 分支            | 用途                                                  |
+| --------------- | ----------------------------------------------------- |
+| `main`          | 生产分支。仅包含稳定、可发布的代码。                  |
+| `dev/main`      | 集成分支。所有功能工作都通过 PR 汇入此处。            |
+| `dev/<feature>` | 功能分支(`dev/ffi-handles`、`dev/error-mapping` 等)。 |
 
 - 进入 `main` 的 PR **仅由项目所有者**从 `dev/main` 创建。
 - 所有开发都在 `dev/<feature>` 分支上进行,这些分支从 `dev/main` 切出,并合并回 `dev/main`。
@@ -185,7 +185,7 @@ gitGraph
 
 ## 行为准则
 
-请保持尊重。参见 [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)。
+请保持尊重。参见 [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)。
 
 骚扰、恶意行为或不怀好意的贡献都不会被容忍。
 

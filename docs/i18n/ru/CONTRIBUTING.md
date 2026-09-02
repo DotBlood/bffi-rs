@@ -11,7 +11,7 @@
 
 - [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) - архитектура и решения
 - [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) - правила для людей и AI-агентов
-- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
+- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -185,7 +185,7 @@ gitGraph
 
 ## Кодекс поведения
 
-Будьте уважительны. См. [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md).
+Будьте уважительны. См. [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md).
 
 Травля, токсичное поведение или недобросовестные вклады не допускаются.
 

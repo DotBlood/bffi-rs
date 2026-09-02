@@ -6,6 +6,10 @@
 
 - **@z2net** - project author & lead
 
+## Contributors
+
+- **ZCode (GLM, [Z.ai](https://z.ai))** - AI agent: developer infrastructure, docs, i18n
+
 ## Getting in touch
 
 | Purpose              | Channel                                                        |
