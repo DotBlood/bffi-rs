@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contact maintainers
+    url: mailto:contact@z2net.com
+    about: For private or security-related questions
+  - name: Design document
+    url: https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md
+    about: Read the architecture and decisions before opening design issues

@@ -1,0 +1,98 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // --- Rust: bin ----------------------------------------------
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Rust: Debug bffi-rs binary",
+      "cargo": {
+        "args": ["build", "--workspace"],
+        "problemMatcher": "$rustc",
+      },
+      "sourceLanguages": ["rust"],
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false,
+      "terminal": "integrated",
+    },
+
+    // --- Rust: integration tests --------------------------------
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Rust: Debug all tests",
+      "cargo": {
+        "args": ["test", "--workspace", "--no-run"],
+        "problemMatcher": "$rustc",
+      },
+      "args": ["--nocapture", "--test-threads=1"],
+      "sourceLanguages": ["rust"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "RUST_BACKTRACE": "full",
+      },
+    },
+
+    // --- Rust: test specific crate ------------------------------
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Rust: Debug tests (bffi-core)",
+      "cargo": {
+        "args": ["test", "--no-run", "-p", "bffi-core"],
+        "problemMatcher": "$rustc",
+      },
+      "args": ["--nocapture"],
+      "sourceLanguages": ["rust"],
+      "cwd": "${workspaceFolder}",
+    },
+
+    // --- Rust: attach to process --------------------------------
+    {
+      "type": "lldb",
+      "request": "attach",
+      "name": "Rust: Attach to process",
+      "program": "${workspaceFolder}/target/debug/bffi-rs",
+      "pid": "${command:pickProcess}",
+      "sourceLanguages": ["rust"],
+    },
+
+    // --- Bun: launch with debugger ------------------------------
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Bun: Launch bin/index.ts",
+      "program": "${workspaceFolder}/bin/index.ts",
+      "cwd": "${workspaceFolder}",
+      "runtime": "bun",
+      "runtimeArgs": [],
+      "args": [],
+      "env": {},
+      "strictEnv": false,
+      "watchMode": false,
+      "stopOnEntry": false,
+      "noDebug": false,
+    },
+
+    // --- Bun: attach to running instance ------------------------
+    // 1. Run: bun --inspect-wait run bin/index.ts
+    // 2. Then select this config and press F5
+    {
+      "type": "bun",
+      "request": "attach",
+      "name": "Bun: Attach (ws://localhost:6499)",
+      "url": "ws://localhost:6499/",
+    },
+  ],
+
+  "compounds": [
+    {
+      "name": "Rust + Bun (full stack)",
+      "configurations": [
+        "Rust: Debug bffi-rs binary",
+        "Bun: Launch bin/index.ts",
+      ],
+      "stopAll": true,
+    },
+  ],
+}

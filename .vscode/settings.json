@@ -1,0 +1,206 @@
+{
+  // ============================================================
+  // Editor basics
+  // ============================================================
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.fixAll.oxc": "explicit",
+    "source.organizeImports": "explicit",
+  },
+  "editor.rulers": [80],
+  "editor.renderWhitespace": "trailing",
+  "editor.smoothScrolling": true,
+  "editor.stickyScroll.enabled": true,
+  "editor.inlayHints.maximumLength": 60,
+
+  // ============================================================
+  // File management
+  // ============================================================
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+  },
+  "search.exclude": {
+    "**/target": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/*.lock": true,
+    "bun.lockb": true,
+  },
+  "files.associations": {
+    "*.oxlintrc.json": "jsonc",
+    "rust-toolchain.toml": "toml",
+    "AGENTS.md": "markdown",
+    "*.d.ts": "typescript",
+  },
+
+  // ============================================================
+  // Rust (rust-analyzer)
+  // ============================================================
+  "rust-analyzer.linkedProjects": ["${workspaceFolder}/Cargo.toml"],
+
+  // Use clippy instead of cargo check for on-save diagnostics
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.checkOnSave": true,
+  "rust-analyzer.check.allTargets": true,
+  "rust-analyzer.check.extraArgs": ["--", "-D", "warnings"],
+
+  // Cargo settings
+  "rust-analyzer.cargo.features": "all",
+  "rust-analyzer.cargo.buildScripts.enable": true,
+  "rust-analyzer.cargo.runBuildScripts": true,
+
+  // Inlay hints (rich, useful for FFI code)
+  "rust-analyzer.inlayHints.maxLength": 60,
+  "rust-analyzer.inlayHints.lifetimeElisionHints.enable": "skip_trivial",
+  "rust-analyzer.inlayHints.lifetimeElisionHints.useParameterNames": true,
+  "rust-analyzer.inlayHints.closureReturnTypeHints.enable": "always",
+  "rust-analyzer.inlayHints.parameterHints.enable": true,
+  "rust-analyzer.inlayHints.typeHints.enable": true,
+  "rust-analyzer.inlayHints.chainingHints.enable": true,
+  "rust-analyzer.inlayHints.discriminantHints.enable": "fieldless",
+
+  // Formatting
+  "rust-analyzer.rustfmt.rangeFormatting.enable": true,
+  "rust-analyzer.rustfmt.extraArgs": ["--edition", "2024"],
+
+  // Completion & hover
+  "rust-analyzer.completion.autoimport.enable": true,
+  "rust-analyzer.completion.autoself.enable": true,
+  "rust-analyzer.hover.actions.debug.enable": true,
+  "rust-analyzer.hover.actions.gotoTypeDef.enable": true,
+  "rust-analyzer.hover.actions.implementations.enable": true,
+  "rust-analyzer.hover.actions.references.enable": true,
+  "rust-analyzer.hover.documentation.links.enable": true,
+
+  // Lens (inline references/impls)
+  "rust-analyzer.lens.enable": true,
+  "rust-analyzer.lens.implementations.enable": true,
+  "rust-analyzer.lens.references.enable": true,
+  "rust-analyzer.lens.run.enable": true,
+  "rust-analyzer.lens.debug.enable": true,
+
+  // Proc macros (critical for #[bffi])
+  "rust-analyzer.procMacro.enable": true,
+  "rust-analyzer.procMacro.attributes.enable": true,
+
+  // Semantic highlighting
+  "rust-analyzer.semanticHighlighting.doc.comment.inject.enable": true,
+  "rust-analyzer.semanticHighlighting.operator.enable": true,
+  "rust-analyzer.semanticHighlighting.punctuation.enable": true,
+
+  // Experimental
+  "rust-analyzer.experimental.procMacroMacros": false,
+  "rust-analyzer.files.watcher": [
+    "**/*.rs",
+    "**/Cargo.toml",
+    "**/rust-toolchain.toml",
+  ],
+
+  // ============================================================
+  // TypeScript / JavaScript / Bun
+  // ============================================================
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifierEnding": "minimal",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.quoteStyle": "double",
+  "typescript.format.semicolons": "insert",
+  "typescript.format.insertSpaceAfterTypeAssertion": false,
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "javascript.preferences.quoteStyle": "double",
+
+  // ============================================================
+  // Oxlint / Oxc
+  // ============================================================
+  "oxc.enable": true,
+  "oxc.lint.enable": true,
+  "oxc.fmt.enable": true,
+  "oxc.typeAware": true,
+  "oxc.fixKind": "all",
+  "oxc.disableNestedConfig": false,
+
+  // ============================================================
+  // Per-language formatter assignments
+  // ============================================================
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true,
+    "editor.semanticHighlighting.enabled": true,
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml",
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "vscode.markdown-language-features",
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off",
+    },
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+  },
+
+  // ============================================================
+  // Debugger
+  // ============================================================
+  "debug.toolBarLocation": "floating",
+  "lldb.displayFormat": "auto",
+  "lldb.dereferencePointers": true,
+  "lldb.showDisassembly": "auto",
+
+  // ============================================================
+  // Terminal
+  // ============================================================
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.linux": "zsh",
+  "terminal.integrated.env.linux": {
+    "RUST_BACKTRACE": "1",
+  },
+  "terminal.integrated.env.osx": {
+    "RUST_BACKTRACE": "1",
+  },
+
+  // ============================================================
+  // Git
+  // ============================================================
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "diffEditor.ignoreTrimWhitespace": false,
+
+  // ============================================================
+  // Exclude generated files from editor context
+  // ============================================================
+  "eslint.enable": false,
+  "prettier.enable": false,
+}

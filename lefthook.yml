@@ -1,0 +1,31 @@
+# Lefthook config - https://lefthook.dev
+# Install/refresh hooks after edits: bunx lefthook install
+
+pre-commit:
+  commands:
+    oxlint:
+      tags: js lint
+      glob: "*.{ts,tsx,js,mjs,cjs}"
+      run: bunx oxlint {staged_files}
+    typecheck:
+      tags: js types
+      run: bun run typecheck
+    cargo-fmt:
+      tags: rust fmt
+      glob: "*.rs"
+      run: bun run fmt:check
+    clippy:
+      tags: rust lint
+      glob: "*.rs"
+      run: bun run clippy
+
+commit-msg:
+  commands:
+    conventional-commit:
+      run: bash scripts/commit-msg.sh {1}
+
+pre-push:
+  commands:
+    tests:
+      tags: rust test
+      run: bun run test

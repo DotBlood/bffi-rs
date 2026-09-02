@@ -1,0 +1,27 @@
+{
+  "recommendations": [
+    // ── Rust ──────────────────────────────────────────────────────
+    "rust-lang.rust-analyzer",
+    "vadimcn.vscode-lldb",
+    "serayuzgur.crates",
+    "tamasfe.even-better-toml",
+
+    // ── Bun / JavaScript / TypeScript ─────────────────────────────
+    "oven.bun-vscode",
+    "oxc.oxc-vscode",
+
+    // ── Documentation / Metadata ──────────────────────────────────
+    "redhat.vscode-yaml",
+    "davidanson.vscode-markdownlint",
+
+    // ── Quality of life ───────────────────────────────────────────
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+  ],
+  "unwantedRecommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-tslint-plugin",
+    "matklad.rust-analyzer",
+  ],
+}

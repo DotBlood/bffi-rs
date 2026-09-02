@@ -1,0 +1,76 @@
+[
+  // --- Rust: bin (launch + build) ----------------------------
+  {
+    "label": "Rust: Debug bffi-rs binary",
+    "adapter": "CodeLLDB",
+    "request": "launch",
+    "build": {
+      "command": "cargo",
+      "args": ["build", "--workspace"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/bffi-rs",
+    "sourceLanguages": ["rust"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "stopOnEntry": false,
+  },
+
+  // --- Rust: integration tests (auto-locate binary) ----------
+  {
+    "label": "Rust: Debug all tests",
+    "adapter": "CodeLLDB",
+    "request": "launch",
+    "build": {
+      "command": "cargo",
+      "args": ["test", "--workspace", "--no-run"],
+    },
+    "sourceLanguages": ["rust"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "args": ["--nocapture", "--test-threads=1"],
+  },
+
+  // --- Rust: current crate tests -----------------------------
+  {
+    "label": "Rust: Debug tests for current crate",
+    "adapter": "CodeLLDB",
+    "request": "launch",
+    "build": {
+      "command": "cargo",
+      "args": ["test", "--no-run", "-p", "$ZED_CUSTOM_RUST_PACKAGE"],
+    },
+    "sourceLanguages": ["rust"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "args": ["--nocapture"],
+  },
+
+  // --- Rust: attach to running process -----------------------
+  {
+    "label": "Rust: Attach to process",
+    "adapter": "CodeLLDB",
+    "request": "attach",
+    "program": "$ZED_WORKTREE_ROOT/target/debug/bffi-rs",
+    "sourceLanguages": ["rust"],
+    "pid": "${command:pickProcess}",
+  },
+
+  // --- Bun: launch with debugger -----------------------------
+  {
+    "label": "Bun: Launch with debugger",
+    "adapter": "JavaScript",
+    "request": "launch",
+    "program": "$ZED_WORKTREE_ROOT/bin/index.ts",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "stopOnEntry": false,
+  },
+
+  // --- Bun: attach to running instance -----------------------
+  {
+    "label": "Bun: Attach (ws://localhost:6499)",
+    "adapter": "JavaScript",
+    "request": "attach",
+    "tcp_connection": {
+      "host": "127.0.0.1",
+      "port": 6499,
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+  },
+]

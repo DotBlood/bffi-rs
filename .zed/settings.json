@@ -1,0 +1,345 @@
+{
+  // ============================================================
+  // Editor basics
+  // ============================================================
+  "tab_size": 2,
+  "hard_tabs": false,
+  "preferred_line_length": 80,
+  "soft_wrap": "editor_width",
+  "format_on_save": "on",
+  "ensure_final_newline_on_save": true,
+  "remove_trailing_whitespace_on_save": true,
+  "scroll_beyond_last_line": "off",
+  "cursor_blink": false,
+  "relative_line_numbers": false,
+
+  // Show inlay hints
+  "inlay_hints": {
+    "enabled": true,
+    "show_type_hints": true,
+    "show_parameter_hints": true,
+    "show_other_hints": true,
+  },
+
+  // ============================================================
+  // File associations
+  // ============================================================
+  "file_types": {
+    "TOML": ["rust-toolchain.toml", "rust-toolchain", ".cargo/config.toml"],
+    "JSON": ["tsconfig.json", "package.json"],
+    "JSONC": [".oxlintrc.json", "rust-project.json"],
+  },
+
+  // ============================================================
+  // Project search / file scanning exclusions
+  // ============================================================
+  "file_scan_exclusions": [
+    "**/target/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.git/**",
+  ],
+  "search": {
+    "file_pattern_exclusions": [
+      "*.lock",
+      "bun.lockb",
+      "target/**",
+      "node_modules/**",
+    ],
+  },
+
+  // ============================================================
+  // Languages
+  // ============================================================
+  "languages": {
+    "Rust": {
+      "language_servers": ["rust-analyzer"],
+      "format_on_save": "on",
+      "formatter": "language_server",
+      "tab_size": 4,
+      "hard_tabs": false,
+      "preferred_line_length": 100,
+      "soft_wrap": "none",
+    },
+    "TypeScript": {
+      "language_servers": ["!typescript-language-server", "vtsls", "..."],
+      "format_on_save": "on",
+      "formatter": "language_server",
+      "tab_size": 2,
+    },
+    "TSX": {
+      "language_servers": ["!typescript-language-server", "vtsls", "..."],
+      "format_on_save": "on",
+      "formatter": "language_server",
+    },
+    "JavaScript": {
+      "language_servers": ["!typescript-language-server", "vtsls", "..."],
+      "format_on_save": "on",
+      "formatter": "language_server",
+      "tab_size": 2,
+    },
+    "TOML": {
+      "language_servers": ["taplo", "..."],
+      "format_on_save": "on",
+      "formatter": "language_server",
+      "tab_size": 2,
+    },
+    "JSON": {
+      "format_on_save": "on",
+      "tab_size": 2,
+    },
+    "Markdown": {
+      "format_on_save": "on",
+      "soft_wrap": "editor_width",
+      "tab_size": 2,
+    },
+  },
+
+  // ============================================================
+  // LSP: rust-analyzer
+  // ============================================================
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        // Use clippy for on-save checks instead of cargo check
+        "check": {
+          "command": "clippy",
+          "extraArgs": ["--", "-D", "warnings"],
+          "allTargets": true,
+          "invocationLocation": "root",
+          "invocationStrategy": "per_workspace",
+        },
+        "cargo": {
+          "features": "all",
+          "loadOutDirsFromCheck": true,
+          "buildScripts": {
+            "enable": true,
+          },
+        },
+        // Proc macros (needed for #[bffi])
+        "procMacro": {
+          "enable": true,
+          "attributes": {
+            "enable": true,
+          },
+        },
+        // Formatting
+        "rustfmt": {
+          "rangeFormatting": {
+            "enable": true,
+          },
+          "extraArgs": ["--edition", "2024"],
+        },
+        // Inlay hints - rich set for FFI development
+        "inlayHints": {
+          "maxLength": 60,
+          "lifetimeElisionHints": {
+            "enable": "skip_trivial",
+            "useParameterNames": true,
+          },
+          "closureReturnTypeHints": {
+            "enable": "always",
+          },
+          "parameterHints": {
+            "enable": true,
+          },
+          "typeHints": {
+            "enable": true,
+          },
+          "chainingHints": {
+            "enable": true,
+          },
+          "discriminantHints": {
+            "enable": "fieldless",
+          },
+        },
+        // Completion
+        "completion": {
+          "autoimport": {
+            "enable": true,
+          },
+          "autoself": {
+            "enable": true,
+          },
+          "callable": {
+            "snippets": "fill_arguments",
+          },
+        },
+        // Hover actions
+        "hover": {
+          "actions": {
+            "debug": {
+              "enable": true,
+            },
+            "gotoTypeDef": {
+              "enable": true,
+            },
+            "implementations": {
+              "enable": true,
+            },
+            "references": {
+              "enable": true,
+            },
+          },
+        },
+        // Lens
+        "lens": {
+          "enable": true,
+          "implementations": {
+            "enable": true,
+          },
+          "references": {
+            "enable": true,
+          },
+          "run": {
+            "enable": true,
+          },
+          "debug": {
+            "enable": true,
+          },
+        },
+        // Semantic highlighting
+        "semanticHighlighting": {
+          "doc": {
+            "comment": {
+              "inject": {
+                "enable": true,
+              },
+            },
+          },
+          "operator": {
+            "enable": true,
+          },
+          "punctuation": {
+            "enable": true,
+          },
+        },
+        // Experimental (safe to enable)
+        "experimental": {
+          "procExprMacros": true,
+        },
+        // Files to watch
+        "files": {
+          "watcher": ["**/*.rs", "**/Cargo.toml", "**/rust-toolchain.toml"],
+        },
+      },
+    },
+
+    // ============================================================
+    // LSP: vtsls (TypeScript)
+    // ============================================================
+    "vtsls": {
+      "settings": {
+        "javascript": {
+          "inlayHints": {
+            "parameterNames": {
+              "enabled": "all",
+              "suppressWhenArgumentMatchesName": false,
+            },
+            "parameterTypes": {
+              "enabled": true,
+            },
+            "variableTypes": {
+              "enabled": true,
+              "suppressWhenTypeMatchesName": true,
+            },
+            "propertyDeclarationTypes": {
+              "enabled": true,
+            },
+            "functionLikeReturnTypes": {
+              "enabled": true,
+            },
+          },
+          "preferences": {
+            "importModuleSpecifier": "relative",
+            "importModuleSpecifierEnding": "minimal",
+            "quoteStyle": "double",
+          },
+        },
+        "typescript": {
+          "inlayHints": {
+            "parameterNames": {
+              "enabled": "all",
+              "suppressWhenArgumentMatchesName": false,
+            },
+            "parameterTypes": {
+              "enabled": true,
+            },
+            "variableTypes": {
+              "enabled": true,
+              "suppressWhenTypeMatchesName": true,
+            },
+            "propertyDeclarationTypes": {
+              "enabled": true,
+            },
+            "functionLikeReturnTypes": {
+              "enabled": true,
+            },
+            "enumMemberValues": {
+              "enabled": true,
+            },
+          },
+          "preferences": {
+            "importModuleSpecifier": "relative",
+            "importModuleSpecifierEnding": "minimal",
+            "quoteStyle": "double",
+            "updateImportsOnFileMove": {
+              "enabled": "always",
+            },
+          },
+          "format": {
+            "semicolons": "insert",
+          },
+        },
+      },
+    },
+
+    // ============================================================
+    // LSP: taplo (TOML)
+    // ============================================================
+    "taplo": {
+      "settings": {
+        "evenBetterToml": {
+          "schema": {
+            "associations": {
+              ".*rust-toolchain\\.toml$": "https://json.schemastore.org/rust-toolchain.json",
+              ".*\\.cargo/config\\.toml$": "https://json.schemastore.org/cargo-config.json",
+            },
+          },
+        },
+      },
+    },
+  },
+
+  // ============================================================
+  // Tasks (quick commands)
+  // ============================================================
+  "tasks": {
+    "variables": {},
+  },
+
+  // ============================================================
+  // Terminal
+  // ============================================================
+  "terminal": {
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
+  },
+
+  // ============================================================
+  // Git
+  // ============================================================
+  "git": {
+    "inline_blame": {
+      "enabled": true,
+    },
+  },
+
+  // ============================================================
+  // Collaboration / AI (disabled for privacy)
+  // ============================================================
+  "features": {
+    "inline_completion_provider": "none",
+  },
+}

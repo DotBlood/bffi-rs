@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bffi-core",
+    # "crates/bffi-types",
+    # "crates/bffi-error",
+    # "crates/bffi-object",
+    # "crates/bffi-callback",
+    # "crates/bffi-dts",
+    # "crates/bffi-macros",
+    # "crates/bffi-class",
+    # "crates/bffi-event-loop",
+    # "crates/bffi-build",
+    # "crates/bffi-rs",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/DotBlood/bffi-rs"
+authors = ["DotBlood"]
+rust-version = "1.98.0"
+
+[workspace.dependencies]
+# Shared dependency versions will go here
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+undocumented_unsafe_blocks = "warn"
+
+[profile.release]
+panic = "abort"
+lto = "fat"
+strip = "symbols"
+codegen-units = 1

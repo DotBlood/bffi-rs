@@ -1,0 +1,123 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // --- Build --------------------------------------------------
+    {
+      "label": "cargo: build (debug)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--workspace"],
+      "group": {
+        "kind": "build",
+        "isDefault": true,
+      },
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+      },
+    },
+    {
+      "label": "cargo: build (release)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--release", "--workspace"],
+      "problemMatcher": ["$rustc"],
+    },
+
+    // --- Test ---------------------------------------------------
+    {
+      "label": "cargo: test (all)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["test", "--workspace"],
+      "group": {
+        "kind": "test",
+        "isDefault": true,
+      },
+      "env": {
+        "RUST_BACKTRACE": "full",
+        "RUST_TEST_THREADS": "1",
+      },
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+      },
+    },
+    {
+      "label": "bun: test (all)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["test"],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+      },
+    },
+    {
+      "label": "bun: test current file",
+      "type": "shell",
+      "command": "bun",
+      "args": ["test", "${file}"],
+      "group": "test",
+    },
+
+    // --- Quality ------------------------------------------------
+    {
+      "label": "cargo: clippy (strict)",
+      "type": "shell",
+      "command": "cargo",
+      "args": [
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings",
+      ],
+      "problemMatcher": ["$rustc"],
+    },
+    {
+      "label": "cargo: fmt check",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["fmt", "--check"],
+    },
+    {
+      "label": "cargo: fmt (write)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["fmt"],
+    },
+    {
+      "label": "bun: lint (oxlint)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "lint"],
+    },
+    {
+      "label": "bun: typecheck (tsc)",
+      "type": "shell",
+      "command": "bun",
+      "args": ["run", "typecheck"],
+    },
+
+    // --- Compound: full check -----------------------------------
+    {
+      "label": "full check (CI parity)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "cargo: fmt check",
+        "cargo: clippy (strict)",
+        "bun: lint (oxlint)",
+        "bun: typecheck (tsc)",
+        "cargo: test (all)",
+        "bun: test (all)",
+      ],
+      "problemMatcher": [],
+    },
+  ],
+}

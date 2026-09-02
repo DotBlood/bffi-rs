@@ -1,0 +1,127 @@
+[
+  // --- Build --------------------------------------------------
+  {
+    "label": "cargo: build (debug)",
+    "command": "cargo",
+    "args": ["build", "--workspace"],
+    "env": {
+      "CARGO_TERM_COLOR": "always",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "on_success",
+    "tags": ["build"],
+  },
+  {
+    "label": "cargo: build (release)",
+    "command": "cargo",
+    "args": ["build", "--release", "--workspace"],
+    "env": {
+      "CARGO_TERM_COLOR": "always",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "tags": ["build"],
+  },
+
+  // --- Test ---------------------------------------------------
+  {
+    "label": "cargo: test (all)",
+    "command": "cargo",
+    "args": ["test", "--workspace"],
+    "env": {
+      "RUST_BACKTRACE": "full",
+      "RUST_TEST_THREADS": "1",
+    },
+    "tags": ["cargo-test"],
+  },
+  {
+    "label": "cargo: test current crate",
+    "command": "cargo",
+    "args": ["test", "-p", "$ZED_CUSTOM_RUST_PACKAGE"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
+    "tags": ["cargo-test"],
+  },
+  {
+    "label": "cargo: test function under cursor",
+    "command": "cargo",
+    "args": ["test", "$ZED_SYMBOL"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
+    "tags": ["cargo-test"],
+  },
+  {
+    "label": "bun: test (all)",
+    "command": "bun",
+    "args": ["test"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "tags": ["bun-test"],
+  },
+  {
+    "label": "bun: test current file",
+    "command": "bun",
+    "args": ["test", "$ZED_RELATIVE_FILE"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "tags": ["bun-test"],
+  },
+
+  // --- Quality ------------------------------------------------
+  {
+    "label": "cargo: clippy (strict)",
+    "command": "cargo",
+    "args": ["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"],
+    "tags": ["lint"],
+  },
+  {
+    "label": "cargo: fmt check",
+    "command": "cargo",
+    "args": ["fmt", "--check"],
+    "tags": ["lint"],
+  },
+  {
+    "label": "cargo: fmt (write)",
+    "command": "cargo",
+    "args": ["fmt"],
+    "tags": ["format"],
+  },
+  {
+    "label": "bun: lint (oxlint)",
+    "command": "bun",
+    "args": ["run", "lint"],
+    "tags": ["lint"],
+  },
+  {
+    "label": "bun: typecheck (tsc)",
+    "command": "bun",
+    "args": ["run", "typecheck"],
+    "tags": ["lint"],
+  },
+
+  // --- Compound -----------------------------------------------
+  {
+    "label": "full check (CI parity)",
+    "command": "bun",
+    "args": ["run", "check"],
+    "tags": ["ci"],
+  },
+
+  // --- Debug helpers (launch via tasks, not DAP) -------------
+  {
+    "label": "bun: run entry",
+    "command": "bun",
+    "args": ["run", "bin/index.ts"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "tags": ["run"],
+  },
+  {
+    "label": "bun: run with inspect",
+    "command": "bun",
+    "args": ["--inspect-wait", "run", "bin/index.ts"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "tags": ["debug"],
+  },
+]
