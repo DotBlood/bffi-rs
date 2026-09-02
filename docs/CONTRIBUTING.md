@@ -1,15 +1,17 @@
 # Contributing to bffi-rs
 
+[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
+
 Thank you for your interest in contributing.
 
-Repository: https://github.com/DotBlood/bffi-rs  
+Repository: https://github.com/DotBlood/bffi-rs
 Contact: contact@z2net.com
 
 Please also read:
 
-- [DESIGN.md](./DESIGN.md) - architecture and decisions
-- [AGENT.md](./AGENT.md) - rules for humans and AI agents
-- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) - architecture and decisions
+- [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) - rules for humans and AI agents
+- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -63,19 +65,19 @@ Format:
 
 ### Allowed types
 
-| Type       | Meaning                                      |
-|------------|----------------------------------------------|
-| `feat`     | New feature                                  |
-| `fix`      | Bug fix                                      |
-| `docs`     | Documentation only                           |
-| `style`    | Formatting, no logic change                  |
-| `refactor` | Code change that is not a fix or feature     |
-| `perf`     | Performance improvement                      |
-| `test`     | Adding or fixing tests                       |
-| `build`    | Build system or dependencies                 |
-| `ci`       | CI configuration                             |
-| `chore`    | Maintenance tasks                            |
-| `revert`   | Revert a previous commit                     |
+| Type       | Meaning                                  |
+| ---------- | ---------------------------------------- |
+| `feat`     | New feature                              |
+| `fix`      | Bug fix                                  |
+| `docs`     | Documentation only                       |
+| `style`    | Formatting, no logic change              |
+| `refactor` | Code change that is not a fix or feature |
+| `perf`     | Performance improvement                  |
+| `test`     | Adding or fixing tests                   |
+| `build`    | Build system or dependencies             |
+| `ci`       | CI configuration                         |
+| `chore`    | Maintenance tasks                        |
+| `revert`   | Revert a previous commit                 |
 
 ### Examples
 
@@ -97,9 +99,51 @@ BREAKING CHANGE: the public type `Handle` was renamed to `BffiHandle`.
 
 ---
 
+## Branching and releases
+
+### Branch model
+
+| Branch          | Purpose                                                         |
+| --------------- | --------------------------------------------------------------- |
+| `main`          | Production branch. Stable, release-ready code only.             |
+| `dev/main`      | Integration branch. All feature work lands here through PRs.    |
+| `dev/<feature>` | Feature branches (`dev/ffi-handles`, `dev/error-mapping`, ...). |
+
+- PRs into `main` are created **only by the project owner**, from `dev/main`.
+- All development happens in `dev/<feature>` branches, cut from `dev/main`, merged back into `dev/main`.
+- Branch names are kebab-case: `dev/ffi-handles`, `dev/fix-panic-mapping`.
+
+```mermaid
+gitGraph
+   commit id: "initial"
+   branch dev/main
+   branch dev/feature
+   commit id: "feature work"
+   commit
+   checkout dev/main
+   merge dev/feature id: "PR: 1 approve"
+   checkout main
+   merge dev/main tag: "v0.1.0" id: "owner only"
+```
+
+### Review rules
+
+- PR `dev/<feature>` → `dev/main`: at least **1 approval** (owner or maintainer) and a green `bun run ci` (locally until CI workflows land).
+- PR `dev/main` → `main`: owner only, on a release merge (see tags below).
+- Reviews follow the PR template checklist (fmt, clippy, tests, lint, docs).
+
+### Tags
+
+- Tags are `v<semver>` (e.g. `v0.1.0`) and are created **only on `main`**, only by the owner.
+- Tags are **annotated** (`git tag -a v0.1.0 -m "..."`) and point at the merge commit of `dev/main` → `main`.
+- The version in `Cargo.toml` / `package.json` is bumped in the same release merge; the merge commit is `chore(release): v0.1.0`.
+- Pre-release tags (`v0.2.0-rc.1`) may optionally be placed on `dev/main` for intermediate builds.
+
+---
+
 ## Pull requests
 
-1. Fork the repository and create a branch from `main`.
+1. Fork the repository and create a branch from `dev/main`.
 2. Make a focused change (one logical unit per PR).
 3. Ensure `cargo fmt`, `cargo clippy`, tests, and `bun run lint` pass.
 4. Fill in the pull request template.
@@ -141,7 +185,7 @@ When reporting a bug, include:
 
 ## Code of conduct
 
-Be respectful. See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
+Be respectful. See [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md).
 
 Harassment, toxic behavior, or bad-faith contributions will not be tolerated.
 

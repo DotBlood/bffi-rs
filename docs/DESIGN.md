@@ -1,5 +1,7 @@
 # bffi-rs - Design Document
 
+[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md)
+
 **Status:** Done  
 **Date:** 2026-09-02  
 **License:** MIT  
@@ -58,29 +60,15 @@ We want a layer that is native to the Bun ecosystem and has predictable behavior
 
 ## 5. High-level architecture
 
-```
-┌─────────────────────────────────────┐
-│         User native modules         │
-└──────────────────┬──────────────────┘
-                   │
-┌──────────────────▼──────────────────┐
-│              bffi-rs                │  public API + macros
-└──────────────────┬──────────────────┘
-                   │
-┌──────────────────▼──────────────────┐
-│     Small crates                    │
-│  bffi-types, bffi-object,           │
-│  bffi-callback, bffi-class,         │
-│  bffi-dts, bffi-error, ...          │
-└──────────────────┬──────────────────┘
-                   │
-┌──────────────────▼──────────────────┐
-│            bffi-core                │  foundation + safety rules
-└──────────────────┬──────────────────┘
-                   │
-┌──────────────────▼──────────────────┐
-│         Thin C ABI layer            │  called via bun:ffi
-└─────────────────────────────────────┘
+```mermaid
+flowchart TB
+    U["User native modules"]
+    F["bffi-rs<br/>public API + macros"]
+    S["Small crates<br/>bffi-types, bffi-object, bffi-callback,<br/>bffi-class, bffi-dts, bffi-error, ..."]
+    C["bffi-core<br/>foundation + safety rules"]
+    A["Thin C ABI layer<br/>called via bun:ffi"]
+
+    U --> F --> S --> C --> A
 ```
 
 Development order: foundation → one capability at a time → ergonomic API → stable C ABI.

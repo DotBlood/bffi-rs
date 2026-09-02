@@ -1,5 +1,7 @@
 # AGENT.md - Rules for AI agents and contributors
 
+[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)
+
 This file defines how humans and AI agents must work on **bffi-rs**.
 
 Repository: https://github.com/DotBlood/bffi-rs  
@@ -140,6 +142,16 @@ chore: pin rust-toolchain to 1.98.0
 ```
 
 Breaking changes must use `BREAKING CHANGE:` in the footer or `!` after the type.
+
+### Branching and releases
+
+- `main` - production branch; PRs into `main` are created only by the project owner, from `dev/main`.
+- `dev/main` - integration branch; all feature work lands here via PRs.
+- Features are developed in `dev/<feature>` branches (kebab-case), cut from and merged back into `dev/main`.
+- PR `dev/<feature>` → `dev/main` requires 1 approval and a green `bun run ci`.
+- Release tags `v<semver>` (annotated) are placed only on `main`, only by the owner.
+
+Full rules: [docs/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) → "Branching and releases".
 
 ### Pull requests
 
