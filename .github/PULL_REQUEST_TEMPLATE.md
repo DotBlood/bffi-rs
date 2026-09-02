@@ -10,6 +10,11 @@
 - [ ] Documentation
 - [ ] Refactor / chore / CI
 
+## Target branch
+
+- [ ] `dev/main` (feature work - requires 1 approval)
+- [ ] `main` (release merge - owner only)
+
 ## Related issues
 
 <!-- Closes #123, Refs #456, ... -->

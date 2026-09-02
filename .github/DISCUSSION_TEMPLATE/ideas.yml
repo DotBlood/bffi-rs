@@ -1,0 +1,40 @@
+title: "[Idea]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea for **bffi-rs**!
+        Please check existing discussions first to avoid duplicates.
+
+  - type: textarea
+    attributes:
+      label: Problem or motivation
+      description: What problem does this idea solve? What use case does it enable?
+      placeholder: As a Bun module author, I want ...
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      description: What would you like to see? API sketches, crate placement, or design notes are welcome.
+      placeholder: A short sketch of the API or behavior ...
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Alternatives considered
+      description: Any approaches you have already considered or seen elsewhere (e.g. napi-rs)?
+    validations:
+      required: false
+
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing discussions for duplicates
+          required: true
+        - label: This idea aligns with the project's Bun-only scope (see docs/DESIGN.md)
+          required: true

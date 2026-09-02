@@ -1,0 +1,22 @@
+title: "[Show and tell]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Show off what you built with **bffi-rs** - native modules, FFI experiments,
+        tooling, benchmarks. Screenshots, repos, and short demos are welcome.
+
+  - type: textarea
+    attributes:
+      label: What did you build?
+      description: A short description with links (repo, demo, post).
+      placeholder: I built ...
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: How does it use bffi-rs?
+      description: Which crates or features (handles, buffers, callbacks, dts generation) does it rely on?
+    validations:
+      required: false
