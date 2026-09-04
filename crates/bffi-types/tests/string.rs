@@ -15,9 +15,9 @@ fn valid_utf8_roundtrips_through_a_copy() {
     let text = bytes_to_string(ascii).expect("ascii is valid utf-8");
     assert_eq!(text, "plain ascii");
 
-    let multibyte = "привет 🚀 — ünïcödé".as_bytes();
+    let multibyte = "привет 🚀 - ünïcödé".as_bytes();
     let text = bytes_to_string(multibyte).expect("multibyte is valid utf-8");
-    assert_eq!(text, "привет 🚀 — ünïcödé");
+    assert_eq!(text, "привет 🚀 - ünïcödé");
 
     // embedded NUL is legal inside a length-prefixed string
     let with_nul = b"a\x00b";

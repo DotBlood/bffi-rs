@@ -9,7 +9,7 @@
 //!
 //! All operations take `&self` (interior mutability via [`RwLock`]), so a
 //! table can be stored in a `static` or behind an `Arc` and shared across
-//! threads — required because callbacks may be invoked from non-JS threads.
+//! threads - required because callbacks may be invoked from non-JS threads.
 //! Tables stored in the process-wide [`crate::catalog::Registry`] are
 //! created and looked up by [`TypeTag`].
 //!
@@ -80,7 +80,7 @@ pub(crate) fn recover<T>(result: std::sync::LockResult<T>) -> T {
 ///
 /// Dropping a table invalidates all handles it issued. If a replacement
 /// table is created with the same tag, its generation-0 handles may be
-/// numerically equal to stale handles from the old table — the previous
+/// numerically equal to stale handles from the old table - the previous
 /// owner is responsible for ensuring no stale handles survive it.
 ///
 /// # Concurrency

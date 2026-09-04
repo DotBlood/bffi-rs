@@ -5,9 +5,9 @@
 //!
 //! This crate is the **policy** layer: it defines what a conversion means
 //! (copy or zero-copy, strict or coercing) over plain safe Rust types
-//! (`f64`, `&[u8]`, `&str`, `String`, `Vec<u8>`). The **syntax** layer —
+//! (`f64`, `&[u8]`, `&str`, `String`, `Vec<u8>`). The **syntax** layer -
 //! the actual `extern "C"` entry points, raw pointer handling and
-//! `bun:ffi` declarations — belongs to `bffi-build` (P2), which will call
+//! `bun:ffi` declarations - belongs to `bffi-build` (P2), which will call
 //! these converters right after validating its pointers.
 //!
 //! ## Copy by default

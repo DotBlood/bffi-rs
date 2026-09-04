@@ -1,6 +1,6 @@
 //! Opaque handles and type tags that identify objects across the C ABI.
 //!
-//! Design reference: `docs/DESIGN.md` §6.2 — ownership is expressed through
+//! Design reference: `docs/DESIGN.md` §6.2 - ownership is expressed through
 //! opaque 64-bit handles instead of raw references:
 //!
 //! ```text
@@ -82,7 +82,7 @@ impl fmt::Display for TypeTag {
 ///
 /// The zero value is [`Handle::NULL`] and never resolves to an object.
 ///
-/// [`Handle`] is `Copy`, `Send` and `Sync` — it is a plain integer with no
+/// [`Handle`] is `Copy`, `Send` and `Sync` - it is a plain integer with no
 /// Rust-side validity requirements.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]

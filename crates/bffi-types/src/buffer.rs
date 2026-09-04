@@ -4,7 +4,7 @@
 use crate::unsafe_zero_copy::ZeroCopyBuf;
 use std::ops::Deref;
 
-/// An owned, heap-allocated byte buffer — the default buffer type.
+/// An owned, heap-allocated byte buffer - the default buffer type.
 ///
 /// Constructing a `CopiedBuf` always copies (or takes ownership of an
 /// existing `Vec`); it never aliases a caller's memory. This is the type
