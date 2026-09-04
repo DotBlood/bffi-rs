@@ -2,7 +2,7 @@
 //!
 //! The C ABI cannot return `Result`. Failures cross the boundary as a
 //! numeric [`ErrorCode`] return value, optionally paired with a detailed
-//! [`BffiError`] stored in a thread-local slot — the same scheme as
+//! [`BffiError`] stored in a thread-local slot - the same scheme as
 //! `errno` / `sqlite3_errmsg`:
 //!
 //! 1. an `extern "C"` function returns an [`ErrorCode`];
@@ -41,6 +41,16 @@ pub enum ErrorCode {
     TableFull = 5,
     /// The type tag is not registered in the registry.
     InvalidTag = 6,
+    /// A byte sequence is not valid UTF-8 where UTF-8 is required.
+    InvalidUtf8 = 7,
+    /// A numeric value is outside the range of the target type.
+    NumberOutOfRange = 8,
+    /// A required pointer was null.
+    NullPointer = 9,
+    /// The caller-provided output buffer is too small for the result.
+    BufferTooSmall = 10,
+    /// An argument violated its documented contract.
+    InvalidArgument = 11,
 }
 
 impl ErrorCode {
@@ -64,6 +74,11 @@ impl ErrorCode {
             4 => Some(Self::InvalidHandle),
             5 => Some(Self::TableFull),
             6 => Some(Self::InvalidTag),
+            7 => Some(Self::InvalidUtf8),
+            8 => Some(Self::NumberOutOfRange),
+            9 => Some(Self::NullPointer),
+            10 => Some(Self::BufferTooSmall),
+            11 => Some(Self::InvalidArgument),
             _ => None,
         }
     }
@@ -79,6 +94,11 @@ impl fmt::Display for ErrorCode {
             Self::InvalidHandle => "unknown or stale handle",
             Self::TableFull => "handle table is full",
             Self::InvalidTag => "unknown type tag",
+            Self::InvalidUtf8 => "byte sequence is not valid UTF-8",
+            Self::NumberOutOfRange => "number is out of the target range",
+            Self::NullPointer => "unexpected null pointer",
+            Self::BufferTooSmall => "output buffer is too small",
+            Self::InvalidArgument => "invalid argument",
         };
         f.write_str(text)
     }
@@ -168,6 +188,11 @@ mod tests {
             ErrorCode::InvalidHandle,
             ErrorCode::TableFull,
             ErrorCode::InvalidTag,
+            ErrorCode::InvalidUtf8,
+            ErrorCode::NumberOutOfRange,
+            ErrorCode::NullPointer,
+            ErrorCode::BufferTooSmall,
+            ErrorCode::InvalidArgument,
         ] {
             assert_eq!(ErrorCode::from_u32(code.as_u32()), Some(code));
         }
