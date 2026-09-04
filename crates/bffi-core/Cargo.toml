@@ -6,6 +6,8 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
+description = "Foundation primitives (handles, generational tables, panic boundary) for the bffi-rs Bun binding framework."
+readme = "README.md"
 
 [lints]
 workspace = true

@@ -37,8 +37,11 @@ expect_used = "warn"
 panic = "warn"
 undocumented_unsafe_blocks = "warn"
 
+# NOTE: `panic` intentionally stays "unwind" (the default). The shipped
+# artifact is a cdylib loaded into the Bun host process, and the safety
+# model (docs/DESIGN.md §6.5) requires `catch_unwind` to convert panics
+# into JS errors instead of killing Bun.
 [profile.release]
-panic = "abort"
 lto = "fat"
 strip = "symbols"
 codegen-units = 1
