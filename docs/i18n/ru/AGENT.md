@@ -1,6 +1,6 @@
-# AGENT.md - Правила для AI-агентов и контрибьюторов
+# AGENTS.md - Правила для AI-агентов и контрибьюторов
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)
+[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)
 
 Этот файл определяет, как люди и AI-агенты должны работать над **bffi-rs**.
 
@@ -63,7 +63,7 @@
 
 ```
 bffi-rs/
-├── AGENT.md                    # this file
+├── AGENTS.md                    # this file
 ├── README.md
 ├── LICENSE
 ├── SECURITY.md

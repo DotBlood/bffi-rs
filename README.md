@@ -14,13 +14,13 @@
 
 Binding framework for Bun - a napi-rs-equivalent for [Bun](https://bun.sh), built on `bun:ffi` and a thin C ABI. Written in Rust, bottom-up from small focused crates.
 
-See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) for architecture and [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) for the project's engineering rules.
+See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) for architecture and [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) for the project's engineering rules.
 
 ## Documentation
 
 - [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) - architecture & decisions
 - [docs/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) - how to contribute (branching, commits, PRs)
-- [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) - engineering rules for humans and AI agents
+- [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) - engineering rules for humans and AI agents
 - [SECURITY.md](https://github.com/DotBlood/bffi-rs/blob/main/SECURITY.md) - security policy
 - [CONTACT.md](https://github.com/DotBlood/bffi-rs/blob/main/CONTACT.md) - contacts
 

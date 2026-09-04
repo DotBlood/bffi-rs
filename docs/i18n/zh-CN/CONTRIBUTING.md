@@ -10,7 +10,7 @@
 请同时阅读:
 
 - [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
-- [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md) - 人类与 AI 代理的规则
+- [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md) - 人类与 AI 代理的规则
 - [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)
 
 ---

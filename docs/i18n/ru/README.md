@@ -14,13 +14,13 @@
 
 Фреймворк биндингов для Bun - аналог napi-rs для [Bun](https://bun.sh), построенный на `bun:ffi` и тонком C ABI. Написан на Rust, развивается снизу вверх из небольших сфокусированных крейтов.
 
-Архитектура описана в [docs/i18n/ru/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md), инженерные правила проекта - в [docs/i18n/ru/AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md).
+Архитектура описана в [docs/i18n/ru/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md), инженерные правила проекта - в [docs/i18n/ru/AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md).
 
 ## Документация
 
 - [docs/i18n/ru/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) - архитектура и решения
 - [docs/i18n/ru/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) - как внести вклад (ветки, коммиты, PR)
-- [docs/i18n/ru/AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) - правила инженерии для людей и AI-агентов
+- [docs/i18n/ru/AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) - правила инженерии для людей и AI-агентов
 - [docs/i18n/ru/SECURITY.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/SECURITY.md) - политика безопасности
 - [docs/i18n/ru/CONTACT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTACT.md) - контакты
 
