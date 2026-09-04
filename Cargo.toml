@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
     "crates/bffi-core",
+    "crates/bffi-error",
     # "crates/bffi-types",
-    # "crates/bffi-error",
     # "crates/bffi-object",
     # "crates/bffi-callback",
     # "crates/bffi-dts",
