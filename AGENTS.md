@@ -194,6 +194,8 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Min Bun       | 1.4.0                                        |
 | Rust/Cargo    | 1.98.0                                       |
 | Handles       | Generational Index + type-tag                |
+| Error format  | `BffiError` = code + message + source; domain errors convert losslessly via `From` |
+| Boundary strings | UTF-8 canonical (`bun:ffi cstring`)          |
 | Buffers       | Copy by default                              |
 | Zero-copy     | Only via `bffi::unsafe_zero_copy`            |
 | Event loop    | Start with `run()`, `pump()` is mock for now |

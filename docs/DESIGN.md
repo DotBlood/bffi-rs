@@ -119,6 +119,8 @@ Outside only the opaque handle is visible.
 | Minimum Bun      | 1.4.0                                               |
 | Rust / Cargo     | 1.98.0                                              |
 | Handles          | Generational Index + type-tag                       |
+| Error format     | `BffiError` = code + message + source; domain errors convert losslessly via `From` |
+| Boundary string encoding | UTF-8 canonical (`bun:ffi cstring`)                    |
 | Buffers          | Copy by default                                     |
 | Zero-copy        | Only via `bffi::unsafe_zero_copy`                   |
 | Event loop       | Start with `run()`; `pump()` is a mock for now      |
