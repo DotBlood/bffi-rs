@@ -40,13 +40,14 @@ pub struct ZeroCopyBuf<'a>(&'a [u8]);
 /// [`ErrorCode::InvalidUtf8`] (as [`BffiError`]) when the bytes are not
 /// valid UTF-8 - the check is mandatory in the zero-copy path too.
 pub fn str_view(bytes: &[u8]) -> Result<ZeroCopyStr<'_>, BffiError> {
-    match std::str::from_utf8(bytes) {
-        Ok(text) => Ok(ZeroCopyStr(text)),
-        Err(_) => Err(BffiError::new(
+    if !crate::utf8::validate(bytes) {
+        return Err(BffiError::new(
             ErrorCode::InvalidUtf8,
             "byte sequence is not valid UTF-8",
-        )),
+        ));
     }
+    // SAFETY: `utf8::validate` just verified that `bytes` is valid UTF-8.
+    Ok(ZeroCopyStr(unsafe { std::str::from_utf8_unchecked(bytes) }))
 }
 
 /// Borrows `bytes` as a byte view without copying (infallible).
