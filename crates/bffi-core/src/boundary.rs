@@ -35,7 +35,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 /// use bffi_core::boundary::catch_panic;
 ///
 /// let ok = catch_panic(|| 1 + 1);
-/// assert_eq!(ok, Ok(2));
+/// assert!(matches!(ok, Ok(2)));
 ///
 /// let panicked = catch_panic(|| panic!("boom"));
 /// assert_eq!(panicked.unwrap_err().message, "boom");
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn passes_values_through_when_no_panic_occurs() {
-        assert_eq!(catch_panic(|| 40 + 2), Ok(42));
+        assert!(matches!(catch_panic(|| 40 + 2), Ok(42)));
     }
 
     #[test]

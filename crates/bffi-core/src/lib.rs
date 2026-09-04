@@ -101,6 +101,6 @@ pub mod table;
 
 pub use boundary::{catch_panic, panic_message, run_extern_body};
 pub use catalog::{Registry, RegistryError};
-pub use error::{BffiError, ErrorCode, last_error, set_last_error, take_last_error};
+pub use error::{BffiError, ErrorCode, set_last_error, take_last_error};
 pub use handle::{Handle, MAX_GENERATION, MAX_INDEX, TypeTag};
 pub use table::{HandleTable, TableError};

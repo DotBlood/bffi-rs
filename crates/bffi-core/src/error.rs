@@ -8,12 +8,14 @@
 //! 1. an `extern "C"` function returns an [`ErrorCode`];
 //! 2. on failure it records the details via [`set_last_error`];
 //! 3. a companion export drains them with [`take_last_error`] so the JS
-//!    side (through `bffi-error`, P1) can build a JS `Error`.
+//!    side (through `bffi-error`) can build a JS `Error`.
 //!
 //! The slot is thread-local because Bun calls into the library on the JS
 //! thread, while callbacks may execute on other threads; concurrent calls
 //! must not overwrite each other's errors.
 
+use crate::catalog::RegistryError;
+use crate::table::TableError;
 use std::cell::RefCell;
 use std::fmt;
 
@@ -104,17 +106,25 @@ impl fmt::Display for ErrorCode {
     }
 }
 
-/// A failure with a code and a human-readable message.
+/// The unified failure format: a machine-readable code, a human-readable
+/// message, and the originating domain error when there is one
+/// (DESIGN §7, "Error format").
 ///
 /// This is the Rust-side error representation that travels through the
 /// thread-local last-error slot; turning it into a JS `Error` is the job of
-/// the `bffi-error` crate.
-#[derive(Clone, PartialEq, Eq, Debug)]
+/// the `bffi-error` crate. Only [`code`](BffiError::code) and
+/// [`message`](BffiError::message) cross the C ABI - [`source`](BffiError::source)
+/// exists for Rust-side diagnostics and lossless domain-error conversion.
+#[derive(Debug)]
 pub struct BffiError {
     /// Machine-readable status code.
     pub code: ErrorCode,
     /// Human-readable details, safe to copy across the FFI boundary.
     pub message: String,
+    /// The originating domain error, if the failure was converted from a
+    /// typed error (e.g. [`TableError`], [`RegistryError`], or a
+    /// `bffi-types` conversion error).
+    pub source: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
 impl BffiError {
@@ -124,6 +134,24 @@ impl BffiError {
         Self {
             code,
             message: message.into(),
+            source: None,
+        }
+    }
+
+    /// Creates an error that keeps the originating domain error.
+    ///
+    /// Any concrete error type that is `Error + Send + Sync + 'static` is
+    /// accepted and boxed into [`BffiError::source`].
+    #[must_use]
+    pub fn with_source(
+        code: ErrorCode,
+        message: impl Into<String>,
+        source: impl Into<Box<dyn std::error::Error + Send + Sync>>,
+    ) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            source: Some(source.into()),
         }
     }
 }
@@ -134,14 +162,43 @@ impl fmt::Display for BffiError {
     }
 }
 
-impl std::error::Error for BffiError {}
+impl std::error::Error for BffiError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source
+            .as_ref()
+            .map(|boxed| &**boxed as &(dyn std::error::Error + 'static))
+    }
+}
 
 impl From<ErrorCode> for BffiError {
     fn from(code: ErrorCode) -> Self {
         Self {
             code,
             message: code.to_string(),
+            source: None,
         }
+    }
+}
+
+/// Unified-format conversion: a full table becomes a [`BffiError`] with
+/// [`ErrorCode::TableFull`], keeping [`TableError`] as the source.
+impl From<TableError> for BffiError {
+    fn from(error: TableError) -> Self {
+        Self::with_source(ErrorCode::TableFull, error.to_string(), error)
+    }
+}
+
+/// Unified-format conversion: registry failures become [`BffiError`] with
+/// the closest transport code, keeping [`RegistryError`] as the source.
+impl From<RegistryError> for BffiError {
+    fn from(error: RegistryError) -> Self {
+        let code = match &error {
+            RegistryError::TagAlreadyRegistered(_) | RegistryError::NotRegistered(_) => {
+                ErrorCode::InvalidTag
+            }
+            RegistryError::TableFull(_) => ErrorCode::TableFull,
+        };
+        Self::with_source(code, error.to_string(), error)
     }
 }
 
@@ -167,15 +224,10 @@ pub fn take_last_error() -> Option<BffiError> {
     LAST_ERROR.with(|slot| slot.borrow_mut().take())
 }
 
-/// Returns a copy of this thread's last error without clearing the slot.
-#[must_use]
-pub fn last_error() -> Option<BffiError> {
-    LAST_ERROR.with(|slot| slot.borrow().clone())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::handle::TypeTag;
     use std::thread;
 
     #[test]
@@ -216,18 +268,76 @@ mod tests {
         let error = BffiError::from(ErrorCode::TableFull);
         assert_eq!(error.code, ErrorCode::TableFull);
         assert_eq!(error.message, error.code.to_string());
+        assert!(error.source.is_none(), "code-only errors have no source");
     }
 
     #[test]
-    fn last_error_can_be_set_taken_and_peeked() {
+    fn with_source_boxes_the_original_error() {
+        let original = std::io::Error::other("disk gone");
+        let error = BffiError::with_source(ErrorCode::Error, "io failed", original);
+
+        let recovered = error
+            .source
+            .as_ref()
+            .and_then(|boxed| boxed.downcast_ref::<std::io::Error>())
+            .expect("original io::Error must be preserved");
+        assert_eq!(recovered.to_string(), "disk gone");
+
+        let as_dyn: &(dyn std::error::Error + 'static) = &error;
+        assert!(
+            as_dyn.source().is_some(),
+            "trait source() exposes the chain"
+        );
+    }
+
+    #[test]
+    fn table_error_converts_losslessly() {
+        let error = BffiError::from(TableError::Full);
+        assert_eq!(error.code, ErrorCode::TableFull);
+        assert_eq!(error.message, "handle table has no free slots");
+
+        let recovered = error
+            .source
+            .as_ref()
+            .and_then(|boxed| boxed.downcast_ref::<TableError>());
+        assert_eq!(recovered, Some(&TableError::Full));
+    }
+
+    #[test]
+    fn registry_errors_map_to_codes_with_source() {
+        let cases = [
+            (
+                RegistryError::TagAlreadyRegistered(TypeTag(0x8001)),
+                ErrorCode::InvalidTag,
+            ),
+            (
+                RegistryError::NotRegistered(TypeTag(0x8002)),
+                ErrorCode::InvalidTag,
+            ),
+            (
+                RegistryError::TableFull(TypeTag(0x8003)),
+                ErrorCode::TableFull,
+            ),
+        ];
+        for (registry_error, expected_code) in cases {
+            let error = BffiError::from(registry_error);
+            assert_eq!(error.code, expected_code, "for {registry_error:?}");
+            let recovered = error
+                .source
+                .as_ref()
+                .and_then(|boxed| boxed.downcast_ref::<RegistryError>());
+            assert!(recovered.is_some(), "source must stay a RegistryError");
+        }
+    }
+
+    #[test]
+    fn last_error_can_be_set_and_taken() {
         assert!(
             take_last_error().is_none(),
             "test threads must start with a clean slot"
         );
 
         set_last_error(BffiError::new(ErrorCode::Error, "first"));
-        assert_eq!(last_error().map(|e| e.message), Some("first".into()));
-
         set_last_error(BffiError::new(ErrorCode::Error, "second"));
         assert_eq!(take_last_error().map(|e| e.message), Some("second".into()));
         assert!(take_last_error().is_none(), "take must clear the slot");
@@ -237,11 +347,10 @@ mod tests {
     fn last_error_is_thread_local() {
         set_last_error(BffiError::new(ErrorCode::Error, "main-only"));
 
-        let observed_by_thread =
-            thread::spawn(|| (last_error().is_some(), take_last_error().is_some()))
-                .join()
-                .expect("thread must not panic");
-        assert_eq!(observed_by_thread, (false, false));
+        let seen_by_thread = thread::spawn(|| take_last_error().is_some())
+            .join()
+            .expect("thread must not panic");
+        assert!(!seen_by_thread, "other threads must see no error");
 
         assert_eq!(
             take_last_error().map(|e| e.message),
