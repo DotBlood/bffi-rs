@@ -83,8 +83,10 @@
 //! ## Implementation notes
 //!
 //! - Zero runtime dependencies: `std` only.
-//! - Almost entirely safe Rust: the table and registry are built from
-//!   `RwLock` + `Arc` and contain no `unsafe` blocks.
+//! - **Unsafe is isolated and audited**: the handle table (lock-free cells,
+//!   refcount surgery) and the SIMD string validation in `bffi-types` are
+//!   the only places allowed to use `unsafe`; every block carries a
+//!   `SAFETY:` justification and all public API is 100% safe.
 //! - Release builds require unwinding (`panic = "unwind"`, the workspace
 //!   default) so [`catch_panic`] can convert panics; abort-on-panic would
 //!   kill the whole Bun host process.
@@ -97,6 +99,7 @@ pub mod boundary;
 pub mod catalog;
 pub mod error;
 pub mod handle;
+pub(crate) mod hazard;
 pub mod table;
 
 pub use boundary::{catch_panic, panic_message, run_extern_body};
