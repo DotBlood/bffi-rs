@@ -196,6 +196,8 @@ chore: pin rust-toolchain to 1.98.0
 | Хендлы        | Generational Index + type-tag           |
 | Формат ошибок | `BffiError` = код + сообщение + источник; доменные ошибки конвертируются без потерь через `From` |
 | Строки на границе | UTF-8 каноническая (`bun:ffi cstring`)  |
+| Таблицы       | Lock-free; reclamation через hazard     |
+| UTF-8 проверка| SIMD (x86 SSSE3, aarch64 NEON)          |
 | Буферы        | Копирование по умолчанию                |
 | Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
 | Event loop    | Старт с `run()`, `pump()` пока заглушка |
