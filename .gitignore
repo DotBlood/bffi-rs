@@ -85,6 +85,7 @@ Desktop.ini
 *.local.*
 .env.local
 .env.*.local
+.mimosa
 
 # ===== Secrets & env =====
 .env
