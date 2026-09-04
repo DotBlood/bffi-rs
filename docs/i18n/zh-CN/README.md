@@ -14,13 +14,13 @@
 
 Bun 绑定框架 - napi-rs 的 Bun 等价物,基于 `bun:ffi` 与轻量 C ABI 构建。使用 Rust 编写,自底向上由多个小型专用 crate 组成。
 
-架构见 [docs/i18n/zh-CN/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md),工程规则见 [docs/i18n/zh-CN/AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)。
+架构见 [docs/i18n/zh-CN/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md),工程规则见 [docs/i18n/zh-CN/AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)。
 
 ## 文档
 
 - [docs/i18n/zh-CN/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
 - [docs/i18n/zh-CN/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) - 贡献指南(分支、提交、PR)
-- [docs/i18n/zh-CN/AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md) - 面向人类与 AI 代理的工程规则
+- [docs/i18n/zh-CN/AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md) - 面向人类与 AI 代理的工程规则
 - [docs/i18n/zh-CN/SECURITY.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md) - 安全策略
 - [docs/i18n/zh-CN/CONTACT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTACT.md) - 联系方式
 

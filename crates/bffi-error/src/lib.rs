@@ -7,14 +7,14 @@
 //! crate adds the missing piece: **which kind of JavaScript error** a
 //! failure must become and **what message** it carries.
 //!
-//! The taxonomy is deliberately small — JavaScript has exactly three error
+//! The taxonomy is deliberately small - JavaScript has exactly three error
 //! constructors worth targeting:
 //!
-//! - [`JsErrorName::TypeError`] — the *value* has the wrong kind or shape
+//! - [`JsErrorName::TypeError`] - the *value* has the wrong kind or shape
 //!   (bad UTF-8, null pointer, contract-violating argument);
-//! - [`JsErrorName::RangeError`] — the value is out of an allowed range
+//! - [`JsErrorName::RangeError`] - the value is out of an allowed range
 //!   (numeric overflow, output buffer too small);
-//! - [`JsErrorName::Error`] — everything else (generic failures, caught
+//! - [`JsErrorName::Error`] - everything else (generic failures, caught
 //!   panics, stale handles, exhausted tables).
 //!
 //! JS-side instantiation (constructing the actual `Error` objects) and the

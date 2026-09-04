@@ -74,7 +74,7 @@ pub fn panic_message(payload: &(dyn Any + Send)) -> String {
 /// [last error](crate::error).
 ///
 /// This function always catches (even in debug builds); the
-/// [`bffi_extern!`](crate::bffi_extern) macro decides *whether* to use it —
+/// [`bffi_extern!`](crate::bffi_extern) macro decides *whether* to use it -
 /// debug builds let the panic escape instead (DESIGN §6.5).
 #[must_use]
 pub fn run_extern_body<F>(f: F) -> ErrorCode

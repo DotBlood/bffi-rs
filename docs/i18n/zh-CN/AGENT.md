@@ -1,10 +1,10 @@
-# AGENT.md - AI 代理与贡献者规则
+# AGENTS.md - AI 代理与贡献者规则
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) | **[简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)**
+[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) | **[简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)**
 
 本文件定义了人类与 AI 代理在 **bffi-rs** 上工作时必须遵循的规则。
 
-仓库:https://github.com/DotBlood/bffi-rs  
+仓库:https://github.com/DotBlood/bffi-rs
 联系方式:contact@z2net.com
 
 ---
@@ -28,7 +28,7 @@
 
 ## 2. 硬性规则
 
-1. **仅支持 Bun**  
+1. **仅支持 Bun**
    不要添加 Node.js 或 Deno 兼容层。
 
 2. **安全第一**
@@ -36,25 +36,25 @@
    - 仅允许通过 `bffi::unsafe_zero_copy` 进行零拷贝。
    - 所有 `extern "C"` 函数必须保持精简,并用 `catch_unwind` 包裹。
 
-3. **句柄**  
-   使用 Generational Index + type-tag(`u64`)。  
+3. **句柄**
+   使用 Generational Index + type-tag(`u64`)。
    绝不通过 C ABI 暴露原始 Rust 引用或复杂类型。
 
 4. **Panic**
    - 开发构建可以中止(更易于调试)。
    - 生产构建必须将 panic 转换为 JS `Error`。
 
-5. **最低 Bun 版本**  
+5. **最低 Bun 版本**
    `1.4.0`
 
-6. **Rust / Cargo 版本**  
-   项目锁定为 **Cargo / Rust 1.98.0**。  
+6. **Rust / Cargo 版本**
+   项目锁定为 **Cargo / Rust 1.98.0**。
    未经明确决策和 CI 更新,不得提升版本。
 
-7. **仓库中不得包含机密信息**  
+7. **仓库中不得包含机密信息**
    任何位于 `.grok`、`.claude`、`.codex`、`.opencode`、`.hermes`、`.mcp`、`.env` 下的内容,以及密钥、令牌等,都必须排除在 git 之外(参见 `.gitignore`)。
 
-8. **许可证**  
+8. **许可证**
    MIT。在适当之处保留 SPDX 头部声明。
 
 ---
@@ -63,7 +63,7 @@
 
 ```
 bffi-rs/
-├── AGENT.md                    # this file
+├── AGENTS.md                    # this file
 ├── README.md
 ├── LICENSE
 ├── SECURITY.md
@@ -188,17 +188,17 @@ chore: pin rust-toolchain to 1.98.0
 
 ## 7. 快速参考 - 已接受的决策
 
-| 主题          | 决策                                          |
-| ------------- | -------------------------------------------- |
-| 宏            | `#[bffi]`                                    |
-| 最低 Bun      | 1.4.0                                        | 
-| Rust/Cargo    | 1.98.0                                       |
-| 句柄          | Generational Index + type-tag                |
-| 缓冲区        | 默认复制                                     |
-| 零拷贝        | 仅通过 `bffi::unsafe_zero_copy`              |
-| 事件循环      | 以 `run()` 启动,`pump()` 目前为 mock 实现   |
-| TS 类型       | 从第一天起生成(`bffi-dts`)                  |
-| Panic(生产)  | 转换为 JS Error                              |
-| Panic(开发)  | 可以中止                                     |
-| 兼容性        | 仅支持 Bun                                   |
-| 许可证        | MIT                                          |
+| 主题        | 决策                                      |
+| ----------- | ----------------------------------------- |
+| 宏          | `#[bffi]`                                 |
+| 最低 Bun    | 1.4.0                                     |
+| Rust/Cargo  | 1.98.0                                    |
+| 句柄        | Generational Index + type-tag             |
+| 缓冲区      | 默认复制                                  |
+| 零拷贝      | 仅通过 `bffi::unsafe_zero_copy`           |
+| 事件循环    | 以 `run()` 启动,`pump()` 目前为 mock 实现 |
+| TS 类型     | 从第一天起生成(`bffi-dts`)                |
+| Panic(生产) | 转换为 JS Error                           |
+| Panic(开发) | 可以中止                                  |
+| 兼容性      | 仅支持 Bun                                |
+| 许可证      | MIT                                       |

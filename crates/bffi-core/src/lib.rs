@@ -8,15 +8,15 @@
 //! crate (`bffi-types`, `bffi-error`, `bffi-object`, …) builds on the
 //! primitives defined here:
 //!
-//! - [`handle`] — the opaque [`Handle`] and [`TypeTag`]s that cross the C
+//! - [`handle`] - the opaque [`Handle`] and [`TypeTag`]s that cross the C
 //!   ABI instead of raw Rust references;
-//! - [`table`] — generational handle tables ([`HandleTable`]) that own the
+//! - [`table`] - generational handle tables ([`HandleTable`]) that own the
 //!   Rust-side objects;
-//! - [`catalog`] — the process-wide [`Registry`] routing handles to typed
+//! - [`catalog`] - the process-wide [`Registry`] routing handles to typed
 //!   tables by tag;
-//! - [`error`] — [`ErrorCode`]s and the thread-local *last error* transport
+//! - [`error`] - [`ErrorCode`]s and the thread-local *last error* transport
 //!   used to move failures across the C ABI;
-//! - [`boundary`] — panic containment for `extern "C"` functions
+//! - [`boundary`] - panic containment for `extern "C"` functions
 //!   ([`catch_panic`], [`bffi_extern!`]).
 //!
 //! The C ABI layer itself (the `extern "C"` functions called from Bun) is
@@ -27,16 +27,16 @@
 //!
 //! Authoritative description: `docs/DESIGN.md` §6. In short:
 //!
-//! 1. **FFI boundary** — every `extern "C"` function is thin and runs its
+//! 1. **FFI boundary** - every `extern "C"` function is thin and runs its
 //!    body under panic containment; panics never cross the boundary in
 //!    release builds.
-//! 2. **Ownership via handles** — Rust objects are stored as `Arc<T>`
+//! 2. **Ownership via handles** - Rust objects are stored as `Arc<T>`
 //!    inside handle tables; the C ABI only ever sees opaque
 //!    [`Handle`]s. Stale handles are rejected through generations.
-//! 3. **Copy by default** — buffers and strings are copied across the
+//! 3. **Copy by default** - buffers and strings are copied across the
 //!    boundary; zero-copy will be an explicit, visibly unsafe API living in
 //!    `bffi-types`, not here.
-//! 4. **Panics** — debug builds may let a panic abort the process (better
+//! 4. **Panics** - debug builds may let a panic abort the process (better
 //!    debugging); release builds convert it into a JS `Error` via the
 //!    last-error transport.
 //!

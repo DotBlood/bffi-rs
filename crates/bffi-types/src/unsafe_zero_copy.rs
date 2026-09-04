@@ -1,4 +1,4 @@
-//! **Unsafe-by-name zero-copy views — read every word of this module.**
+//! **Unsafe-by-name zero-copy views - read every word of this module.**
 //!
 //! Everything else in this crate copies (DESIGN §6.3). Zero-copy is only
 //! allowed through this module, and the module name is the warning label:
@@ -9,13 +9,13 @@
 //!
 //! A `ZeroCopyStr` / `ZeroCopyBuf` view:
 //!
-//! 1. borrows memory the *caller* controls — it must not outlive the FFI
+//! 1. borrows memory the *caller* controls - it must not outlive the FFI
 //!    call that produced the buffer. The `'a` lifetime enforces this at
 //!    compile time as long as the raw pointer is only dereferenced inside
 //!    the boundary layer (`bffi-build`) for the duration of the call;
-//! 2. aliases memory that JS may legally keep mutating between calls —
+//! 2. aliases memory that JS may legally keep mutating between calls -
 //!    never store a view in Rust state, never spawn a thread with it;
-//! 3. still validates UTF-8 for [`str_view`] — zero-copy means *no copy*,
+//! 3. still validates UTF-8 for [`str_view`] - zero-copy means *no copy*,
 //!    never *no checks*.
 //!
 //! The constructors here are safe because they take a borrowed slice; the
@@ -25,11 +25,11 @@
 use bffi_core::{BffiError, ErrorCode};
 use std::ops::Deref;
 
-/// A borrowed `&str` view over caller-owned UTF-8 bytes — no copy.
+/// A borrowed `&str` view over caller-owned UTF-8 bytes - no copy.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ZeroCopyStr<'a>(&'a str);
 
-/// A borrowed `&[u8]` view over caller-owned bytes — no copy.
+/// A borrowed `&[u8]` view over caller-owned bytes - no copy.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ZeroCopyBuf<'a>(&'a [u8]);
 
@@ -38,7 +38,7 @@ pub struct ZeroCopyBuf<'a>(&'a [u8]);
 /// # Errors
 ///
 /// [`ErrorCode::InvalidUtf8`] (as [`BffiError`]) when the bytes are not
-/// valid UTF-8 — the check is mandatory in the zero-copy path too.
+/// valid UTF-8 - the check is mandatory in the zero-copy path too.
 pub fn str_view(bytes: &[u8]) -> Result<ZeroCopyStr<'_>, BffiError> {
     match std::str::from_utf8(bytes) {
         Ok(text) => Ok(ZeroCopyStr(text)),

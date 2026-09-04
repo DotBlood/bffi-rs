@@ -3,13 +3,13 @@
 //! A JavaScript number is an `f64`. Converting it to a fixed-width integer
 //! can lose data, so [`JsNumber`] never converts implicitly:
 //!
-//! - **strict** ([`JsNumber::try_into_i32`] and friends) — the default:
+//! - **strict** ([`JsNumber::try_into_i32`] and friends) - the default:
 //!   NaN, infinities and out-of-range values are errors; fractional values
 //!   truncate toward zero *only* when the truncated result is in range;
-//! - **saturating** ([`JsNumber::to_i32_saturating`] and friends) — the
+//! - **saturating** ([`JsNumber::to_i32_saturating`] and friends) - the
 //!   value clamps to the target range, NaN becomes `0` (the Rust `as`-cast
 //!   contract);
-//! - **JS semantics** ([`JsNumber::to_i32_js`] / [`JsNumber::to_u32_js`]) —
+//! - **JS semantics** ([`JsNumber::to_i32_js`] / [`JsNumber::to_u32_js`]) -
 //!   the exact ECMAScript `ToInt32`/`ToUint32` operations behind `x | 0`
 //!   and `x >>> 0`: truncation, then reduction modulo 2^32.
 //!
@@ -51,7 +51,7 @@ impl From<ConversionError> for BffiError {
 
 /// Strict integer conversion: truncates toward zero, then range-checks
 /// against exact f64 bounds. All bounds up to 32 bits are powers of two
-/// minus one — exactly representable in `f64`.
+/// minus one - exactly representable in `f64`.
 macro_rules! strict_int {
     ($(#[$meta:meta])* $name:ident, $ty:ty, $lo:expr, $hi:expr) => {
         $(#[$meta])*
@@ -321,7 +321,7 @@ impl JsNumber {
 }
 
 /// `ToInt32`/`ToUint32` core: NaN/infinity gate plus exact reduction into
-/// `[0, 2^32)`. `%` on `f64` is IEEE fmod — exact for any finite inputs —
+/// `[0, 2^32)`. `%` on `f64` is IEEE fmod - exact for any finite inputs -
 /// so huge values reduce without precision surprises.
 fn js_mod_32(value: f64) -> Option<f64> {
     if !value.is_finite() {

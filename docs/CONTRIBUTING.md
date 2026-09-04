@@ -10,7 +10,7 @@ Contact: contact@z2net.com
 Please also read:
 
 - [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) - architecture and decisions
-- [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) - rules for humans and AI agents
+- [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) - rules for humans and AI agents
 - [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
 
 ---
