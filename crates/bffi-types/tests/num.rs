@@ -174,6 +174,27 @@ fn conversion_error_becomes_number_out_of_range_bffi_error() {
 }
 
 #[test]
+fn conversion_error_survives_as_the_source() {
+    let error = BffiError::from(ConversionError::NotFinite);
+    let recovered = error
+        .source
+        .as_ref()
+        .and_then(|boxed| boxed.downcast_ref::<ConversionError>());
+    assert_eq!(
+        recovered,
+        Some(&ConversionError::NotFinite),
+        "the typed cause must not be lost in conversion"
+    );
+
+    // the std Error::source() chain exposes the same original error
+    let as_dyn: &(dyn std::error::Error + 'static) = &error;
+    let via_trait = as_dyn
+        .source()
+        .and_then(|source| source.downcast_ref::<ConversionError>());
+    assert_eq!(via_trait, Some(&ConversionError::NotFinite));
+}
+
+#[test]
 fn number_accessors_roundtrip() {
     assert_eq!(num(42.5).get(), 42.5);
     assert_eq!(f64::from(num(-0.5)), -0.5);

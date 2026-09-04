@@ -45,7 +45,7 @@ impl std::error::Error for ConversionError {}
 
 impl From<ConversionError> for BffiError {
     fn from(error: ConversionError) -> Self {
-        BffiError::new(ErrorCode::NumberOutOfRange, error.to_string())
+        BffiError::with_source(ErrorCode::NumberOutOfRange, error.to_string(), error)
     }
 }
 
