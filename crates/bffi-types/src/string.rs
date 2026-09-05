@@ -5,7 +5,12 @@
 //! therefore **copies** into an owned [`String`] after validating UTF-8.
 //! The zero-copy counterpart lives behind [`crate::unsafe_zero_copy`].
 
+use crate::utf8;
 use bffi_core::{BffiError, ErrorCode};
+
+fn invalid_utf8() -> BffiError {
+    BffiError::new(ErrorCode::InvalidUtf8, "byte sequence is not valid UTF-8")
+}
 
 /// Validates `bytes` as UTF-8 and returns an owned copy.
 ///
@@ -17,8 +22,13 @@ use bffi_core::{BffiError, ErrorCode};
 /// [`ErrorCode::InvalidUtf8`] (as [`BffiError`]) when the sequence is not
 /// valid UTF-8.
 pub fn bytes_to_string(bytes: &[u8]) -> Result<String, BffiError> {
-    String::from_utf8(bytes.to_vec())
-        .map_err(|_| BffiError::new(ErrorCode::InvalidUtf8, "byte sequence is not valid UTF-8"))
+    if !utf8::validate(bytes) {
+        return Err(invalid_utf8());
+    }
+    let copy = bytes.to_vec();
+    // SAFETY: `utf8::validate` just verified that `bytes` is valid UTF-8
+    // and `copy` is a byte-for-byte copy of it.
+    Ok(unsafe { String::from_utf8_unchecked(copy) })
 }
 
 /// Copies a `&str` into an owned byte vector.

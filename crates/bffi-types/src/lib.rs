@@ -60,10 +60,22 @@
 //! assert_eq!(copied.as_slice(), [1, 2, 3]);
 //! # Ok::<(), bffi_core::BffiError>(())
 //! ```
+//!
+//! ## Implementation notes
+//!
+//! - UTF-8 validation is SIMD-accelerated (x86_64 SSSE3, aarch64 NEON)
+//!   with a scalar DFA fallback; all paths are cross-checked against
+//!   `std::str::from_utf8` semantics in tests.
+//! - **Unsafe is isolated and audited**: only the SIMD vector loads and
+//!   the unchecked UTF-8 constructors guarded by the validator use it;
+//!   every block carries a `SAFETY:` justification and all public API is
+//!   safe.
 
 // The workspace restriction lints (expect/unwrap/panic) target production
 // code; tests assert invariants and intentionally trigger panics.
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
+
+pub(crate) mod utf8;
 
 pub mod buffer;
 pub mod num;

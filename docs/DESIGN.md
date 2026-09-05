@@ -121,6 +121,8 @@ Outside only the opaque handle is visible.
 | Handles          | Generational Index + type-tag                       |
 | Error format     | `BffiError` = code + message + source; domain errors convert losslessly via `From` |
 | Boundary string encoding | UTF-8 canonical (`bun:ffi cstring`)                    |
+| Handle concurrency | Lock-free; hazard-pointer reclamation; pinned two-level cell pages |
+| UTF-8 validation | SIMD (x86 SSSE3, aarch64 NEON); scalar DFA is the reference semantics |
 | Buffers          | Copy by default                                     |
 | Zero-copy        | Only via `bffi::unsafe_zero_copy`                   |
 | Event loop       | Start with `run()`; `pump()` is a mock for now      |

@@ -196,6 +196,8 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Handles       | Generational Index + type-tag                |
 | Error format  | `BffiError` = code + message + source; domain errors convert losslessly via `From` |
 | Boundary strings | UTF-8 canonical (`bun:ffi cstring`)          |
+| Table locking | Lock-free; hazard-pointer reclamation        |
+| UTF-8 checks  | SIMD (x86 SSSE3, aarch64 NEON); scalar ref   |
 | Buffers       | Copy by default                              |
 | Zero-copy     | Only via `bffi::unsafe_zero_copy`            |
 | Event loop    | Start with `run()`, `pump()` is mock for now |
