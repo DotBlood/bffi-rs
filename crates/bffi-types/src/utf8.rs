@@ -43,6 +43,7 @@ use std::sync::OnceLock;
 pub(crate) fn validate(bytes: &[u8]) -> bool {
     static PATH: OnceLock<Path> = OnceLock::new();
     match PATH.get_or_init(Path::detect) {
+        #[cfg(not(target_arch = "aarch64"))]
         Path::Scalar => scalar_dfa(bytes),
         #[cfg(target_arch = "x86_64")]
         Path::X86Ssse3 => x86::validate(bytes),
@@ -53,6 +54,9 @@ pub(crate) fn validate(bytes: &[u8]) -> bool {
 
 #[derive(Clone, Copy, Debug)]
 enum Path {
+    /// Scalar fallback. Not reachable on aarch64, where NEON is
+    /// mandatory - the variant is cfg-ed out there so it cannot be dead.
+    #[cfg(not(target_arch = "aarch64"))]
     Scalar,
     #[cfg(target_arch = "x86_64")]
     X86Ssse3,
@@ -136,6 +140,10 @@ fn dfa_step(remaining: &mut u8, lo: &mut u8, hi: &mut u8, byte: u8) -> bool {
 }
 
 /// Reference implementation: a plain scalar DFA.
+///
+/// On aarch64 the NEON path is unconditional, so this exists only for the
+/// cross-validation unit tests.
+#[cfg(any(not(target_arch = "aarch64"), test))]
 pub(crate) fn scalar_dfa(bytes: &[u8]) -> bool {
     let (mut remaining, mut lo, mut hi) = (0_u8, 0x80_u8, 0xBF_u8);
     for &byte in bytes {
@@ -281,7 +289,6 @@ mod arm {
     use core::arch::aarch64::*;
 
     /// Unsigned range check `lo <= v[i] <= hi` for every lane.
-    #[inline]
     #[inline]
     #[target_feature(enable = "neon")]
     fn in_range(v: uint8x16_t, lo: u8, hi: u8) -> uint8x16_t {
