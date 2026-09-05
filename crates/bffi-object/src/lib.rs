@@ -19,6 +19,30 @@
 //! 2. the handle's type tag must match the wrap's table (type spoofing);
 //! 3. the slot generation must match (a stale handle stays dead after
 //!    release, even when the slot is reused).
+//!
+//! ## Quick start
+//!
+//! ```
+//! use std::sync::OnceLock;
+//!
+//! use bffi_core::TypeTag;
+//! use bffi_object::ObjectWrap;
+//!
+//! struct Counter {
+//!     n: u32,
+//! }
+//!
+//! // One tag per type per process; claim it once in a static.
+//! static COUNTERS: OnceLock<ObjectWrap<Counter>> = OnceLock::new();
+//! const COUNTER: TypeTag = TypeTag(0x0142);
+//!
+//! let wrap = COUNTERS.get_or_init(|| ObjectWrap::new(COUNTER).expect("tag 0x0142 free"));
+//! let handle = wrap.wrap(Counter { n: 7 }).expect("room");
+//! assert_eq!(wrap.get(handle).expect("live").n, 7);
+//! let released = wrap.release(handle).expect("live handle");
+//! assert_eq!(released.n, 7);          // the Arc outlives the slot
+//! assert!(wrap.get(handle).is_err()); // the handle is stale now
+//! ```
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 

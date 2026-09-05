@@ -206,3 +206,4 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Panic (dev)   | May abort                                    |
 | Compatibility | Bun only                                     |
 | License       | MIT                                          |
+| Object ownership | `ObjectWrap<T>` over global `Registry` (tag 0x0100-0x01FF); release frees the slot |

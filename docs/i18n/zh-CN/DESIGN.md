@@ -120,6 +120,7 @@ type Handle = u64;
 | Rust / Cargo     | 1.98.0                                              |
 | 句柄             | Generational Index + type-tag                       |
 | 错误格式         | `BffiError` = 代码 + 消息 + 来源;领域错误通过 `From` 无损转换 |
+| 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`;一个标签对应一个类型(范围 0x0100-0x01FF);release 释放槽位,`Arc` 持有者保持对象存活 |
 | 边界字符串编码   | UTF-8 为规范编码(`bun:ffi cstring`)                         |
 | 句柄并发         | 无锁;危险指针回收;固定的两层单元页                     |
 | UTF-8 校验       | SIMD(x86 SSSE3,aarch64 NEON);标量 DFA 为参考语义      |

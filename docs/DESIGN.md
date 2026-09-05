@@ -120,6 +120,7 @@ Outside only the opaque handle is visible.
 | Rust / Cargo     | 1.98.0                                              |
 | Handles          | Generational Index + type-tag                       |
 | Error format     | `BffiError` = code + message + source; domain errors convert losslessly via `From` |
+| Object ownership | `ObjectWrap<T>` over the global `Registry`; one tag = one type per process (range 0x0100-0x01FF); release frees the slot, `Arc` holders keep the value alive |
 | Boundary string encoding | UTF-8 canonical (`bun:ffi cstring`)                    |
 | Handle concurrency | Lock-free; hazard-pointer reclamation; pinned two-level cell pages |
 | UTF-8 validation | SIMD (x86 SSSE3, aarch64 NEON); scalar DFA is the reference semantics |

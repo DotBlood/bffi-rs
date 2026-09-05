@@ -7,6 +7,7 @@ repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 description = "Typed object ownership (ObjectWrap) over generational handles and the global registry for the bffi-rs Bun binding framework."
+readme = "README.md"
 
 [lints]
 workspace = true

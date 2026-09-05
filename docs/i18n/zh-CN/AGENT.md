@@ -206,3 +206,4 @@ chore: pin rust-toolchain to 1.98.0
 | Panic(开发) | 可以中止                                  |
 | 兼容性      | 仅支持 Bun                                |
 | 许可证      | MIT                                       |
+| 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`(标签 0x0100-0x01FF);release 释放槽位 |
