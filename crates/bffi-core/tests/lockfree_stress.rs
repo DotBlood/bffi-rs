@@ -172,6 +172,12 @@ fn get_never_resolves_a_removed_value_even_under_heavy_removal() {
         }
     });
 
+    // The retire list drains amortized (threshold 2 x hazard-slot count)
+    // and on Drop; a value protected by a reader at removal time is
+    // legitimately still alive right after the scope. Dropping the table
+    // is the deterministic point where exactly-once freeing is guaranteed.
+    drop(arena);
+
     // every value must have been dropped exactly once (table + readers):
     // the remover drained the whole window, so nothing stays live
     assert_eq!(LIVE.load(Ordering::Relaxed), 0);

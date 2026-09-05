@@ -43,6 +43,7 @@ use std::sync::OnceLock;
 pub(crate) fn validate(bytes: &[u8]) -> bool {
     static PATH: OnceLock<Path> = OnceLock::new();
     match PATH.get_or_init(Path::detect) {
+        #[cfg(not(target_arch = "aarch64"))]
         Path::Scalar => scalar_dfa(bytes),
         #[cfg(target_arch = "x86_64")]
         Path::X86Ssse3 => x86::validate(bytes),
@@ -53,6 +54,9 @@ pub(crate) fn validate(bytes: &[u8]) -> bool {
 
 #[derive(Clone, Copy, Debug)]
 enum Path {
+    /// Scalar fallback. Not reachable on aarch64, where NEON is
+    /// mandatory - the variant is cfg-ed out there so it cannot be dead.
+    #[cfg(not(target_arch = "aarch64"))]
     Scalar,
     #[cfg(target_arch = "x86_64")]
     X86Ssse3,
@@ -67,12 +71,16 @@ impl Path {
             if std::arch::is_x86_feature_detected!("ssse3") {
                 return Self::X86Ssse3;
             }
+            Self::Scalar
         }
         #[cfg(target_arch = "aarch64")]
         {
-            return Self::ArmNeon;
+            Self::ArmNeon
         }
-        Self::Scalar
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+        {
+            Self::Scalar
+        }
     }
 }
 
@@ -132,6 +140,10 @@ fn dfa_step(remaining: &mut u8, lo: &mut u8, hi: &mut u8, byte: u8) -> bool {
 }
 
 /// Reference implementation: a plain scalar DFA.
+///
+/// On aarch64 the NEON path is unconditional, so this exists only for the
+/// cross-validation unit tests.
+#[cfg(any(not(target_arch = "aarch64"), test))]
 pub(crate) fn scalar_dfa(bytes: &[u8]) -> bool {
     let (mut remaining, mut lo, mut hi) = (0_u8, 0x80_u8, 0xBF_u8);
     for &byte in bytes {
@@ -278,19 +290,21 @@ mod arm {
 
     /// Unsigned range check `lo <= v[i] <= hi` for every lane.
     #[inline]
+    #[target_feature(enable = "neon")]
     fn in_range(v: uint8x16_t, lo: u8, hi: u8) -> uint8x16_t {
         let ge_lo = vcleq_u8(vdupq_n_u8(lo), v);
         let le_hi = vcleq_u8(v, vdupq_n_u8(hi));
         vandq_u8(ge_lo, le_hi)
     }
 
-    #[inline]
+    #[target_feature(enable = "neon")]
     fn not(v: uint8x16_t) -> uint8x16_t {
         vmvnq_u8(v)
     }
 
     /// SAFETY: NEON is mandatory on aarch64; the tail (fewer than 16
     /// bytes) is handled by the caller.
+    #[target_feature(enable = "neon")]
     unsafe fn validate_blocks(bytes: &[u8]) -> bool {
         let mut error = vdupq_n_u8(0);
         let mut prev = vdupq_n_u8(0);

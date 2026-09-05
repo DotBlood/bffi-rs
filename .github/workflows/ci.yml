@@ -4,10 +4,11 @@ name: CI
 # foundation is expected to support. The macOS runner is arm64, which
 # exercises the aarch64 NEON UTF-8 validation path.
 on:
+  # every pull request is checked regardless of its target branch (stacked
+  # feature PRs must be validated too); pushes are limited to the mainlines
   pull_request:
-    branches: [main, dev/main]
   push:
-    branches: [dev/main]
+    branches: [main, dev/main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
