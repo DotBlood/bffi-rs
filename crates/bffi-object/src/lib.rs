@@ -23,5 +23,7 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
 pub mod error;
+pub mod wrap;
 
 pub use error::ObjectError;
+pub use wrap::{ObjectWrap, TAG_MAX, TAG_MIN, tag_in_range};
