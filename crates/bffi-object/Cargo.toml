@@ -1,0 +1,15 @@
+[package]
+name = "bffi-object"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Typed object ownership (ObjectWrap) over generational handles and the global registry for the bffi-rs Bun binding framework."
+
+[lints]
+workspace = true
+
+[dependencies]
+bffi-core = { path = "../bffi-core" }
