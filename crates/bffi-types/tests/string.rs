@@ -21,9 +21,13 @@ fn valid_utf8_roundtrips_through_a_copy() {
 
     // embedded NUL is legal inside a length-prefixed string
     let with_nul = b"a\x00b";
-    assert_eq!(bytes_to_string(with_nul).as_deref(), Ok("a\0b"));
+    assert_eq!(
+        bytes_to_string(with_nul).as_deref().ok(),
+        Some("a\0b"),
+        "embedded NUL must survive"
+    );
 
-    assert_eq!(bytes_to_string(b"").as_deref(), Ok(""));
+    assert_eq!(bytes_to_string(b"").as_deref().ok(), Some(""));
 }
 
 #[test]

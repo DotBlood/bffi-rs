@@ -194,6 +194,8 @@ chore: pin rust-toolchain to 1.98.0
 | Мин. Bun      | 1.4.0                                   |
 | Rust/Cargo    | 1.98.0                                  |
 | Хендлы        | Generational Index + type-tag           |
+| Формат ошибок | `BffiError` = код + сообщение + источник; доменные ошибки конвертируются без потерь через `From` |
+| Строки на границе | UTF-8 каноническая (`bun:ffi cstring`)  |
 | Буферы        | Копирование по умолчанию                |
 | Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
 | Event loop    | Старт с `run()`, `pump()` пока заглушка |

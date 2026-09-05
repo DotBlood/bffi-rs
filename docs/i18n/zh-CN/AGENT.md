@@ -194,6 +194,8 @@ chore: pin rust-toolchain to 1.98.0
 | 最低 Bun    | 1.4.0                                     |
 | Rust/Cargo  | 1.98.0                                    |
 | 句柄        | Generational Index + type-tag             |
+| 错误格式    | `BffiError` = 代码 + 消息 + 来源;领域错误通过 `From` 无损转换 |
+| 边界字符串  | UTF-8 为规范编码(`bun:ffi cstring`)       |
 | 缓冲区      | 默认复制                                  |
 | 零拷贝      | 仅通过 `bffi::unsafe_zero_copy`           |
 | 事件循环    | 以 `run()` 启动,`pump()` 目前为 mock 实现 |

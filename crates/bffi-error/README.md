@@ -30,6 +30,11 @@ The rule of thumb: _wrong kind or shape of a value_ is a `TypeError`,
 _out of an allowed range_ is a `RangeError`, everything internal is a plain
 `Error`.
 
+`BffiError` also carries an optional typed **source** (the originating
+domain error, e.g. `ConversionError` or `TableError`). It does not change
+the JS shape today; once the facade lands, it can populate the JS `Error`
+`cause` option without touching this mapping.
+
 ## Example
 
 ```rust
