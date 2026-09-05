@@ -4,7 +4,7 @@ members = [
     "crates/bffi-core",
     "crates/bffi-error",
     "crates/bffi-types",
-    # "crates/bffi-object",
+    "crates/bffi-object",
     # "crates/bffi-callback",
     # "crates/bffi-dts",
     # "crates/bffi-macros",
