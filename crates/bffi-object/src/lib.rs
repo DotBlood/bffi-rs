@@ -21,3 +21,7 @@
 //!    release, even when the slot is reused).
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
+
+pub mod error;
+
+pub use error::ObjectError;
