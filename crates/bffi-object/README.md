@@ -127,8 +127,10 @@ cargo test -p bffi-object          # everything
 cargo test -p bffi-object --doc    # documentation examples
 ```
 
-Suites: lifecycle unit tests per module plus multi-threaded stress tests
-covering concurrent wrap/release traffic and tag-claim races.
+Suites: unit tests per module, plus integration tests covering the handle
+lifecycle and UAF barriers (`tests/lifecycle.rs`) and multi-threaded stress
+tests covering concurrent wrap/get/release traffic and a release-vs-get race
+(`tests/concurrency.rs`).
 
 ## Requirements
 

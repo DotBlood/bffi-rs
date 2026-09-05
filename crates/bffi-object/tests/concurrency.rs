@@ -80,7 +80,8 @@ fn release_concurrent_with_get_never_resurrects() {
                 // ObjectWrap is Copy: the move closure captures it by value.
                 barrier.wait();
                 // Before release: Ok; after: clean InvalidHandle. A panic
-                // or a resurrection would fail the test via join/unwrap.
+                // in a getter fails the test via the scope join; a released
+                // handle must never come back to life persistently.
                 while !done.load(Ordering::Acquire) {
                     let _ = wrap.get(handle);
                 }
