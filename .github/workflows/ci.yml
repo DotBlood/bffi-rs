@@ -1,0 +1,63 @@
+name: CI
+
+# CI parity with `bun run ci`, spread across the operating systems the
+# foundation is expected to support. The macOS runner is arm64, which
+# exercises the aarch64 NEON UTF-8 validation path.
+on:
+  pull_request:
+    branches: [main, dev/main]
+  push:
+    branches: [dev/main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@1.98.0
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt
+        run: cargo fmt --check
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test (debug)
+        run: cargo test --workspace
+
+      # release configuration on one OS keeps the matrix cheap while still
+      # covering the optimized build of the lock-free and SIMD code
+      - name: cargo test (release)
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo test --workspace --release
+
+  js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: bun install
+        run: bun install --frozen-lockfile
+
+      - name: oxlint
+        run: bun run lint
+
+      - name: tsc
+        run: bun run typecheck
