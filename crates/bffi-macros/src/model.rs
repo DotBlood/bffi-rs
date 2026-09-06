@@ -79,17 +79,18 @@ pub(crate) struct FnParam {
 
 /// A validated `#[bffi]` function: everything later stages need to
 /// generate the C ABI shim and the `bffi_meta` descriptor.
-// The fields are consumed by the shim/meta generators landing in
-// Tasks 3-4; until then the non-test build sees them as dead.
-#[allow(dead_code)]
 #[derive(Clone)]
 pub(crate) struct FnModel {
     /// Function name.
     pub ident: syn::Ident,
     /// Function visibility.
+    // Quoted into descriptors by the generator in Task 4.
+    #[allow(dead_code)]
     pub vis: syn::Visibility,
     /// Doc-comment lines with exactly one leading space trimmed
     /// (`/// Adds.` becomes `Adds.`).
+    // Quoted into descriptors by the generator in Task 4.
+    #[allow(dead_code)]
     pub docs: Vec<String>,
     /// Parameters in declaration order (receivers are rejected).
     pub params: Vec<FnParam>,

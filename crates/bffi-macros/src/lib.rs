@@ -29,6 +29,7 @@ extern crate proc_macro;
 mod errors;
 mod mapping;
 mod model;
+mod shim;
 
 use proc_macro::TokenStream;
 
@@ -38,17 +39,21 @@ use proc_macro::TokenStream;
 /// (plain `fn`s over primitives, `&str` and `()` only - see
 /// [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)).
 /// Inputs outside the rules produce a spanned compile error with the
-/// documented help lines. The C ABI shim plus `bffi_meta` descriptor
-/// expansion lands in Tasks 3-4, so validated items currently pass
-/// through unchanged.
+/// documented help lines. A validated item expands into its original
+/// tokens plus an `extern "C"` shim (`bffi_<name>`) generated under
+/// the boundary policy; the `bffi_meta` descriptor lands in Task 4.
 #[proc_macro_attribute]
 pub fn bffi(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = proc_macro2::TokenStream::from(attrs);
     let item = proc_macro2::TokenStream::from(item);
-    match model::FnModel::parse(&attrs, item.clone()) {
-        // Task 3/4 will append the shim + meta; the original item
-        // passes through unchanged once it validates.
-        Ok(_model) => item.into(),
+    // The item already parsed successfully inside `FnModel::parse`
+    // once; parsing it here too gives the shim generator the typed
+    // item to echo unchanged.
+    match syn::parse2::<syn::ItemFn>(item.clone()) {
         Err(err) => err.to_compile_error().into(),
+        Ok(func) => match model::FnModel::parse(&attrs, item.clone()) {
+            Ok(model_) => shim::expand(&model_, &func).into(),
+            Err(err) => err.to_compile_error().into(),
+        },
     }
 }
