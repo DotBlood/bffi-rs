@@ -128,7 +128,7 @@ type Handle = u64;
 | UTF-8 校验       | SIMD(x86 SSSE3,aarch64 NEON);标量 DFA 为参考语义      |
 | 缓冲区           | 默认复制                                            |
 | 零拷贝           | 仅通过 `bffi::unsafe_zero_copy`                     |
-| 事件循环         | 以 `run()` 启动;`pump()` 目前为 mock 实现          |
+| 事件循环         | `enqueue`/`marshal` 队列 + 在运行线程上阻塞的 `run()`（任务经 `run_extern_body`）;`stop()` 是粘性的;`pump()` 为 mock;无运行线程时 marshal -> WrongThread(12) |
 | TypeScript 类型 | IR（ModuleDef/FunctionDef）+ 确定性 render；export_name = bffi_ 前缀 |
 | Panic(生产)    | 转换为 JS Error                                     |
 | Panic(开发)    | 可以中止                                            |

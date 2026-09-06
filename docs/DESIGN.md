@@ -128,7 +128,7 @@ Outside only the opaque handle is visible.
 | UTF-8 validation | SIMD (x86 SSSE3, aarch64 NEON); scalar DFA is the reference semantics |
 | Buffers          | Copy by default                                     |
 | Zero-copy        | Only via `bffi::unsafe_zero_copy`                   |
-| Event loop       | Start with `run()`; `pump()` is a mock for now      |
+| Event loop       | `enqueue`/`marshal` queue + blocking `run()` on the runner thread (jobs via `run_extern_body`); `stop()` is sticky; `pump()` is a mock; marshal without a runner -> WrongThread(12) |
 | TypeScript types | IR (ModuleDef/FunctionDef) + deterministic render; export_name = bffi_-prefix |
 | Panic (prod)     | Convert to JS Error                                 |
 | Panic (dev)      | May abort                                           |

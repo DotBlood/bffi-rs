@@ -200,7 +200,7 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | UTF-8 checks  | SIMD (x86 SSSE3, aarch64 NEON); scalar ref   |
 | Buffers       | Copy by default                              |
 | Zero-copy     | Only via `bffi::unsafe_zero_copy`            |
-| Event loop    | Start with `run()`, `pump()` is mock for now |
+| Event loop    | `run()` drains a job queue on the runner thread; `marshal` = wrong-thread path (code 12); `pump()` is mock |
 | TS types      | IR (ModuleDef/FunctionDef) + deterministic render; export_name = bffi_-prefix |
 | Panic (prod)  | Convert to JS Error                          |
 | Panic (dev)   | May abort                                    |

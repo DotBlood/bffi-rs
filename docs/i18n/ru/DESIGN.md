@@ -128,7 +128,7 @@ type Handle = u64;
 | UTF-8 валидация        | SIMD (x86 SSSE3, aarch64 NEON); скалярный DFA - эталонная семантика |
 | Буферы                 | Копирование по умолчанию                                  |
 | Zero-copy              | Только через `bffi::unsafe_zero_copy`                     |
-| Event loop             | Старт с `run()`; `pump()` пока заглушка                   |
+| Event loop             | Очередь `enqueue`/`marshal` + блокирующий `run()` на потоке-исполнителе (задачи через `run_extern_body`); `stop()` липкий; `pump()` заглушка; marshal без раннера -> WrongThread(12) |
 | TypeScript-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
 | Паника (prod)          | Преобразуется в JS Error                                  |
 | Паника (dev)           | Может прерываться (abort)                                 |

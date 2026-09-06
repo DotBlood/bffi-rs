@@ -200,7 +200,7 @@ chore: pin rust-toolchain to 1.98.0
 | UTF-8 проверка| SIMD (x86 SSSE3, aarch64 NEON)          |
 | Буферы        | Копирование по умолчанию                |
 | Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
-| Event loop    | Старт с `run()`, `pump()` пока заглушка |
+| Event loop    | `run()` дренирует очередь задач на потоке-исполнителе; `marshal` - путь wrong-thread (код 12); `pump()` заглушка |
 | TS-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
 | Паника (prod) | Преобразуется в JS Error                |
 | Паника (dev)  | Может прерываться (abort)               |
