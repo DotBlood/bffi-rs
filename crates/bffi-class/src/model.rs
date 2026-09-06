@@ -7,9 +7,14 @@
 //! constructor returning `Self`, `&self` methods over the accepted
 //! matrix). Every violation is a spanned `E005`-`E008` diagnostic, so
 //! the codegen stages can rely on the shape being valid.
+//!
+//! The boundary kinds and the parse helpers live in
+//! `bffi_macro_support`; this crate keeps the `ItemStruct`/`ItemImpl`
+//! parsing and its own `E005`-`E008` diagnostics.
 
-use crate::errors::MacroDiagnostic;
+use crate::errors::{class_shape, field_type, impl_binding, method_shape, tag};
 use crate::mapping::{self, RetKind};
+use bffi_macro_support::util::{extract_docs, to_snake_case};
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;
 use syn::{Fields, ItemImpl, ItemStruct, ReturnType, Visibility};
@@ -87,69 +92,17 @@ pub(crate) struct ImplModel {
     pub methods: Vec<MethodModel>,
 }
 
-/// Converts `Counter`/`HTTPServer`/`my_type` to `counter`/`http_server`/`my_type`.
-pub(crate) fn to_snake_case(name: &str) -> String {
-    let chars: Vec<char> = name.chars().collect();
-    let mut out = String::with_capacity(name.len() + 4);
-    for (index, &ch) in chars.iter().enumerate() {
-        if ch.is_ascii_uppercase() {
-            let prev_lower = index > 0 && chars[index - 1].is_ascii_lowercase();
-            let prev_underscore = index > 0 && chars[index - 1] == '_';
-            let next_lower = chars.get(index + 1).is_some_and(|c| c.is_ascii_lowercase());
-            // Insert an underscore at a hump (`aB`) or an acronym
-            // boundary (`ABc`), never after an existing `_`.
-            if index > 0 && !prev_underscore && (prev_lower || next_lower) {
-                out.push('_');
-            }
-            out.extend(ch.to_lowercase());
-        } else {
-            out.push(ch);
-        }
-    }
-    out
-}
-
-/// Collects `///` doc lines, trimming exactly one leading space (same
-/// rule as `bffi-macros`).
-pub(crate) fn extract_docs(attrs: &[syn::Attribute]) -> Vec<String> {
-    let mut docs = Vec::new();
-    for attr in attrs {
-        if !attr.path().is_ident("doc") {
-            continue;
-        }
-        let syn::Meta::NameValue(meta) = &attr.meta else {
-            continue;
-        };
-        let syn::Expr::Lit(expr) = &meta.value else {
-            continue;
-        };
-        let syn::Lit::Str(lit) = &expr.lit else {
-            continue;
-        };
-        let mut doc = lit.value();
-        if doc.starts_with(' ') {
-            doc = doc[1..].to_owned();
-        }
-        docs.push(doc);
-    }
-    docs
-}
-
 impl ClassModel {
     /// Parses `#[bffi_class(tag = 0x01xx)]` on a named struct.
     pub(crate) fn parse(attrs: &TokenStream, item: TokenStream) -> syn::Result<ClassModel> {
-        let tag = parse_tag(attrs)?;
-        let struc: ItemStruct = syn::parse2(item).map_err(|err| {
-            MacroDiagnostic::class_shape(err.span(), "only `struct` declarations are supported")
-        })?;
+        let tag_value = parse_tag(attrs)?;
+        let struc: ItemStruct = syn::parse2(item)
+            .map_err(|err| class_shape(err.span(), "only `struct` declarations are supported"))?;
         if !struc.generics.params.is_empty() || struc.generics.where_clause.is_some() {
-            return Err(MacroDiagnostic::class_shape(
-                struc.generics.span(),
-                "generic struct",
-            ));
+            return Err(class_shape(struc.generics.span(), "generic struct"));
         }
         let Fields::Named(fields) = &struc.fields else {
-            return Err(MacroDiagnostic::class_shape(
+            return Err(class_shape(
                 struc.fields.span(),
                 "only named-field structs are supported (no tuple/unit structs)",
             ));
@@ -165,11 +118,7 @@ impl ClassModel {
             };
             let name = ident.to_string();
             let Some(ty) = field_kind(&field.ty) else {
-                return Err(MacroDiagnostic::field_type(
-                    field.ty.span(),
-                    &field.ty,
-                    &name,
-                ));
+                return Err(field_type(field.ty.span(), &field.ty, &name));
             };
             exported.push(FieldModel { name, ty });
         }
@@ -178,7 +127,7 @@ impl ClassModel {
             js_name: to_snake_case(&struc.ident.to_string()),
             ident: struc.ident,
             docs: extract_docs(&struc.attrs),
-            tag,
+            tag: tag_value,
             fields: exported,
         })
     }
@@ -207,17 +156,16 @@ impl syn::parse::Parse for ClassArgs {
 /// Parses and range-checks the `tag = <literal>` attribute argument.
 fn parse_tag(attrs: &TokenStream) -> syn::Result<u16> {
     if attrs.is_empty() {
-        return Err(MacroDiagnostic::tag(attrs.span(), "missing `tag = ...`"));
+        return Err(tag(attrs.span(), "missing `tag = ...`"));
     }
-    let args: ClassArgs = syn::parse2(attrs.clone()).map_err(|err| {
-        MacroDiagnostic::tag(err.span(), format!("expected `tag = <literal>` ({})", err))
-    })?;
+    let args: ClassArgs = syn::parse2(attrs.clone())
+        .map_err(|err| tag(err.span(), format!("expected `tag = <literal>` ({})", err)))?;
     let value: u16 = args
         .tag
         .base10_parse()
-        .map_err(|_| MacroDiagnostic::tag(args.tag.span(), "the tag must fit in u16"))?;
+        .map_err(|_| tag(args.tag.span(), "the tag must fit in u16"))?;
     if !(0x0100..=0x01FF).contains(&value) {
-        return Err(MacroDiagnostic::tag(
+        return Err(tag(
             args.tag.span(),
             format!("tag {value:#06x} is outside the bffi-object range 0x0100..=0x01FF"),
         ));
@@ -239,23 +187,19 @@ fn field_kind(ty: &syn::Type) -> Option<FieldTy> {
 impl ImplModel {
     /// Parses an `impl Type` block under `#[bffi_impl]`.
     pub(crate) fn parse(item: TokenStream) -> syn::Result<ImplModel> {
-        let imp: ItemImpl = syn::parse2(item).map_err(|err| {
-            MacroDiagnostic::impl_binding(err.span(), "only `impl Type` blocks are supported")
-        })?;
+        let imp: ItemImpl = syn::parse2(item)
+            .map_err(|err| impl_binding(err.span(), "only `impl Type` blocks are supported"))?;
         if !imp.generics.params.is_empty() || imp.generics.where_clause.is_some() {
-            return Err(MacroDiagnostic::class_shape(
-                imp.generics.span(),
-                "generic impl",
-            ));
+            return Err(class_shape(imp.generics.span(), "generic impl"));
         }
         let syn::Type::Path(path) = imp.self_ty.as_ref() else {
-            return Err(MacroDiagnostic::impl_binding(
+            return Err(impl_binding(
                 imp.self_ty.span(),
                 "the impl target must be a plain path",
             ));
         };
         let Some(segment) = path.path.segments.last() else {
-            return Err(MacroDiagnostic::impl_binding(
+            return Err(impl_binding(
                 imp.self_ty.span(),
                 "the impl target must be a plain path",
             ));
@@ -280,7 +224,7 @@ impl ImplModel {
             });
             if has_marker {
                 if constructor.is_some() {
-                    return Err(MacroDiagnostic::impl_binding(
+                    return Err(impl_binding(
                         method.sig.ident.span(),
                         "multiple `#[bffi_constructor]` fns (exactly one is allowed)",
                     ));
@@ -293,7 +237,7 @@ impl ImplModel {
             methods.push(model);
         }
         let Some(constructor) = constructor else {
-            return Err(MacroDiagnostic::impl_binding(
+            return Err(impl_binding(
                 imp.self_ty.span(),
                 "no `#[bffi_constructor]` fn found (JS needs a constructor to create instances)",
             ));
@@ -312,19 +256,16 @@ impl ImplModel {
 /// parameters over the accepted matrix.
 fn parse_constructor(method: &syn::ImplItemFn) -> syn::Result<ConstructorModel> {
     if method.sig.asyncness.is_some() {
-        return Err(MacroDiagnostic::method_shape(
-            method.sig.span(),
-            "async constructor",
-        ));
+        return Err(method_shape(method.sig.span(), "async constructor"));
     }
     if !method.sig.generics.params.is_empty() {
-        return Err(MacroDiagnostic::method_shape(
+        return Err(method_shape(
             method.sig.generics.span(),
             "generic constructor",
         ));
     }
     if let Some(syn::FnArg::Receiver(receiver)) = method.sig.inputs.first() {
-        return Err(MacroDiagnostic::method_shape(
+        return Err(method_shape(
             receiver.span(),
             "constructor with a `self` receiver",
         ));
@@ -338,14 +279,11 @@ fn parse_constructor(method: &syn::ImplItemFn) -> syn::Result<ConstructorModel> 
                         && p.path.segments.len() == 1
                         && p.path.segments[0].ident == "Self"
             ) {
-                return Err(MacroDiagnostic::method_shape(
-                    ty.span(),
-                    "constructor must return `Self`",
-                ));
+                return Err(method_shape(ty.span(), "constructor must return `Self`"));
             }
         }
         ReturnType::Default => {
-            return Err(MacroDiagnostic::method_shape(
+            return Err(method_shape(
                 method.sig.span(),
                 "constructor must return `Self`",
             ));
@@ -363,7 +301,7 @@ fn parse_constructor(method: &syn::ImplItemFn) -> syn::Result<ConstructorModel> 
             syn::Pat::Ident(pat) => pat.ident.to_string(),
             syn::Pat::Wild(_) => "_".to_owned(),
             other => {
-                return Err(MacroDiagnostic::method_shape(
+                return Err(method_shape(
                     other.span(),
                     "non-identifier parameter pattern (use `name: Type` or `_`)",
                 ));
@@ -383,31 +321,22 @@ fn parse_constructor(method: &syn::ImplItemFn) -> syn::Result<ConstructorModel> 
 /// Parses one `&self` method over the accepted matrix.
 fn parse_method(method: &syn::ImplItemFn) -> syn::Result<MethodModel> {
     if method.sig.asyncness.is_some() {
-        return Err(MacroDiagnostic::method_shape(
-            method.sig.ident.span(),
-            "async method",
-        ));
+        return Err(method_shape(method.sig.ident.span(), "async method"));
     }
     if !method.sig.generics.params.is_empty() {
-        return Err(MacroDiagnostic::method_shape(
-            method.sig.generics.span(),
-            "generic method",
-        ));
+        return Err(method_shape(method.sig.generics.span(), "generic method"));
     }
     if method.sig.unsafety.is_some() {
-        return Err(MacroDiagnostic::method_shape(
-            method.sig.ident.span(),
-            "unsafe method",
-        ));
+        return Err(method_shape(method.sig.ident.span(), "unsafe method"));
     }
     let Some(syn::FnArg::Receiver(receiver)) = method.sig.inputs.first() else {
-        return Err(MacroDiagnostic::method_shape(
+        return Err(method_shape(
             method.sig.span(),
             "associated fn without a `self` receiver (constructors need `#[bffi_constructor]`)",
         ));
     };
     if receiver.reference.is_none() || receiver.mutability.is_some() {
-        return Err(MacroDiagnostic::method_shape(
+        return Err(method_shape(
             receiver.span(),
             "methods take `&self` only (`&mut self` and by-value `self` cannot be served through Arc<T>)",
         ));
@@ -422,7 +351,7 @@ fn parse_method(method: &syn::ImplItemFn) -> syn::Result<MethodModel> {
             syn::Pat::Ident(pat) => pat.ident.to_string(),
             syn::Pat::Wild(_) => "_".to_owned(),
             other => {
-                return Err(MacroDiagnostic::method_shape(
+                return Err(method_shape(
                     other.span(),
                     "non-identifier parameter pattern (use `name: Type` or `_`)",
                 ));

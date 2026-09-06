@@ -132,6 +132,7 @@ type Handle = u64;
 | Event loop             | Очередь `enqueue`/`marshal` + блокирующий `run()` на потоке-исполнителе (задачи через `run_extern_body`); `stop()` липкий; `pump()` заглушка; marshal без раннера -> WrongThread(12) |
 | TypeScript-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
 | Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх `ObjectWrap` (теги 0x0100-0x01FF): геттеры `pub`-примитивных полей, `&self`-методы, генерируемый release; метаданные split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; диагностика E005-E008 |
+| Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (`bffi-macros`, `bffi-class`); tooling-крейт - без runtime-кода и ABI |
 | Паника (prod)          | Преобразуется в JS Error                                  |
 | Паника (dev)           | Может прерываться (abort)                                 |
 | Совместимость          | Только Bun                                                |
@@ -153,6 +154,7 @@ type Handle = u64;
 | `bffi-dts`        | Генерация TypeScript `.d.ts`                                  | P1        |
 | `bffi-macros`     | Процедурные макросы (`#[bffi]`, атрибуты)                     | P1        |
 | `bffi-class`      | Макросы объявления классов                                    | P2        |
+| `bffi-macro-support` | Общая внутренняя логика макросов (виды, классификация, кодогенерация) | P3 |
 | `bffi-event-loop` | Абстракция `run()` / `pump()`                                 | P2        |
 | `bffi-build`      | Помощники сборки, генерация C ABI, интеграция с Bun           | P2        |
 | `bffi-rs`         | Публичный фасад, реэкспортирующий стек                        | P2        |

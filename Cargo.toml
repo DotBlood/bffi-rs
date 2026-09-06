@@ -8,6 +8,7 @@ members = [
     "crates/bffi-callback",
     "crates/bffi-dts",
     "crates/bffi-macros",
+    "crates/bffi-macro-support",
     "crates/bffi-build",
     "examples/native",
     "crates/bffi-event-loop",

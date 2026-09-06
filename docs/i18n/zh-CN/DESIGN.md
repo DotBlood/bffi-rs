@@ -132,6 +132,7 @@ type Handle = u64;
 | 事件循环         | `enqueue`/`marshal` 队列 + 在运行线程上阻塞的 `run()`（任务经 `run_extern_body`）;`stop()` 是粘性的;`pump()` 为 mock;无运行线程时 marshal -> WrongThread(12) |
 | TypeScript 类型 | IR（ModuleDef/FunctionDef/ClassDef）+ 确定性 render；export_name = bffi_ 前缀 |
 | 类宏 | 基于,ObjectWrap（标签 0x0100-0x01FF）的 `#[bffi_class]`/`#[bffi_impl]`:pub 原始字段的 getter、`&self` 方法、自动生成 release;元数据拆分为 `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`;诊断 E005-E008 |
+| 宏支持 | `bffi-macro-support`:为 proc-macro crate(`bffi-macros`、`bffi-class`)提供共享的模型/映射/代码生成;工具 crate - 无运行时代码、无 ABI |
 | Panic(生产)    | 转换为 JS Error                                     |
 | Panic(开发)    | 可以中止                                            |
 | 兼容性           | 仅支持 Bun                                          |
@@ -153,6 +154,7 @@ type Handle = u64;
 | `bffi-dts`         | 生成 TypeScript `.d.ts`                              | P1       |
 | `bffi-macros`      | 过程宏(`#[bffi]`、属性)                             | P1       |
 | `bffi-class`       | 类声明宏                                             | P2       |
+| `bffi-macro-support` | 宏内部共享逻辑(类型种类、分类、代码生成)           | P3       |
 | `bffi-event-loop`  | `run()` / `pump()` 抽象                              | P2       |
 | `bffi-build`       | 构建辅助、C ABI 生成、Bun 集成                       | P2       |
 | `bffi-rs`          | 重新导出整个技术栈的公共门面                         | P2       |
