@@ -250,6 +250,27 @@ mod tests {
     }
 
     #[test]
+    fn rejected_param_types_fail_classification() {
+        let cases = [
+            ("&mut str", "mutability would break the copy guarantee"),
+            ("&u32", "only `&str` may be borrowed"),
+            ("str", "bare `str` is unsized"),
+            ("i128", "integer width outside the P1 matrix"),
+            ("usize", "integer width outside the P1 matrix"),
+            ("char", "not in the P1 matrix"),
+            ("&[u8]", "buffers arrive with bffi-build (P2)"),
+            ("String", "owned strings arrive with bffi-build (P2)"),
+        ];
+        for (src, why) in cases {
+            let result = classify_param(&ty(src), "x");
+            assert!(result.is_err(), "`{src}` must be rejected: {why}");
+            // Rendering contract: type rejections carry the E002 code.
+            let text = result.expect_err("checked above").to_string();
+            assert!(text.contains("bffi[E002]"), "`{src}` must carry E002");
+        }
+    }
+
+    #[test]
     fn happy_path_model_parse() {
         let item = quote! {
             #[doc = " Adds."]
