@@ -119,9 +119,10 @@ cargo test -p bffi-dts          # everything
 cargo test -p bffi-dts --doc    # documentation examples
 ```
 
-Suites: unit tests per module (`ir`, `ident`, `render`) plus golden tests
-(`tests/golden.rs`) that pin the rendered bytes for `math`, `kitchen`, and
-`empty` modules against the files under `tests/golden/`. Textual comparisons
+Suites: unit tests for `ir` and `ident`, plus golden integration tests
+(`tests/golden.rs`) covering the renderer - byte-exact fixtures
+(`tests/golden/*.d.ts`) with LF normalization, a determinism check, and a
+no-carriage-return guard. Textual comparisons
 normalize `\r\n` back to `\n` (undoing any `core.autocrlf` effect on Windows
 checkouts), a guard test asserts the committed golden files are LF-only, and
 the repo-root `.gitattributes` forces `eol=lf` for `*.d.ts`. A determinism
