@@ -25,3 +25,7 @@
 //! - output is a function of the IR alone.
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
+
+pub mod ir;
+
+pub use ir::{FunctionDef, ModuleDef, ParamDef, TsType};
