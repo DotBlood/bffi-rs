@@ -6,10 +6,9 @@
 //! `bigint`, `boolean`, `string`, `void`) that the descriptor generator
 //! quotes into the expansion.
 
-use crate::{
-    errors,
-    model::{BigIntTy, FnReturn, PrimTy, ShimKind},
-};
+use crate::errors::MacroDiagnostic;
+use crate::model::{BigIntTy, FnReturn, PrimTy, ShimKind};
+use syn::spanned::Spanned;
 
 /// Kind of a plain path type: a small primitive or a 64-bit integer.
 enum PathKind {
@@ -95,7 +94,7 @@ pub(crate) fn classify_param(ty: &syn::Type, name: &str) -> syn::Result<ShimKind
     {
         return Ok(ShimKind::Str);
     }
-    Err(errors::unsupported_param_type(ty, name))
+    Err(MacroDiagnostic::param_type(ty.span(), ty, name))
 }
 
 /// Classifies a return type: the plain primitives plus `i64`/`u64` and
@@ -109,7 +108,7 @@ pub(crate) fn classify_return(ty: &syn::Type) -> syn::Result<FnReturn> {
     match path_kind(ty) {
         Some(PathKind::Prim(prim)) => Ok(FnReturn::Prim(prim)),
         Some(PathKind::BigInt(bigint)) => Ok(FnReturn::BigInt(bigint)),
-        None => Err(errors::unsupported_return_type(ty)),
+        None => Err(MacroDiagnostic::return_type(ty.span(), ty)),
     }
 }
 
@@ -237,7 +236,7 @@ mod tests {
     fn unsupported_param_type_is_rejected_with_documented_message() {
         let err = classify_param(&ty("Vec<u8>"), "data").expect_err("rejected");
         let text = err.to_string();
-        assert!(text.starts_with("bffi: unsupported type `Vec < u8 >` for parameter `data`"));
+        assert!(text.starts_with("bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`"));
         assert!(text.contains(
             "  = help: supported in P1: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()"
         ));
@@ -278,7 +277,7 @@ mod tests {
         let err = result.err().expect("rejected");
         assert!(
             err.to_string()
-                .starts_with("bffi: this attribute takes no options")
+                .starts_with("bffi[E004]: this attribute takes no options")
         );
     }
 }

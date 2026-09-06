@@ -6,9 +6,11 @@
 //! the P1 boundary rules is rejected here with a spanned error, so the
 //! downstream stages can rely on the shape being valid.
 
-use crate::{errors, mapping};
+use crate::errors::MacroDiagnostic;
+use crate::mapping;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
+use syn::spanned::Spanned;
 use syn::{FnArg, ItemFn, Pat, ReturnType};
 
 /// A 64-bit integer crossing the boundary (`i64`/`u64`).
@@ -105,7 +107,7 @@ impl FnModel {
     /// carry the documented help lines.
     pub(crate) fn parse(attrs: &TokenStream, item: TokenStream) -> syn::Result<FnModel> {
         if !attrs.is_empty() {
-            return Err(errors::no_options(attrs));
+            return Err(MacroDiagnostic::attr_options(attrs.span()));
         }
         let func: ItemFn = syn::parse2(item)?;
         validate_shape(&func.sig)?;
@@ -144,31 +146,43 @@ impl FnModel {
 /// with the error spanned on the offending token.
 fn validate_shape(sig: &syn::Signature) -> syn::Result<()> {
     if let Some(tokens) = &sig.asyncness {
-        return Err(errors::unsupported_shape("async function", tokens));
+        return Err(MacroDiagnostic::fn_shape(tokens.span(), "async function"));
     }
     if !sig.generics.params.is_empty() {
-        return Err(errors::unsupported_shape(
+        return Err(MacroDiagnostic::fn_shape(
+            sig.generics.params.span(),
             "generic function",
-            &sig.generics.params,
         ));
     }
     if let Some(where_clause) = &sig.generics.where_clause {
-        return Err(errors::unsupported_shape("generic function", where_clause));
+        return Err(MacroDiagnostic::fn_shape(
+            where_clause.span(),
+            "generic function",
+        ));
     }
     if let Some(tokens) = &sig.unsafety {
-        return Err(errors::unsupported_shape("unsafe function", tokens));
+        return Err(MacroDiagnostic::fn_shape(tokens.span(), "unsafe function"));
     }
     if let Some(FnArg::Receiver(recv)) = sig.inputs.first() {
-        return Err(errors::unsupported_shape("method (self receiver)", recv));
+        return Err(MacroDiagnostic::fn_shape(
+            recv.span(),
+            "method (self receiver)",
+        ));
     }
     if let Some(tokens) = &sig.variadic {
-        return Err(errors::unsupported_shape("variadic function", tokens));
+        return Err(MacroDiagnostic::fn_shape(
+            tokens.span(),
+            "variadic function",
+        ));
     }
     if let Some(tokens) = &sig.abi {
-        return Err(errors::unsupported_shape("extern abi function", tokens));
+        return Err(MacroDiagnostic::fn_shape(
+            tokens.span(),
+            "extern abi function",
+        ));
     }
     if let Some(tokens) = &sig.constness {
-        return Err(errors::unsupported_shape("const function", tokens));
+        return Err(MacroDiagnostic::fn_shape(tokens.span(), "const function"));
     }
     Ok(())
 }
