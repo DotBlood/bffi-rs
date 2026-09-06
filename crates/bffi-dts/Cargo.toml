@@ -7,6 +7,7 @@ repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 description = "TypeScript .d.ts generation for the bffi-rs Bun binding framework: static IR and a deterministic renderer."
+readme = "README.md"
 
 [lints]
 workspace = true

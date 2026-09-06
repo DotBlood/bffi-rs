@@ -23,6 +23,30 @@
 //! - a fixed two-line header; no timestamps or versions embedded;
 //! - LF line endings and a trailing newline;
 //! - output is a function of the IR alone.
+//!
+//! ## Quick start
+//!
+//! ```rust
+//! use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType};
+//!
+//! static PARAMS: &[ParamDef] = &[
+//!     ParamDef { name: "a", ty: TsType::Number },
+//!     ParamDef { name: "b", ty: TsType::Number },
+//! ];
+//! static DOCS: &[&str] = &["Adds two numbers."];
+//! static FNS: &[FunctionDef] = &[FunctionDef {
+//!     js_name: "add",
+//!     export_name: "bffi_add",
+//!     docs: DOCS,
+//!     params: PARAMS,
+//!     ret: TsType::Number,
+//! }];
+//!
+//! let module = ModuleDef { name: "math", fns: FNS };
+//! let dts = bffi_dts::render(&module);
+//! assert!(dts.contains("/** Adds two numbers. */"));
+//! assert!(dts.contains("export function add(a: number, b: number): number;"));
+//! ```
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
