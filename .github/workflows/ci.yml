@@ -62,3 +62,11 @@ jobs:
 
       - name: tsc
         run: bun run typecheck
+
+      # the first real bun:ffi crossing: build the release cdylib and
+      # run the e2e suite against it (ubuntu: .so artifact)
+      - name: cargo build (release, example)
+        run: bun run build
+
+      - name: bun test (native e2e)
+        run: bun test examples/native

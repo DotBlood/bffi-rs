@@ -1,0 +1,22 @@
+[package]
+name = "bffi-example-native"
+description = "Example native module for bffi-rs: the first real cdylib loaded by Bun through bun:ffi."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+bffi-core = { path = "../../crates/bffi-core" }
+bffi-types = { path = "../../crates/bffi-types" }
+bffi-dts = { path = "../../crates/bffi-dts" }
+bffi-macros = { path = "../../crates/bffi-macros" }
+bffi-build = { path = "../../crates/bffi-build" }

@@ -34,7 +34,8 @@ See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.m
 
 ```sh
 bun install          # installs dependencies + git hooks (lefthook)
-bun run build        # TODO: cargo build wiring
+bun run build        # builds the example native module (release cdylib)
+bun run test:native  # builds it and runs the bun:ffi e2e suite
 bun run check        # oxlint + tsc + cargo check
 bun run ci           # full CI parity: lint, typecheck, fmt, clippy, tests
 ```

@@ -9,6 +9,7 @@ members = [
     "crates/bffi-dts",
     "crates/bffi-macros",
     "crates/bffi-build",
+    "examples/native",
     # "crates/bffi-class",
     # "crates/bffi-event-loop",
     # "crates/bffi-build",
