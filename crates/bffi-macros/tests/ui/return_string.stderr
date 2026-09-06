@@ -1,0 +1,8 @@
+error: bffi: unsupported type `String` for the return type
+         = help: supported in P1: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()
+         = help: buffers, Option, structs and Result arrive with bffi-build (P2)
+         = help: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+ --> tests/ui/return_string.rs:5:11
+  |
+5 | fn f() -> String {
+  |           ^^^^^^

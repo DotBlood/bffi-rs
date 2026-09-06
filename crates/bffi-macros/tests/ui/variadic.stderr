@@ -1,0 +1,7 @@
+error: bffi: unsupported function shape: variadic function
+         = help: plain `fn`s only in P1
+         = help: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+ --> tests/ui/variadic.rs:5:13
+  |
+5 | fn f(x: u8, args: ...) {}
+  |             ^^^^^^^^^

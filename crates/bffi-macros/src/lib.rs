@@ -26,13 +26,29 @@
 #[allow(unused_extern_crates)]
 extern crate proc_macro;
 
+mod errors;
+mod mapping;
+mod model;
+
 use proc_macro::TokenStream;
 
 /// Marks a function for bffi-rs code generation.
 ///
-/// Expands to a C ABI shim plus a `bffi_meta` descriptor; the full
-/// expansion contract lands in Task 5.
+/// The signature is parsed and validated against the P1 boundary rules
+/// (plain `fn`s over primitives, `&str` and `()` only - see
+/// [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)).
+/// Inputs outside the rules produce a spanned compile error with the
+/// documented help lines. The C ABI shim plus `bffi_meta` descriptor
+/// expansion lands in Tasks 3-4, so validated items currently pass
+/// through unchanged.
 #[proc_macro_attribute]
-pub fn bffi(_attrs: TokenStream, item: TokenStream) -> TokenStream {
-    item
+pub fn bffi(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    let attrs = proc_macro2::TokenStream::from(attrs);
+    let item = proc_macro2::TokenStream::from(item);
+    match model::FnModel::parse(&attrs, item.clone()) {
+        // Task 3/4 will append the shim + meta; the original item
+        // passes through unchanged once it validates.
+        Ok(_model) => item.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
 }
