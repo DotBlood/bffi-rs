@@ -28,6 +28,8 @@
 
 pub mod ident;
 pub mod ir;
+pub mod render;
 
 pub use ident::sanitize;
 pub use ir::{FunctionDef, ModuleDef, ParamDef, TsType};
+pub use render::render;
