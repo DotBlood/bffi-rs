@@ -207,3 +207,4 @@ chore: pin rust-toolchain to 1.98.0
 | Совместимость | Только Bun                              |
 | Лицензия      | MIT                                     |
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry` (тег 0x0100-0x01FF); release освобождает слот |
+| Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; wrong-thread - reject |

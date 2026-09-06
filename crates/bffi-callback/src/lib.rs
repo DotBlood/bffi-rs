@@ -20,6 +20,33 @@
 //! - Panics raised inside a callback body are not this crate's concern:
 //!   catching and converting them into JS errors is the P2 trampoline's
 //!   job (DESIGN.md §6.5).
+//!
+//! ## Quick start
+//!
+//! Register a Rust closure, invoke it through its opaque handle, and
+//! revoke it - revocation is terminal:
+//!
+//! ```
+//! use std::sync::Arc;
+//!
+//! use bffi_callback::{CallbackSig, Value, ValueType, invoke, register, revoke};
+//!
+//! let sig = CallbackSig::new(ValueType::I32, &[ValueType::I32, ValueType::I32]);
+//! let handle = register(
+//!     sig,
+//!     Arc::new(|args: &[Value]| match args {
+//!         [Value::I32(a), Value::I32(b)] => Value::I32(a + b),
+//!         _ => unreachable!("invoke checks the signature before calling"),
+//!     }),
+//! )
+//! .expect("table has room");
+//!
+//! let sum = invoke(handle, &[Value::I32(2), Value::I32(3)]).expect("live handle");
+//! assert_eq!(sum, Value::I32(5));
+//!
+//! assert!(revoke(handle));
+//! assert!(invoke(handle, &[Value::I32(2), Value::I32(3)]).is_err());
+//! ```
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
