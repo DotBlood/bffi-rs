@@ -6,13 +6,21 @@
 //! incoming handle through the `ObjectWrap`/Registry barriers (tag +
 //! generation + null) before any use.
 //!
+//! The transport-level token generators (out-parameters, return tails,
+//! cstring conversions, small type renderers) live in
+//! `bffi_macro_support::codegen`; this module assembles them into the
+//! class-specific shims.
+//!
 //! Generated code never `expect`s or `panic!`s: a tag collision is
 //! stored as the sticky `ObjectWrap` init outcome and surfaces as a
 //! runtime error code - user crates compile under the same
 //! `-D warnings` lints as the framework.
 
-use crate::mapping::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
-use crate::model::{ClassModel, ConstructorModel, FieldTy, ImplModel, MethodModel, MethodParam};
+use crate::mapping::ShimKind;
+use crate::model::{ClassModel, ConstructorModel, FieldTy, ImplModel, MethodModel};
+use bffi_macro_support::codegen::{
+    bigint_ty, out_param, param_ident, prim_ty, ret_body, shim_param, str_conversions,
+};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -177,7 +185,7 @@ fn constructor_shim(model: &ImplModel) -> TokenStream {
         .params
         .iter()
         .enumerate()
-        .map(|(index, param)| shim_param(param, index))
+        .map(|(index, param)| shim_param(&param.name, param.kind, index))
         .collect();
     let args = ctor.params.iter().enumerate().map(|(index, param)| {
         let name = param_ident(&param.name, index);
@@ -189,7 +197,11 @@ fn constructor_shim(model: &ImplModel) -> TokenStream {
             ShimKind::Prim(_) | ShimKind::BigInt(_) => quote! { #name },
         }
     });
-    let conversion = str_conversions(&ctor.params);
+    let conversion = str_conversions(
+        ctor.params
+            .iter()
+            .map(|param| (param.name.as_str(), param.kind)),
+    );
     let body = quote! {
         if __ret.is_null() {
             let error = ::bffi_core::BffiError::new(
@@ -239,7 +251,7 @@ fn method_shim(model: &ImplModel, method: &MethodModel) -> TokenStream {
         .params
         .iter()
         .enumerate()
-        .map(|(index, param)| shim_param(param, index))
+        .map(|(index, param)| shim_param(&param.name, param.kind, index))
         .collect();
     let out = out_param(&method.ret);
     let args = method.params.iter().enumerate().map(|(index, param)| {
@@ -252,7 +264,12 @@ fn method_shim(model: &ImplModel, method: &MethodModel) -> TokenStream {
             ShimKind::Prim(_) | ShimKind::BigInt(_) => quote! { #name },
         }
     });
-    let conversion = str_conversions(&method.params);
+    let conversion = str_conversions(
+        method
+            .params
+            .iter()
+            .map(|param| (param.name.as_str(), param.kind)),
+    );
     let call = quote! { #type_ident::#method_ident(&__arc, #(#args,)*) };
     let transport = ret_body(&method.ret, call);
     let body = quote! {
@@ -302,200 +319,4 @@ fn shim_pair(
         }
     };
     quote! { #debug_shim #release_shim }
-}
-
-/// The `&str` parameter conversion preamble (cstring -> UTF-8 view).
-fn str_conversions(params: &[MethodParam]) -> TokenStream {
-    let mut body = TokenStream::new();
-    for (index, param) in params.iter().enumerate() {
-        if !matches!(param.kind, ShimKind::Str) {
-            continue;
-        }
-        let name = param_ident(&param.name, index);
-        let ptr = format_ident!("{name}_ptr");
-        let bytes = format_ident!("{name}_bytes");
-        let view = format_ident!("{name}_view");
-        body.extend(quote! {
-            if #ptr.is_null() {
-                let error = ::bffi_core::BffiError::new(
-                    ::bffi_core::ErrorCode::NullPointer,
-                    "string argument pointer is null",
-                );
-                ::bffi_core::set_last_error(error);
-                return ::bffi_core::ErrorCode::NullPointer;
-            }
-            // SAFETY: bun:ffi hands out NUL-terminated cstrings for `&str`
-            // parameters (DESIGN.md §6.3); the pointer is null-checked above.
-            let #bytes = unsafe { ::std::ffi::CStr::from_ptr(#ptr) }.to_bytes();
-            let #view = match ::bffi_types::unsafe_zero_copy::str_view(#bytes) {
-                ::std::result::Result::Ok(v) => v,
-                ::std::result::Result::Err(e) => {
-                    ::bffi_core::set_last_error(e);
-                    return ::bffi_core::ErrorCode::InvalidUtf8;
-                }
-            };
-        });
-    }
-    body
-}
-
-/// The out-parameter declaration for a return kind.
-fn out_param(ret: &RetKind) -> Vec<TokenStream> {
-    match ret {
-        RetKind::Unit => Vec::new(),
-        RetKind::Prim(prim) => {
-            let ty = prim_ty(*prim);
-            vec![quote! { __ret: *mut #ty }]
-        }
-        RetKind::BigInt(big) => {
-            let ty = bigint_ty(*big);
-            vec![quote! { __ret: *mut #ty }]
-        }
-        RetKind::Buffer(_) | RetKind::Nullable(_) => vec![quote! { __ret: *mut u64 }],
-        RetKind::Result(inner) => out_param(inner),
-    }
-}
-
-/// Generates the return-transport tail from the call expression.
-fn ret_body(ret: &RetKind, call: TokenStream) -> TokenStream {
-    match ret {
-        RetKind::Unit => quote! {
-            #call;
-            ::bffi_core::ErrorCode::Ok
-        },
-        RetKind::Result(inner) => {
-            let ok_tail = value_tail(inner);
-            quote! {
-                match #call {
-                    ::std::result::Result::Ok(__value) => { #ok_tail }
-                    ::std::result::Result::Err(__err) => {
-                        let __msg = ::std::string::ToString::to_string(&__err);
-                        ::bffi_core::set_last_error(::bffi_core::BffiError::with_source(
-                            ::bffi_core::ErrorCode::DomainError,
-                            __msg,
-                            ::std::boxed::Box::new(__err),
-                        ));
-                        ::bffi_core::ErrorCode::DomainError
-                    }
-                }
-            }
-        }
-        other => {
-            let tail = value_tail(other);
-            quote! {
-                let __value = #call;
-                #tail
-            }
-        }
-    }
-}
-
-/// Consumes an already-bound `__value` and yields the transport tail.
-fn value_tail(ret: &RetKind) -> TokenStream {
-    match ret {
-        RetKind::Unit => quote! { ::bffi_core::ErrorCode::Ok },
-        RetKind::Prim(_) | RetKind::BigInt(_) => quote! {
-            // SAFETY: `__ret` is non-null (checked above) and valid for one
-            // `T` write per the bun:ffi out-parameter contract.
-            unsafe { ::std::ptr::write(__ret, __value); }
-            ::bffi_core::ErrorCode::Ok
-        },
-        RetKind::Buffer(ty) => {
-            let conv = buffer_conv(*ty);
-            quote! {
-                #conv
-                match ::bffi_build::runtime::store_bytes(__bytes) {
-                    ::std::result::Result::Ok(__handle) => {
-                        // SAFETY: `__ret` is non-null (checked above) and valid
-                        // for one `u64` write per the bun:ffi out-parameter contract.
-                        unsafe { ::std::ptr::write(__ret, __handle.as_u64()); }
-                        ::bffi_core::ErrorCode::Ok
-                    }
-                    ::std::result::Result::Err(__e) => {
-                        ::bffi_core::set_last_error(::bffi_core::BffiError::from(__e));
-                        ::bffi_core::ErrorCode::TableFull
-                    }
-                }
-            }
-        }
-        RetKind::Nullable(ty) => {
-            let some_tail = value_tail(&RetKind::Buffer(*ty));
-            quote! {
-                match __value {
-                    ::std::option::Option::Some(__value) => { #some_tail }
-                    ::std::option::Option::None => {
-                        // SAFETY: `__ret` is non-null (checked above) and valid for
-                        // one `u64` write; `0` is the documented null handle.
-                        unsafe { ::std::ptr::write(__ret, 0_u64); }
-                        ::bffi_core::ErrorCode::Ok
-                    }
-                }
-            }
-        }
-        // Unreachable: `ret_body` unwraps `Result` first.
-        RetKind::Result(_) => quote! { ::bffi_core::ErrorCode::Ok },
-    }
-}
-
-/// Converts a bound `__value` into `__bytes: CopiedBuf`.
-fn buffer_conv(ty: BufferTy) -> TokenStream {
-    match ty {
-        BufferTy::String => quote! {
-            let __bytes = ::bffi_types::CopiedBuf::from_vec(__value.into_bytes());
-        },
-        BufferTy::ByteVec => quote! {
-            let __bytes = ::bffi_types::CopiedBuf::from_vec(__value);
-        },
-        BufferTy::CopiedBuf => quote! {
-            let __bytes = __value;
-        },
-    }
-}
-
-/// Declares one shim parameter.
-fn shim_param(param: &MethodParam, index: usize) -> TokenStream {
-    let name = param_ident(&param.name, index);
-    match param.kind {
-        ShimKind::Str => {
-            let ptr = format_ident!("{name}_ptr");
-            quote! { #ptr: *const ::std::os::raw::c_char }
-        }
-        ShimKind::Prim(prim) => {
-            let ty = prim_ty(prim);
-            quote! { #name: #ty }
-        }
-        ShimKind::BigInt(big) => {
-            let ty = bigint_ty(big);
-            quote! { #name: #ty }
-        }
-    }
-}
-
-/// Sanitizes a parameter name into a usable shim identifier
-/// (positional fallback for `_`/keywords, same contract as bffi-macros).
-fn param_ident(name: &str, index: usize) -> proc_macro2::Ident {
-    syn::parse_str::<proc_macro2::Ident>(name).unwrap_or_else(|_| format_ident!("__arg{index}"))
-}
-
-/// The Rust type of a small boundary primitive.
-fn prim_ty(prim: PrimTy) -> TokenStream {
-    match prim {
-        PrimTy::I8 => quote! { i8 },
-        PrimTy::I16 => quote! { i16 },
-        PrimTy::I32 => quote! { i32 },
-        PrimTy::U8 => quote! { u8 },
-        PrimTy::U16 => quote! { u16 },
-        PrimTy::U32 => quote! { u32 },
-        PrimTy::F32 => quote! { f32 },
-        PrimTy::F64 => quote! { f64 },
-        PrimTy::Bool => quote! { bool },
-    }
-}
-
-/// The Rust type of a 64-bit boundary integer.
-fn bigint_ty(big: BigIntTy) -> TokenStream {
-    match big {
-        BigIntTy::I64 => quote! { i64 },
-        BigIntTy::U64 => quote! { u64 },
-    }
 }

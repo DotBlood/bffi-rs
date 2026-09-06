@@ -88,6 +88,7 @@ bffi-rs/
 │   ├── bffi-class/
 │   ├── bffi-dts/                # TypeScript .d.ts generation
 │   ├── bffi-macros/
+│   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
 │   ├── bffi-event-loop/
 │   ├── bffi-build/
 │   └── bffi-rs/                 # public facade
@@ -204,6 +205,7 @@ chore: pin rust-toolchain to 1.98.0
 | 事件循环    | `run()` 在运行线程上排空任务队列;`marshal` - 跨线程路径(代码 12);`pump()` 为 mock |
 | TS 类型 | IR（ModuleDef/FunctionDef/ClassDef）+ 确定性 render；export_name = bffi_ 前缀 |
 | 类宏 | 基于 ObjectWrap（标签 0x0100-0x01FF）的 `#[bffi_class]`/`#[bffi_impl]`:pub 原始字段的 getter、`&self` 方法、自动生成 release;元数据 bffi_meta_<name> + bffi_meta_<name>_impl::CLASS;E005-E008 |
+| 宏支持 | `bffi-macro-support`:为 proc-macro crate(bffi-macros、bffi-class)提供共享的模型/映射/代码生成;工具 crate - 无运行时代码、无 ABI |
 | Panic(生产) | 转换为 JS Error                           |
 | Panic(开发) | 可以中止                                  |
 | 兼容性      | 仅支持 Bun                                |

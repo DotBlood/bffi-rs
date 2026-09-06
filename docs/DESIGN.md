@@ -132,6 +132,7 @@ Outside only the opaque handle is visible.
 | Event loop       | `enqueue`/`marshal` queue + blocking `run()` on the runner thread (jobs via `run_extern_body`); `stop()` is sticky; `pump()` is a mock; marshal without a runner -> WrongThread(12) |
 | TypeScript types | IR (ModuleDef/FunctionDef/ClassDef) + deterministic render; export_name = bffi_-prefix |
 | Class macros | `#[bffi_class]`/`#[bffi_impl]` over `ObjectWrap` (tags 0x0100-0x01FF): getters for `pub` primitive fields, `&self` methods, generated release; metadata split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; diagnostics E005-E008 |
+| Macro support | `bffi-macro-support`: shared model/mapping/codegen for the proc-macro crates (`bffi-macros`, `bffi-class`); tooling crate - no runtime code, no ABI |
 | Panic (prod)     | Convert to JS Error                                 |
 | Panic (dev)      | May abort                                           |
 | Compatibility    | Bun only                                            |
@@ -153,6 +154,7 @@ Outside only the opaque handle is visible.
 | `bffi-dts`         | TypeScript `.d.ts` generation                        | P1       |
 | `bffi-macros`      | Procedural macros (`#[bffi]`, attributes)            | P1       |
 | `bffi-class`       | Class declaration macros                             | P2       |
+| `bffi-macro-support` | Shared macro internals (kinds, classification, codegen) | P3   |
 | `bffi-event-loop`  | `run()` / `pump()` abstraction                       | P2       |
 | `bffi-build`       | Build helpers, C ABI generation, Bun integration     | P2       |
 | `bffi-rs`          | Public facade that re-exports the stack              | P2       |

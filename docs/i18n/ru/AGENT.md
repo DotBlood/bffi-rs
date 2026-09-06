@@ -88,6 +88,7 @@ bffi-rs/
 │   ├── bffi-class/
 │   ├── bffi-dts/                # TypeScript .d.ts generation
 │   ├── bffi-macros/
+│   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
 │   ├── bffi-event-loop/
 │   ├── bffi-build/
 │   └── bffi-rs/                 # public facade
@@ -204,6 +205,7 @@ chore: pin rust-toolchain to 1.98.0
 | Event loop    | `run()` дренирует очередь задач на потоке-исполнителе; `marshal` - путь wrong-thread (код 12); `pump()` заглушка |
 | TS-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
 | Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх ObjectWrap (теги 0x0100-0x01FF): геттеры полей, `&self`-методы, генерируемый release; метаданные bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; E005-E008 |
+| Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (bffi-macros, bffi-class); tooling-крейт - без runtime-кода и ABI |
 | Паника (prod) | Преобразуется в JS Error                |
 | Паника (dev)  | Может прерываться (abort)               |
 | Совместимость | Только Bun                              |

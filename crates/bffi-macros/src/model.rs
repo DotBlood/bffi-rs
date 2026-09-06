@@ -5,87 +5,18 @@
 //! descriptor generators in later stages consume. Every input outside
 //! the P1 boundary rules is rejected here with a spanned error, so the
 //! downstream stages can rely on the shape being valid.
+//!
+//! The boundary kind model lives in `bffi_macro_support::kind`; this
+//! crate keeps the `ItemFn` parsing and its own `E001`-anchored shape
+//! diagnostics.
 
-use crate::errors::MacroDiagnostic;
+use crate::errors::{attr_options, fn_shape, param_pattern};
 use crate::mapping;
+use bffi_macro_support::kind::{RetKind, ShimKind};
+use bffi_macro_support::util::extract_docs;
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;
 use syn::{FnArg, ItemFn, Pat, ReturnType};
-
-/// A 64-bit integer crossing the boundary (`i64`/`u64`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum BigIntTy {
-    /// `i64`
-    I64,
-    /// `u64`
-    U64,
-}
-
-/// A small primitive accepted at the boundary: number-ish integers,
-/// floats, or `bool`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum PrimTy {
-    /// `i8`
-    I8,
-    /// `i16`
-    I16,
-    /// `i32`
-    I32,
-    /// `u8`
-    U8,
-    /// `u16`
-    U16,
-    /// `u32`
-    U32,
-    /// `f32`
-    F32,
-    /// `f64`
-    F64,
-    /// `bool`
-    Bool,
-}
-
-/// The kind of one parameter (or return) at the boundary.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ShimKind {
-    /// A small primitive (`number`-ish types and `bool`).
-    Prim(PrimTy),
-    /// A 64-bit integer (`i64`/`u64`).
-    BigInt(BigIntTy),
-    /// A borrowed `&str` copied across the boundary.
-    Str,
-}
-
-/// An owned byte-carrying return type: stored in the `bffi-build`
-/// transient-buffer table and handed to JS as a handle.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum BufferTy {
-    /// `String` - UTF-8 bytes; rendered as `string`.
-    String,
-    /// `Vec<u8>` - raw bytes; rendered as `Uint8Array`.
-    ByteVec,
-    /// `CopiedBuf` - raw bytes; rendered as `Uint8Array`.
-    CopiedBuf,
-}
-
-/// The return side of a validated function.
-// Not `Copy`: `Result` boxes its inner return.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum FnReturn {
-    /// No return value (`()`).
-    Unit,
-    /// A small primitive.
-    Prim(PrimTy),
-    /// A 64-bit integer (`i64`/`u64`).
-    BigInt(BigIntTy),
-    /// An owned byte payload returned as a transient-buffer handle.
-    Buffer(BufferTy),
-    /// `Option` of a buffer payload: `None` writes the `0` handle.
-    Nullable(BufferTy),
-    /// `Result<T, E>`: `Ok` transports `T`, `Err` reports the domain
-    /// error through the last-error channel (`ErrorCode::DomainError`).
-    Result(Box<FnReturn>),
-}
 
 /// One validated parameter.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -112,7 +43,7 @@ pub(crate) struct FnModel {
     /// Parameters in declaration order (receivers are rejected).
     pub params: Vec<FnParam>,
     /// Validated return type.
-    pub ret: FnReturn,
+    pub ret: RetKind,
 }
 
 impl FnModel {
@@ -125,7 +56,7 @@ impl FnModel {
     /// carry the documented help lines.
     pub(crate) fn parse(attrs: &TokenStream, item: TokenStream) -> syn::Result<FnModel> {
         if !attrs.is_empty() {
-            return Err(MacroDiagnostic::attr_options(attrs.span()));
+            return Err(attr_options(attrs.span()));
         }
         let func: ItemFn = syn::parse2(item)?;
         validate_shape(&func.sig)?;
@@ -143,14 +74,14 @@ impl FnModel {
             let name = match &*arg.pat {
                 Pat::Ident(pat) => pat.ident.to_string(),
                 Pat::Wild(_) => "_".to_owned(),
-                other => return Err(MacroDiagnostic::param_pattern(other.span())),
+                other => return Err(param_pattern(other.span())),
             };
             let kind = mapping::classify_param(&arg.ty, &name)?;
             params.push(FnParam { name, kind });
         }
 
         let ret = match &func.sig.output {
-            ReturnType::Default => FnReturn::Unit,
+            ReturnType::Default => RetKind::Unit,
             ReturnType::Type(_, ty) => mapping::classify_return(ty)?,
         };
 
@@ -168,69 +99,28 @@ impl FnModel {
 /// with the error spanned on the offending token.
 fn validate_shape(sig: &syn::Signature) -> syn::Result<()> {
     if let Some(tokens) = &sig.asyncness {
-        return Err(MacroDiagnostic::fn_shape(tokens.span(), "async function"));
+        return Err(fn_shape(tokens.span(), "async function"));
     }
     if !sig.generics.params.is_empty() {
-        return Err(MacroDiagnostic::fn_shape(
-            sig.generics.params.span(),
-            "generic function",
-        ));
+        return Err(fn_shape(sig.generics.params.span(), "generic function"));
     }
     if let Some(where_clause) = &sig.generics.where_clause {
-        return Err(MacroDiagnostic::fn_shape(
-            where_clause.span(),
-            "generic function",
-        ));
+        return Err(fn_shape(where_clause.span(), "generic function"));
     }
     if let Some(tokens) = &sig.unsafety {
-        return Err(MacroDiagnostic::fn_shape(tokens.span(), "unsafe function"));
+        return Err(fn_shape(tokens.span(), "unsafe function"));
     }
     if let Some(FnArg::Receiver(recv)) = sig.inputs.first() {
-        return Err(MacroDiagnostic::fn_shape(
-            recv.span(),
-            "method (self receiver)",
-        ));
+        return Err(fn_shape(recv.span(), "method (self receiver)"));
     }
     if let Some(tokens) = &sig.variadic {
-        return Err(MacroDiagnostic::fn_shape(
-            tokens.span(),
-            "variadic function",
-        ));
+        return Err(fn_shape(tokens.span(), "variadic function"));
     }
     if let Some(tokens) = &sig.abi {
-        return Err(MacroDiagnostic::fn_shape(
-            tokens.span(),
-            "extern abi function",
-        ));
+        return Err(fn_shape(tokens.span(), "extern abi function"));
     }
     if let Some(tokens) = &sig.constness {
-        return Err(MacroDiagnostic::fn_shape(tokens.span(), "const function"));
+        return Err(fn_shape(tokens.span(), "const function"));
     }
     Ok(())
-}
-
-/// Collects `///` doc-comment lines, trimming exactly one leading
-/// space (`/// Adds.` becomes `Adds.`).
-fn extract_docs(attrs: &[syn::Attribute]) -> Vec<String> {
-    let mut docs = Vec::new();
-    for attr in attrs {
-        if !attr.path().is_ident("doc") {
-            continue;
-        }
-        let syn::Meta::NameValue(meta) = &attr.meta else {
-            continue;
-        };
-        let syn::Expr::Lit(expr) = &meta.value else {
-            continue;
-        };
-        let syn::Lit::Str(lit) = &expr.lit else {
-            continue;
-        };
-        let mut doc = lit.value();
-        if doc.starts_with(' ') {
-            doc = doc[1..].to_owned();
-        }
-        docs.push(doc);
-    }
-    docs
 }
