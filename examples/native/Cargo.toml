@@ -9,7 +9,9 @@ authors.workspace = true
 rust-version.workspace = true
 
 [lib]
-crate-type = ["cdylib"]
+# cdylib is the Bun-loaded artifact; rlib lets the tests/ integration
+# suite link the crate for the bffi_meta descriptor aggregation.
+crate-type = ["cdylib", "rlib"]
 
 [lints]
 workspace = true
@@ -24,3 +26,5 @@ bffi-macros = { path = "../../crates/bffi-macros" }
 bffi-build = { path = "../../crates/bffi-build" }
 bffi-object = { path = "../../crates/bffi-object" }
 bffi-class = { path = "../../crates/bffi-class" }
+bffi-callback = { path = "../../crates/bffi-callback" }
+bffi-event-loop = { path = "../../crates/bffi-event-loop" }
