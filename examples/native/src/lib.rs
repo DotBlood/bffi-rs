@@ -14,11 +14,10 @@
 
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use bffi::{CopiedBuf, ErrorCode};
 use bffi_build::bffi_runtime_abi;
 use bffi_class::{bffi_class, bffi_constructor, bffi_impl};
-use bffi_core::ErrorCode;
 use bffi_macros::bffi;
-use bffi_types::CopiedBuf;
 
 // The eight JS-facing runtime exports (bffi_error_*, bffi_buffer pair,
 // bffi_types_free) generated into this cdylib.

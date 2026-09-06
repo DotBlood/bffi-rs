@@ -40,6 +40,11 @@ bun run check        # oxlint + tsc + cargo check
 bun run ci           # full CI parity: lint, typecheck, fmt, clippy, tests
 ```
 
+For a native module, depend on [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+(the facade: one dependency for the whole stack) and - when using the
+attribute macros - on the individual `bffi-core`/`bffi-types`/
+`bffi-dts` crates their expansions name.
+
 ## Conventions
 
 - Conventional Commits are enforced by a `commit-msg` hook (`scripts/commit-msg.sh`).

@@ -136,6 +136,7 @@ Outside only the opaque handle is visible.
 | Panic (dev)      | May abort                                           |
 | Compatibility    | Bun only                                            |
 | Distribution     | Source in repo; prebuilt binaries later for npm     |
+| Facade           | `bffi`: flat re-exports of the stack; `unsafe_zero_copy` is the only zero-copy door; macro expansions stay on the user's direct deps |
 | License          | MIT                                                 |
 
 ---

@@ -12,10 +12,7 @@ members = [
     "examples/native",
     "crates/bffi-event-loop",
     "crates/bffi-class",
-    # "crates/bffi-rs",
-    # "crates/bffi-event-loop",
-    # "crates/bffi-build",
-    # "crates/bffi-rs",
+    "crates/bffi",
 ]
 
 [workspace.package]

@@ -208,6 +208,7 @@ chore: pin rust-toolchain to 1.98.0
 | Panic(开发) | 可以中止                                  |
 | 兼容性      | 仅支持 Bun                                |
 | 许可证      | MIT                                       |
+| 门面         | `bffi`:扁平化再导出整个栈;`unsafe_zero_copy` 是唯一的零拷贝入口;宏展开依赖用户的直接依赖 |
 | 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`(标签 0x0100-0x01FF);release 释放槽位 |
 | 回调 | `register`/`revoke` + `bind_js_callback`；标签 0x0200-0x0201；跨线程 - 拒绝 |
 | 构建 ABI | 运行时导出（`bffi_error_*`、`bffi_buffer` 对、`bffi_types_free`）通过在用户 crate 中展开的 `bffi_runtime_abi!()` 生成；标签 0x0400-0x04FF；规范契约：bffi-build/CALLING-CONVENTION.md |
