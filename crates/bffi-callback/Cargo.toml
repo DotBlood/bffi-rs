@@ -1,0 +1,16 @@
+[package]
+name = "bffi-callback"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Explicit callback registration, invocation and revocation in both directions for the bffi-rs Bun binding framework."
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[dependencies]
+bffi-core = { path = "../bffi-core" }

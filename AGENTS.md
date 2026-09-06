@@ -207,3 +207,4 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Compatibility | Bun only                                     |
 | License       | MIT                                          |
 | Object ownership | `ObjectWrap<T>` over global `Registry` (tag 0x0100-0x01FF); release frees the slot |
+| Callbacks | `register`/`revoke` + `bind_js_callback`; tags 0x0200-0x0201; wrong-thread reject |
