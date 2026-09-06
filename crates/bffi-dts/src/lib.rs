@@ -26,6 +26,8 @@
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
+pub mod ident;
 pub mod ir;
 
+pub use ident::sanitize;
 pub use ir::{FunctionDef, ModuleDef, ParamDef, TsType};
