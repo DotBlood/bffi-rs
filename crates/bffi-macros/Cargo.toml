@@ -7,6 +7,7 @@ repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 description = "The #[bffi] attribute macro of the bffi-rs Bun binding framework: C ABI shims under the boundary policy plus const TypeScript descriptors."
+readme = "README.md"
 
 [lib]
 proc-macro = true

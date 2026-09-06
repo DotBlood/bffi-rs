@@ -115,7 +115,7 @@ type Handle = u64;
 
 | 主题             | 决策                                                |
 |------------------|-----------------------------------------------------|
-| 宏               | `#[bffi]`                                           |
+| 宏               | `#[bffi]` - shim（debug 直接执行 / release catch_unwind）+ const `bffi_meta_*` 描述符 |
 | 最低 Bun 版本    | 1.4.0                                               |
 | Rust / Cargo     | 1.98.0                                              |
 | 句柄             | Generational Index + type-tag                       |

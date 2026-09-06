@@ -190,7 +190,7 @@ chore: pin rust-toolchain to 1.98.0
 
 | 主题        | 决策                                      |
 | ----------- | ----------------------------------------- |
-| 宏          | `#[bffi]`                                 |
+| 宏          | `#[bffi]`：shim（debug 直接 / release catch_unwind）+ bffi_meta_* 描述符 |
 | 最低 Bun    | 1.4.0                                     |
 | Rust/Cargo  | 1.98.0                                    |
 | 句柄        | Generational Index + type-tag             |
