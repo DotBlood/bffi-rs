@@ -7,7 +7,7 @@ members = [
     "crates/bffi-object",
     "crates/bffi-callback",
     "crates/bffi-dts",
-    # "crates/bffi-macros",
+    "crates/bffi-macros",
     # "crates/bffi-class",
     # "crates/bffi-event-loop",
     # "crates/bffi-build",
@@ -23,7 +23,10 @@ authors = ["DotBlood"]
 rust-version = "1.98.0"
 
 [workspace.dependencies]
-# Shared dependency versions will go here
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
+trybuild = "1"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"

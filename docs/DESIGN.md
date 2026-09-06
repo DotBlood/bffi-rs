@@ -115,7 +115,7 @@ Outside only the opaque handle is visible.
 
 | Topic            | Decision                                            |
 |------------------|-----------------------------------------------------|
-| Macro            | `#[bffi]`                                           |
+| Macro            | `#[bffi]` - shim (debug bare / release catch_unwind) + const `bffi_meta_*` descriptor |
 | Minimum Bun      | 1.4.0                                               |
 | Rust / Cargo     | 1.98.0                                              |
 | Handles          | Generational Index + type-tag                       |

@@ -1,0 +1,27 @@
+[package]
+name = "bffi-macros"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "The #[bffi] attribute macro of the bffi-rs Bun binding framework: C ABI shims under the boundary policy plus const TypeScript descriptors."
+readme = "README.md"
+
+[lib]
+proc-macro = true
+
+[lints]
+workspace = true
+
+[dependencies]
+syn.workspace = true
+quote.workspace = true
+proc-macro2.workspace = true
+
+[dev-dependencies]
+bffi-core = { path = "../bffi-core" }
+bffi-types = { path = "../bffi-types" }
+bffi-dts = { path = "../bffi-dts" }
+trybuild.workspace = true

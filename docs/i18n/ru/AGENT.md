@@ -190,7 +190,7 @@ chore: pin rust-toolchain to 1.98.0
 
 | Тема          | Решение                                 |
 | ------------- | --------------------------------------- |
-| Макрос        | `#[bffi]`                               |
+| Макрос        | `#[bffi]`: шим (debug bare / release catch_unwind) + дескриптор bffi_meta_* |
 | Мин. Bun      | 1.4.0                                   |
 | Rust/Cargo    | 1.98.0                                  |
 | Хендлы        | Generational Index + type-tag           |

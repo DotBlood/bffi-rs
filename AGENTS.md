@@ -190,7 +190,7 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 
 | Topic         | Decision                                     |
 | ------------- | -------------------------------------------- |
-| Macro         | `#[bffi]`                                    |
+| Macro         | `#[bffi]`: shim (debug bare / release catch_unwind) + bffi_meta_* descriptor |
 | Min Bun       | 1.4.0                                        |
 | Rust/Cargo    | 1.98.0                                       |
 | Handles       | Generational Index + type-tag                |

@@ -1,0 +1,7 @@
+error: bffi[E001]: unsupported function shape: unsafe function
+         = help: plain `fn`s only in P1
+         = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+ --> tests/ui/unsafe_fn.rs:5:1
+  |
+5 | unsafe fn f() {}
+  | ^^^^^^
