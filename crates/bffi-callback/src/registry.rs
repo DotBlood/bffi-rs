@@ -125,9 +125,10 @@ pub fn register(sig: CallbackSig, f: Arc<NativeBody>) -> Result<Handle, Callback
 /// ([`CallbackError::SignatureMismatch`]) -> JS-thread gate ->
 /// the call itself.
 ///
-/// The closure's panic is deliberately NOT caught here: debug builds
-/// abort (easier debugging) and release catches at the P2 event-loop
-/// trampoline (`run_extern_body`, DESIGN.md §6.5).
+/// The closure's panic is deliberately NOT caught here: today it
+/// unwinds into the caller - DESIGN.md §6.5 allows debug builds to
+/// abort instead, for easier debugging - and catching at the FFI
+/// boundary is the P2 event-loop trampoline's job (`run_extern_body`).
 ///
 /// # Errors
 ///
@@ -229,14 +230,24 @@ pub fn js_callback(handle: Handle) -> Result<JsCallbackInfo, CallbackError> {
 /// Revocation is terminal - the handle never resurrects, even if its
 /// slot is reused (criterion 5.2).
 ///
+/// Revocation is contained to the two callback tags: a handle owned by
+/// any other table (another crate's or an undeclared user tag) is a
+/// no-op that returns `false` and leaves its slot untouched. Within
+/// the two tags removal stays type-erased - callers never need to know
+/// which kind a handle belongs to.
+///
 /// Returns `true` iff a live callback slot was removed. Table
 /// initialization failure is ignored gracefully (nothing was ever
-/// stored, so there is nothing to remove), as is the null handle.
+/// stored, so there is nothing to remove), as are the null handle and
+/// any handle outside the callback tags.
 pub fn revoke(handle: Handle) -> bool {
     if tables().ok().is_none() {
         return false;
     }
     if handle.is_null() {
+        return false;
+    }
+    if !matches!(handle.tag(), NATIVE_TAG | JS_TAG) {
         return false;
     }
     Registry::global().remove(handle)
@@ -246,7 +257,7 @@ pub fn revoke(handle: Handle) -> bool {
 mod tests {
     use std::sync::Arc;
 
-    use bffi_core::Handle;
+    use bffi_core::{Handle, Registry, TypeTag};
 
     use super::{bind_js_callback, invoke, js_callback, register, revoke};
     use crate::error::CallbackError;
@@ -371,5 +382,19 @@ mod tests {
         assert!(revoke(js));
         assert!(!revoke(native));
         assert!(!revoke(js));
+    }
+
+    #[test]
+    fn revoke_ignores_handles_outside_callback_tags() {
+        const FOREIGN: TypeTag = TypeTag(0x8100);
+
+        Registry::global().declare::<u32>(FOREIGN).unwrap();
+        let foreign = Registry::global()
+            .insert(FOREIGN, Arc::new(42_u32))
+            .unwrap();
+
+        assert!(!revoke(foreign));
+        assert!(Registry::global().get_typed::<u32>(foreign).is_some());
+        assert!(!revoke(Handle::new(TypeTag(0x8F00), 0, 0)));
     }
 }

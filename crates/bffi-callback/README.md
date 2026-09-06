@@ -76,11 +76,11 @@ a handle belongs to.
 
 ## Panic policy
 
-`invoke` does NOT catch panics raised inside a callback body. Debug
-builds abort (easier debugging); release builds catch the unwind at
-the P2 event-loop trampoline (`run_extern_body`) and convert it into a
-JS `Error` - DESIGN.md §6.5. This crate deliberately stays out of that
-business.
+`invoke` does NOT catch panics raised inside a callback body: today a
+panic unwinds into the caller - DESIGN.md §6.5 allows debug builds to
+abort instead, for easier debugging - and catching at the FFI boundary
+is the P2 event-loop trampoline's job (`run_extern_body`). This crate
+deliberately stays out of that business.
 
 ## Quick start
 
