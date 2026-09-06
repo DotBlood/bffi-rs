@@ -22,3 +22,7 @@
 //!   job (DESIGN.md §6.5).
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
+
+pub mod value;
+
+pub use value::{CallbackSig, Value, ValueType};
