@@ -42,7 +42,7 @@
 //!     ret: TsType::Number,
 //! }];
 //!
-//! let module = ModuleDef { name: "math", fns: FNS };
+//! let module = ModuleDef { name: "math", fns: FNS, classes: &[] };
 //! let dts = bffi_dts::render(&module);
 //! assert!(dts.contains("/** Adds two numbers. */"));
 //! assert!(dts.contains("export function add(a: number, b: number): number;"));
@@ -55,5 +55,5 @@ pub mod ir;
 pub mod render;
 
 pub use ident::sanitize;
-pub use ir::{FunctionDef, ModuleDef, ParamDef, TsType};
+pub use ir::{ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef, ParamDef, TsType};
 pub use render::render;

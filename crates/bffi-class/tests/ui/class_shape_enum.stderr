@@ -1,0 +1,7 @@
+error: bffi[E005]: unsupported class shape: only `struct` declarations are supported
+         = help: `#[bffi_class]` annotates a non-generic named struct
+         = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+ --> tests/ui/class_shape_enum.rs:5:1
+  |
+5 | enum NotAStruct {
+  | ^^^^

@@ -106,6 +106,7 @@ fn descriptors_render_through_bffi_dts() {
     let module = ModuleDef {
         name: "math",
         fns: FNS,
+        classes: &[],
     };
     let rendered = bffi_dts::render(&module);
     assert!(rendered.contains("/** Adds two numbers. */"));

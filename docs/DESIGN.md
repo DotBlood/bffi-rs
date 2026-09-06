@@ -130,7 +130,8 @@ Outside only the opaque handle is visible.
 | Buffers          | Copy by default                                     |
 | Zero-copy        | Only via `bffi::unsafe_zero_copy`                   |
 | Event loop       | `enqueue`/`marshal` queue + blocking `run()` on the runner thread (jobs via `run_extern_body`); `stop()` is sticky; `pump()` is a mock; marshal without a runner -> WrongThread(12) |
-| TypeScript types | IR (ModuleDef/FunctionDef) + deterministic render; export_name = bffi_-prefix |
+| TypeScript types | IR (ModuleDef/FunctionDef/ClassDef) + deterministic render; export_name = bffi_-prefix |
+| Class macros | `#[bffi_class]`/`#[bffi_impl]` over `ObjectWrap` (tags 0x0100-0x01FF): getters for `pub` primitive fields, `&self` methods, generated release; metadata split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; diagnostics E005-E008 |
 | Panic (prod)     | Convert to JS Error                                 |
 | Panic (dev)      | May abort                                           |
 | Compatibility    | Bun only                                            |

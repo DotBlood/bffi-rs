@@ -20,3 +20,5 @@ bffi-types = { path = "../../crates/bffi-types" }
 bffi-dts = { path = "../../crates/bffi-dts" }
 bffi-macros = { path = "../../crates/bffi-macros" }
 bffi-build = { path = "../../crates/bffi-build" }
+bffi-object = { path = "../../crates/bffi-object" }
+bffi-class = { path = "../../crates/bffi-class" }

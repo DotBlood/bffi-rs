@@ -14,7 +14,9 @@
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
-use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType, render::render};
+use bffi_dts::{
+    ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef, ParamDef, TsType, render::render,
+};
 
 static ADD_PARAMS: &[ParamDef] = &[
     ParamDef {
@@ -38,6 +40,7 @@ static MATH_FNS: &[FunctionDef] = &[FunctionDef {
 static MATH: ModuleDef = ModuleDef {
     name: "math",
     fns: MATH_FNS,
+    classes: &[],
 };
 
 static KITCHEN_FNS: &[FunctionDef] = &[
@@ -90,11 +93,57 @@ static KITCHEN_FNS: &[FunctionDef] = &[
 static KITCHEN: ModuleDef = ModuleDef {
     name: "kitchen",
     fns: KITCHEN_FNS,
+    classes: &[],
 };
 
 static EMPTY: ModuleDef = ModuleDef {
     name: "empty",
     fns: &[],
+    classes: &[],
+};
+
+/// A class fixture exercising the constructor, a field getter, a
+/// method, a reserved-word method name, and multi-line JSDoc.
+static COUNTER_CLASS: &[ClassDef] = &[ClassDef {
+    js_name: "counter",
+    docs: &["A native counter."],
+    constructor: MethodDef {
+        js_name: "constructor",
+        export_name: "bffi_counter_new",
+        docs: &["Creates a counter."],
+        params: &[ParamDef {
+            name: "start",
+            ty: TsType::Number,
+        }],
+        ret: TsType::BigInt,
+    },
+    fields: &[FieldDef {
+        js_name: "value",
+        docs: &["The current value."],
+        ty: TsType::Number,
+    }],
+    methods: &[
+        MethodDef {
+            js_name: "increment",
+            export_name: "bffi_counter_increment",
+            docs: &["Adds one and returns the new value."],
+            params: &[],
+            ret: TsType::Number,
+        },
+        MethodDef {
+            js_name: "class",
+            export_name: "bffi_counter_class",
+            docs: &[],
+            params: &[],
+            ret: TsType::Void,
+        },
+    ],
+}];
+
+static SHAPES: ModuleDef = ModuleDef {
+    name: "shapes",
+    fns: &[],
+    classes: COUNTER_CLASS,
 };
 
 /// Normalizes CRLF line endings to LF, undoing any `core.autocrlf`
@@ -122,8 +171,14 @@ fn golden_empty_matches() {
 }
 
 #[test]
+fn golden_classes_match() {
+    let expected = normalize_lf(include_str!("golden/classes.d.ts"));
+    assert_eq!(render(&SHAPES), expected);
+}
+
+#[test]
 fn render_is_deterministic() {
-    for module in [&MATH, &KITCHEN, &EMPTY] {
+    for module in [&MATH, &KITCHEN, &EMPTY, &SHAPES] {
         let first = render(module);
         let second = render(module);
         assert_eq!(first, second, "re-rendering {module:?} must be identical");
@@ -136,6 +191,7 @@ fn golden_files_contain_no_carriage_returns() {
         include_str!("golden/math.d.ts"),
         include_str!("golden/kitchen.d.ts"),
         include_str!("golden/empty.d.ts"),
+        include_str!("golden/classes.d.ts"),
     ] {
         assert!(!contents.contains('\r'), "golden file must be LF-only");
     }

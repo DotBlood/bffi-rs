@@ -6,7 +6,7 @@
 //! (see the "Render guarantees" section of the crate docs).
 
 use crate::ident::sanitize;
-use crate::ir::{FunctionDef, ModuleDef};
+use crate::ir::{ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef};
 
 /// Renders `module` as a complete TypeScript declaration file.
 ///
@@ -27,12 +27,19 @@ use crate::ir::{FunctionDef, ModuleDef};
 ///      parameters are joined by `, ` as `name: type`, and every type
 ///      name comes from [`TsType::as_str`] (so [`TsType::Void`] renders
 ///      `void` with no special casing).
+/// 4. For each class, in declaration order: one empty line, then the
+///    class block: the JSDoc block (same rules), then
+///    `export class {js_name} {` / the constructor declaration
+///    (`constructor({params});`, JSDoc first) / the field getters
+///    (`get {name}(): {ty};`, JSDoc first) / the methods
+///    (`{name}({params}): {ret};`, JSDoc first), each indented by two
+///    spaces / a closing `}` line.
 ///
 /// The output uses LF line endings throughout and ends with exactly
-/// one trailing newline; a module with no functions therefore ends
-/// right after its two header lines. No timestamps or version numbers
-/// are embedded. [`FunctionDef::export_name`] is never rendered: it
-/// exists for the build side only.
+/// one trailing newline; a module with no functions and no classes
+/// therefore ends right after its two header lines. No timestamps or
+/// version numbers are embedded. `export_name` fields are never
+/// rendered: they exist for the build side only.
 ///
 /// # Panics
 ///
@@ -50,6 +57,10 @@ pub fn render(module: &ModuleDef) -> String {
         out.push('\n');
         push_function(function, &mut out);
     }
+    for class in module.classes {
+        out.push('\n');
+        push_class(class, &mut out);
+    }
     out
 }
 
@@ -60,8 +71,58 @@ fn push_function(function: &FunctionDef, out: &mut String) {
     out.push_str("export function ");
     out.push_str(&sanitize(function.js_name));
     out.push('(');
+    push_params(function.params, out);
+    out.push_str("): ");
+    out.push_str(function.ret.as_str());
+    out.push_str(";\n");
+}
+
+/// Appends one class block: the JSDoc header, then `export class` with
+/// the constructor, field getters and methods indented inside.
+fn push_class(class: &ClassDef, out: &mut String) {
+    push_docs(class.docs, out);
+    out.push_str("export class ");
+    out.push_str(&sanitize(class.js_name));
+    out.push_str(" {\n");
+    push_method("constructor", &class.constructor, out);
+    for field in class.fields {
+        push_field(field, out);
+    }
+    for method in class.methods {
+        push_method(&sanitize(method.js_name), method, out);
+    }
+    out.push_str("}\n");
+}
+
+/// Appends one constructor/method declaration line (two-space indent).
+fn push_method(keyword: &str, method: &MethodDef, out: &mut String) {
+    push_member_docs(method.docs, out);
+    out.push_str("  ");
+    out.push_str(keyword);
+    out.push('(');
+    push_params(method.params, out);
+    out.push(')');
+    if keyword != "constructor" {
+        out.push_str(": ");
+        out.push_str(method.ret.as_str());
+    }
+    out.push_str(";\n");
+}
+
+/// Appends one read-only getter declaration line (two-space indent).
+fn push_field(field: &FieldDef, out: &mut String) {
+    push_member_docs(field.docs, out);
+    out.push_str("  get ");
+    out.push_str(&sanitize(field.js_name));
+    out.push_str("(): ");
+    out.push_str(field.ty.as_str());
+    out.push_str(";\n");
+}
+
+/// Appends `, `-joined `name: type` parameters.
+fn push_params(params: &[crate::ir::ParamDef], out: &mut String) {
     let mut first = true;
-    for param in function.params {
+    for param in params {
         if !first {
             out.push_str(", ");
         }
@@ -70,9 +131,6 @@ fn push_function(function: &FunctionDef, out: &mut String) {
         out.push_str(": ");
         out.push_str(param.ty.as_str());
     }
-    out.push_str("): ");
-    out.push_str(function.ret.as_str());
-    out.push_str(";\n");
 }
 
 /// Appends the JSDoc block for `docs`, or nothing when `docs` is
@@ -94,4 +152,25 @@ fn push_docs(docs: &[&str], out: &mut String) {
         out.push('\n');
     }
     out.push_str(" */\n");
+}
+
+/// The JSDoc renderer for class members: every rendered line gets the
+/// two-space body indent.
+fn push_member_docs(docs: &[&str], out: &mut String) {
+    if docs.is_empty() {
+        return;
+    }
+    if let [only] = docs {
+        out.push_str("  /** ");
+        out.push_str(only);
+        out.push_str(" */\n");
+        return;
+    }
+    out.push_str("  /**\n");
+    for line in docs {
+        out.push_str("   * ");
+        out.push_str(line);
+        out.push('\n');
+    }
+    out.push_str("  */\n");
 }

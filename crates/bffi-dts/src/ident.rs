@@ -118,6 +118,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn reserved_list_is_sorted_for_the_binary_search() {
+        // `binary_search` requires sorted input; a `windows(2)` sweep
+        // catches an unsorted edit at test time instead of at runtime.
+        assert!(
+            RESERVED.windows(2).all(|pair| pair[0] < pair[1]),
+            "RESERVED must stay strictly sorted"
+        );
+    }
+
+    #[test]
     fn sanitize_passes_valid_identifiers_through() {
         for name in ["add", "_x", "$y", "a1"] {
             let sanitized = sanitize(name);

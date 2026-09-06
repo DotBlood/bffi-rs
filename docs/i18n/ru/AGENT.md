@@ -202,7 +202,8 @@ chore: pin rust-toolchain to 1.98.0
 | Буферы        | Копирование по умолчанию                |
 | Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
 | Event loop    | `run()` дренирует очередь задач на потоке-исполнителе; `marshal` - путь wrong-thread (код 12); `pump()` заглушка |
-| TS-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
+| TS-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
+| Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх ObjectWrap (теги 0x0100-0x01FF): геттеры полей, `&self`-методы, генерируемый release; метаданные bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; E005-E008 |
 | Паника (prod) | Преобразуется в JS Error                |
 | Паника (dev)  | Может прерываться (abort)               |
 | Совместимость | Только Bun                              |

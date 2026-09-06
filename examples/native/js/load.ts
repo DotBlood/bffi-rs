@@ -60,6 +60,11 @@ const DECLARATIONS = {
   bffi_boom: { args: ["pointer"], returns: "u32" },
   bffi_shout: { args: ["cstring", "pointer"], returns: "u32" },
   bffi_checked_div: { args: ["u32", "u32", "pointer"], returns: "u32" },
+  // #[bffi_class] Counter
+  bffi_counter_new: { args: ["u32", "pointer"], returns: "u32" },
+  bffi_counter_value_get: { args: ["u64", "pointer"], returns: "u32" },
+  bffi_counter_increment: { args: ["u64", "pointer"], returns: "u32" },
+  bffi_counter_release: { args: ["u64"], returns: "u32" },
   // bffi_runtime_abi!() exports
   bffi_error_take_last: { args: [], returns: "u64" },
   bffi_error_name: { args: ["u64"], returns: "u32" },
@@ -206,3 +211,50 @@ export const native = {
   },
   takeError,
 };
+
+/** JS-side wrapper over the generated `Counter` shims. The
+ * FinalizationRegistry releases the native handle when the wrapper is
+ * collected (the documented P2 JS contract). */
+const counterFinalizers = new FinalizationRegistry((handle: bigint) => {
+  lib().bffi_counter_release(handle);
+});
+
+export class Counter {
+  private handle: bigint;
+
+  constructor(start: number) {
+    const out = new BigUint64Array(1);
+    const status = lib().bffi_counter_new(start, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`bffi_counter_new failed: ${status}`);
+    }
+    this.handle = out[0] ?? 0n;
+    counterFinalizers.register(this, this.handle);
+  }
+
+  get value(): number {
+    const out = new Uint32Array(1);
+    const status = lib().bffi_counter_value_get(this.handle, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`bffi_counter_value_get failed: ${status}`);
+    }
+    return out[0] ?? 0;
+  }
+
+  increment(): number {
+    const out = new Uint32Array(1);
+    const status = lib().bffi_counter_increment(this.handle, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`bffi_counter_increment failed: ${status}`);
+    }
+    return out[0] ?? 0;
+  }
+
+  release(): void {
+    counterFinalizers.unregister(this);
+    const status = lib().bffi_counter_release(this.handle);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`bffi_counter_release failed: ${status}`);
+    }
+  }
+}

@@ -8,7 +8,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { ErrorCode, hasArtifact, native, takeError } from "./load.ts";
+import { Counter, ErrorCode, hasArtifact, native, takeError } from "./load.ts";
 
 const skip = !(await hasArtifact());
 
@@ -61,6 +61,29 @@ describe.skipIf(skip)("native artifact (release cdylib)", () => {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toBe("division by 0");
     }
+  });
+
+  test("the Counter class roundtrips through its shims", () => {
+    const counter = new Counter(41);
+    expect(counter.value).toBe(41);
+    // &self methods compute from the stored value; the stored value
+    // itself only changes through a new instance (no interior
+    // mutability in this example).
+    expect(counter.increment()).toBe(42);
+    expect(counter.value).toBe(41);
+    counter.release();
+    // After release the handle is dead: the getter reports
+    // InvalidHandle.
+    expect(() => counter.value).toThrow();
+  });
+
+  test("a second Counter instance owns an independent handle", () => {
+    const a = new Counter(1);
+    const b = new Counter(100);
+    expect(a.increment()).toBe(2);
+    expect(b.increment()).toBe(101);
+    a.release();
+    b.release();
   });
 
   test("echo_buffer roundtrips bytes through the buffer pair", () => {

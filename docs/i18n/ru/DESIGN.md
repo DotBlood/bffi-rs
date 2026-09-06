@@ -130,7 +130,8 @@ type Handle = u64;
 | Буферы                 | Копирование по умолчанию                                  |
 | Zero-copy              | Только через `bffi::unsafe_zero_copy`                     |
 | Event loop             | Очередь `enqueue`/`marshal` + блокирующий `run()` на потоке-исполнителе (задачи через `run_extern_body`); `stop()` липкий; `pump()` заглушка; marshal без раннера -> WrongThread(12) |
-| TypeScript-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
+| TypeScript-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
+| Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх `ObjectWrap` (теги 0x0100-0x01FF): геттеры `pub`-примитивных полей, `&self`-методы, генерируемый release; метаданные split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; диагностика E005-E008 |
 | Паника (prod)          | Преобразуется в JS Error                                  |
 | Паника (dev)           | Может прерываться (abort)                                 |
 | Совместимость          | Только Bun                                                |

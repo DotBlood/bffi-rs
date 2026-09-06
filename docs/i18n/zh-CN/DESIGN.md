@@ -130,7 +130,8 @@ type Handle = u64;
 | 缓冲区           | 默认复制                                            |
 | 零拷贝           | 仅通过 `bffi::unsafe_zero_copy`                     |
 | 事件循环         | `enqueue`/`marshal` 队列 + 在运行线程上阻塞的 `run()`（任务经 `run_extern_body`）;`stop()` 是粘性的;`pump()` 为 mock;无运行线程时 marshal -> WrongThread(12) |
-| TypeScript 类型 | IR（ModuleDef/FunctionDef）+ 确定性 render；export_name = bffi_ 前缀 |
+| TypeScript 类型 | IR（ModuleDef/FunctionDef/ClassDef）+ 确定性 render；export_name = bffi_ 前缀 |
+| 类宏 | 基于,ObjectWrap（标签 0x0100-0x01FF）的 `#[bffi_class]`/`#[bffi_impl]`:pub 原始字段的 getter、`&self` 方法、自动生成 release;元数据拆分为 `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`;诊断 E005-E008 |
 | Panic(生产)    | 转换为 JS Error                                     |
 | Panic(开发)    | 可以中止                                            |
 | 兼容性           | 仅支持 Bun                                          |

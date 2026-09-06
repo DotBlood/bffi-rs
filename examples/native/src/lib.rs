@@ -15,6 +15,7 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use bffi_build::bffi_runtime_abi;
+use bffi_class::{bffi_class, bffi_constructor, bffi_impl};
 use bffi_core::ErrorCode;
 use bffi_macros::bffi;
 use bffi_types::CopiedBuf;
@@ -67,6 +68,28 @@ impl std::error::Error for MathError {}
 #[bffi]
 pub fn checked_div(a: u32, b: u32) -> Result<u32, MathError> {
     a.checked_div(b).ok_or(MathError { divisor: b })
+}
+
+/// A native class: exercised end-to-end through bun:ffi.
+#[bffi_class(tag = 0x015A)]
+/// A native counter.
+pub struct Counter {
+    /// The current value.
+    pub value: u32,
+}
+
+#[bffi_impl]
+impl Counter {
+    #[bffi_constructor]
+    /// Creates a counter.
+    pub fn new(start: u32) -> Self {
+        Self { value: start }
+    }
+
+    /// Adds one and returns the new value.
+    pub fn increment(&self) -> u32 {
+        self.value + 1
+    }
 }
 
 /// Always panics: the release build must convert this into
