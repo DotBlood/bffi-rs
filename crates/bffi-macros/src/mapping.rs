@@ -114,8 +114,6 @@ pub(crate) fn classify_return(ty: &syn::Type) -> syn::Result<FnReturn> {
 
 /// TypeScript name of a small primitive: every numeric type is
 /// `number`, `bool` is `boolean`.
-// Quoted into descriptors by the generator in Task 4.
-#[allow(dead_code)]
 pub(crate) fn ts_prim(prim: PrimTy) -> &'static str {
     match prim {
         PrimTy::I8
@@ -131,8 +129,6 @@ pub(crate) fn ts_prim(prim: PrimTy) -> &'static str {
 }
 
 /// TypeScript name of an accepted parameter kind.
-// Quoted into descriptors by the generator in Task 4.
-#[allow(dead_code)]
 pub(crate) fn ts_type(kind: &ShimKind) -> &'static str {
     match kind {
         ShimKind::Prim(prim) => ts_prim(*prim),
@@ -142,8 +138,6 @@ pub(crate) fn ts_type(kind: &ShimKind) -> &'static str {
 }
 
 /// TypeScript name of an accepted return type.
-// Quoted into descriptors by the generator in Task 4.
-#[allow(dead_code)]
 pub(crate) fn ts_return(ret: &FnReturn) -> &'static str {
     match ret {
         FnReturn::Unit => "void",

@@ -17,10 +17,11 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-/// Renders the full expansion of a validated model: the original item
-/// tokens first (docs and attributes unchanged), then the
-/// `extern "C"` shim.
-pub(crate) fn expand(model: &FnModel, item: &syn::ItemFn) -> TokenStream {
+/// Renders the shim expansion of a validated model: the pair of cfg
+/// variants for the symbol the JS side links against
+/// (`bffi_<name>`). The caller assembles the full expansion
+/// (original item, shims, descriptor).
+pub(crate) fn expand(model: &FnModel) -> TokenStream {
     let shim_ident = format_ident!("bffi_{}", model.ident);
     let params: Vec<TokenStream> = model
         .params
@@ -54,7 +55,7 @@ pub(crate) fn expand(model: &FnModel, item: &syn::ItemFn) -> TokenStream {
         }
     };
 
-    quote! { #item #debug_shim #release_shim }
+    quote! { #debug_shim #release_shim }
 }
 
 /// Declares one shim parameter.
@@ -229,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn expansion_keeps_item_and_adds_both_cfg_shims() {
+    fn expansion_adds_both_cfg_shims_without_the_item() {
         let item = quote! {
             /// Adds two numbers.
             fn add(a: u32, b: u32) -> u32 {
@@ -237,13 +238,18 @@ mod tests {
             }
         };
         let attrs = proc_macro2::TokenStream::new();
-        let model = FnModel::parse(&attrs, item.clone()).expect("accepted");
-        let func = syn::parse2::<syn::ItemFn>(item).expect("valid fn");
+        let model = FnModel::parse(&attrs, item).expect("accepted");
 
-        let tokens = expand(&model, &func).to_string();
+        let tokens = expand(&model).to_string();
 
-        assert!(tokens.contains("fn add"), "original item is emitted first");
-        assert!(tokens.contains("Adds two numbers"), "docs stay on the item");
+        assert!(
+            !tokens.contains("fn add "),
+            "the original item is echoed by the entry, not the shim generator"
+        );
+        assert!(
+            !tokens.contains("Adds two numbers"),
+            "docs stay on the echoed item"
+        );
         assert!(tokens.contains("fn bffi_add"));
         assert!(tokens.contains("no_mangle"));
         assert!(

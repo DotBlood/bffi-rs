@@ -84,13 +84,11 @@ pub(crate) struct FnModel {
     /// Function name.
     pub ident: syn::Ident,
     /// Function visibility.
-    // Quoted into descriptors by the generator in Task 4.
+    // Kept lossless for later stages; nothing consumes it in P1.
     #[allow(dead_code)]
     pub vis: syn::Visibility,
     /// Doc-comment lines with exactly one leading space trimmed
     /// (`/// Adds.` becomes `Adds.`).
-    // Quoted into descriptors by the generator in Task 4.
-    #[allow(dead_code)]
     pub docs: Vec<String>,
     /// Parameters in declaration order (receivers are rejected).
     pub params: Vec<FnParam>,
