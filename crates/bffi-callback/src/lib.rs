@@ -24,7 +24,9 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
 pub mod error;
+pub mod thread;
 pub mod value;
 
 pub use error::CallbackError;
+pub use thread::{ensure_js_thread, set_js_thread};
 pub use value::{CallbackSig, Value, ValueType};
