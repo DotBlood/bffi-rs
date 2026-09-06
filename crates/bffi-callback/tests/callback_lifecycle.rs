@@ -19,7 +19,10 @@
 use std::sync::Arc;
 use std::thread;
 
-use bffi_callback::{CallbackError, CallbackSig, Value, ValueType, invoke, register, revoke};
+use bffi_callback::{
+    CallbackError, CallbackSig, Value, ValueType, bind_js_callback, invoke, js_callback, register,
+    revoke,
+};
 
 /// The signature of the shared test callback: `i32(i32, i32)`.
 fn sum_sig() -> CallbackSig {
@@ -106,4 +109,30 @@ fn invoke_works_from_any_thread_while_unbound() {
             join.join().unwrap();
         }
     });
+}
+
+#[test]
+fn bind_js_callback_lifecycle() {
+    let sig = CallbackSig::new(ValueType::Bool, &[ValueType::I32]);
+    let ptr = 0xfeed_face_usize;
+    let handle = bind_js_callback(sig, ptr).unwrap();
+
+    let info = js_callback(handle).unwrap();
+    assert_eq!(
+        info.sig,
+        CallbackSig::new(ValueType::Bool, &[ValueType::I32])
+    );
+    assert_eq!(info.ptr, ptr);
+
+    assert!(revoke(handle));
+    assert_eq!(
+        js_callback(handle).err(),
+        Some(CallbackError::InvalidHandle(handle))
+    );
+
+    assert_eq!(
+        invoke(handle, &[]).err(),
+        Some(CallbackError::InvalidHandle(handle)),
+        "a js slot must not respond to invoke (type routing)"
+    );
 }

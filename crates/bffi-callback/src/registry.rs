@@ -1,5 +1,6 @@
-//! The callback table and the JS -> Rust lifecycle: [`register`],
-//! [`invoke`], [`revoke`].
+//! The callback table and both lifecycle directions: [`register`] /
+//! [`invoke`] / [`revoke`] (JS -> Rust) and [`bind_js_callback`] /
+//! [`js_callback`] (Rust -> JS).
 //!
 //! A Rust closure is registered explicitly and addressed by an opaque
 //! [`Handle`] (criterion 5.1: registration = `register`), invoked with
@@ -13,8 +14,8 @@
 //! even if the slot is later reused (criterion 5.2).
 //!
 //! Storage lives in the process-wide [`Registry`] under two
-//! crate-owned tags: `0x0200` for [`NativeEntry`] (this module) and
-//! `0x0201` for [`JsEntry`] (populated by the Rust -> JS direction).
+//! crate-owned tags: `0x0200` for [`NativeEntry`] and `0x0201` for
+//! [`JsEntry`] (populated by [`bind_js_callback`]).
 
 use std::sync::{Arc, OnceLock};
 
@@ -42,15 +43,22 @@ struct NativeEntry {
 }
 
 /// A registered JS-side callback (Rust -> JS direction): its declared
-/// signature plus the raw trampoline slot handed over by the JS side.
-/// Declared now so both tables are born at one initialization point;
-/// the Rust -> JS direction populates the table.
-// The fields stay unread until the Rust -> JS direction lands; the
-// declaration itself is what reserves the table's type identity.
-#[allow(dead_code)]
+/// signature plus the opaque pointer token handed over by the JS side.
 struct JsEntry {
     sig: CallbackSig,
     ptr: usize,
+}
+
+/// A read-only snapshot of a JS-side callback slot, returned by
+/// [`js_callback`]: the declared signature plus the opaque pointer
+/// token stored at [`bind_js_callback`] time.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct JsCallbackInfo {
+    /// The signature declared when the callback was bound.
+    pub sig: CallbackSig,
+    /// The opaque, handle-sized token handed to [`bind_js_callback`].
+    /// Never dereferenced by this crate.
+    pub ptr: usize,
 }
 
 /// Declares both callback tables in the global registry, exactly once
@@ -147,6 +155,71 @@ pub fn invoke(handle: Handle, args: &[Value]) -> Result<Value, CallbackError> {
     Ok((entry.f)(args))
 }
 
+/// Binds a JS-side callback (Rust -> JS direction) and returns its
+/// fresh, opaque [`Handle`].
+///
+/// `ptr` is an opaque, handle-sized token - in the P2 world, the
+/// `JSCallback` pointer `bun:ffi` hands out. It is stored and handed
+/// back by [`js_callback`] but NEVER dereferenced here: the whole
+/// crate is zero-unsafe. A `ptr` of `0` is a legal opaque value in v1
+/// - no validation is performed beyond the type.
+///
+/// The declared [`CallbackSig`] is carried verbatim in the slot;
+/// checking it when the callback is actually raised is the JS side's
+/// job.
+///
+/// # Errors
+///
+/// [`CallbackError::TableFull`] when the JS table has no free slot, or
+/// [`CallbackError::TagInUse`] if table initialization ever failed
+/// earlier in the process (the memoized outcome).
+pub fn bind_js_callback(sig: CallbackSig, ptr: usize) -> Result<Handle, CallbackError> {
+    tables()?;
+    Registry::global()
+        .insert(JS_TAG, Arc::new(JsEntry { sig, ptr }))
+        .map_err(|_| {
+            // `tables()` declared JS_TAG for `JsEntry` and the registry
+            // has no undeclare, so `NotRegistered` is unreachable after
+            // declare; the remaining condition is a full table.
+            // `RegistryError` is `#[non_exhaustive]`, so future variants
+            // are grouped defensively into the wildcard (same pattern as
+            // bffi-object's wrap.rs).
+            CallbackError::TableFull
+        })
+}
+
+/// Reads back the JS-side callback behind `handle`.
+///
+/// Returns a [`JsCallbackInfo`] snapshot: the signature declared at
+/// [`bind_js_callback`] time plus the opaque pointer token. Check
+/// order: table init -> null handle -> table lookup (wrong tag, stale,
+/// or unknown handles all land in [`CallbackError::InvalidHandle`]).
+///
+/// Revocation goes through the SAME [`revoke`] as the native direction
+/// (criterion 5.1: removal = revoke, both directions) - after
+/// `revoke(handle)`, this call reports
+/// [`CallbackError::InvalidHandle`].
+///
+/// # Errors
+///
+/// [`CallbackError::InvalidHandle`] for a null, revoked, stale, or
+/// foreign-kind handle; [`CallbackError::TagInUse`] if table
+/// initialization ever failed earlier in the process (the memoized
+/// outcome).
+pub fn js_callback(handle: Handle) -> Result<JsCallbackInfo, CallbackError> {
+    tables()?;
+    if handle.is_null() {
+        return Err(CallbackError::InvalidHandle(handle));
+    }
+    let entry = Registry::global()
+        .get_typed::<JsEntry>(handle)
+        .ok_or(CallbackError::InvalidHandle(handle))?;
+    Ok(JsCallbackInfo {
+        sig: entry.sig.clone(),
+        ptr: entry.ptr,
+    })
+}
+
 /// Revokes the callback behind `handle`, whatever direction it
 /// belongs to.
 ///
@@ -175,7 +248,7 @@ mod tests {
 
     use bffi_core::Handle;
 
-    use super::{invoke, register, revoke};
+    use super::{bind_js_callback, invoke, js_callback, register, revoke};
     use crate::error::CallbackError;
     use crate::value::{CallbackSig, Value, ValueType};
 
@@ -257,5 +330,46 @@ mod tests {
             Some(CallbackError::InvalidHandle(Handle::NULL))
         );
         assert!(!revoke(Handle::NULL));
+    }
+
+    #[test]
+    fn bind_then_js_callback_returns_the_slot() {
+        let sig = CallbackSig::new(ValueType::Bool, &[ValueType::I32]);
+        let ptr = 0xdead_beef_usize;
+        let handle = bind_js_callback(sig, ptr).unwrap();
+
+        let info = js_callback(handle).unwrap();
+        assert_eq!(
+            info.sig,
+            CallbackSig::new(ValueType::Bool, &[ValueType::I32])
+        );
+        assert_eq!(info.ptr, ptr);
+    }
+
+    #[test]
+    fn js_callback_after_revoke_is_invalid_handle() {
+        let sig = CallbackSig::new(ValueType::Bool, &[]);
+        let handle = bind_js_callback(sig, 0).unwrap();
+
+        assert!(revoke(handle));
+        assert_eq!(
+            js_callback(handle).err(),
+            Some(CallbackError::InvalidHandle(handle))
+        );
+    }
+
+    #[test]
+    fn revoke_removes_js_slots_through_the_same_entry_point() {
+        let native = register(
+            CallbackSig::new(ValueType::Bool, &[]),
+            Arc::new(|_| Value::Bool(true)),
+        )
+        .unwrap();
+        let js = bind_js_callback(CallbackSig::new(ValueType::Bool, &[]), 0).unwrap();
+
+        assert!(revoke(native));
+        assert!(revoke(js));
+        assert!(!revoke(native));
+        assert!(!revoke(js));
     }
 }
