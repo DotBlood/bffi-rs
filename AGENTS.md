@@ -208,3 +208,4 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | License       | MIT                                          |
 | Object ownership | `ObjectWrap<T>` over global `Registry` (tag 0x0100-0x01FF); release frees the slot |
 | Callbacks | `register`/`revoke` + `bind_js_callback`; tags 0x0200-0x0201; wrong-thread reject |
+| Build ABI | Runtime exports (`bffi_error_*`, `bffi_buffer` pair, `bffi_types_free`) via `bffi_runtime_abi!()` in the user crate; tags 0x0400-0x04FF; canonical contract: bffi-build/CALLING-CONVENTION.md |

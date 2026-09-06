@@ -90,6 +90,39 @@ where
     }
 }
 
+/// Like [`run_extern_body`], but for entry points whose C ABI return is a
+/// plain value (a handle, a length, a pointer) instead of an
+/// [`ErrorCode`]: on panic the panic is recorded as the [last
+/// error](crate::error) and `fallback` is returned.
+///
+/// The caller picks a `fallback` that the export's contract already
+/// defines as "nothing" (`0`, a null pointer, ...); the stored last error
+/// keeps the failure details observable.
+///
+/// # Examples
+///
+/// ```
+/// use bffi_core::boundary::run_extern_body_or;
+///
+/// let value = run_extern_body_or(|| 21_u64 * 2, 0_u64);
+/// assert_eq!(value, 42);
+///
+/// let fallback = run_extern_body_or(|| panic!("boom"), 0_u64);
+/// assert_eq!(fallback, 0);
+/// ```
+pub fn run_extern_body_or<F, T>(f: F, fallback: T) -> T
+where
+    F: FnOnce() -> T,
+{
+    match catch_panic(f) {
+        Ok(value) => value,
+        Err(error) => {
+            set_last_error(error);
+            fallback
+        }
+    }
+}
+
 /// Declares an `extern "C"` function whose body runs under the FFI safety
 /// policy.
 ///
@@ -198,5 +231,19 @@ mod tests {
         let error = take_last_error().expect("last error must be stored");
         assert_eq!(error.code, ErrorCode::Panic);
         assert_eq!(error.message, "boundary!");
+    }
+
+    #[test]
+    fn extern_body_or_returns_the_value_when_no_panic_occurs() {
+        assert_eq!(run_extern_body_or(|| 40_u64 + 2, 0_u64), 42);
+    }
+
+    #[test]
+    fn extern_body_or_returns_fallback_and_stores_last_error_on_panic() {
+        let fallback = run_extern_body_or(|| panic!("typed boom"), 0_u64);
+        assert_eq!(fallback, 0);
+        let error = take_last_error().expect("last error must be stored");
+        assert_eq!(error.code, ErrorCode::Panic);
+        assert_eq!(error.message, "typed boom");
     }
 }

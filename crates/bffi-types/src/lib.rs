@@ -85,4 +85,4 @@ pub mod unsafe_zero_copy;
 pub use buffer::CopiedBuf;
 pub use num::{ConversionError, JsNumber};
 pub use string::{bytes_to_string, string_to_bytes};
-pub use unsafe_zero_copy::{ZeroCopyBuf, ZeroCopyStr};
+pub use unsafe_zero_copy::{ZeroCopyBuf, ZeroCopyStr, buf_view, str_view};

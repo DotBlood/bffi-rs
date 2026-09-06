@@ -2,8 +2,9 @@
 //! [`BffiError`].
 //!
 //! One variant per failure mode of the callback registry; the
-//! conversion targets EXISTING `ErrorCode`s only (P1 rule: no new codes
-//! in P1).
+//! conversion targets existing `ErrorCode`s plus `WrongThread` (P2:
+//! dedicated code for calls that could not be marshalled to the JS
+//! thread).
 //!
 //! Display texts are part of the contract: they travel across the C ABI
 //! as `BffiError.message` and must stay deterministic (see the `Display`
@@ -118,17 +119,18 @@ impl fmt::Display for CallbackError {
 
 impl std::error::Error for CallbackError {}
 
-/// Unified-format conversion on existing codes: stale/foreign handles
-/// map to `InvalidHandle`, signature and thread-rule violations to
-/// `InvalidArgument`, a full table to `TableFull`, an already-declared
-/// tag to `InvalidTag`; the domain error is preserved as the source.
+/// Unified-format conversion: stale/foreign handles map to
+/// `InvalidHandle`, signature mismatches to `InvalidArgument`,
+/// wrong-thread calls to the dedicated `WrongThread` code (P2; the
+/// message still distinguishes the cause), a full table to `TableFull`,
+/// an already-declared tag to `InvalidTag`; the domain error is
+/// preserved as the source.
 impl From<CallbackError> for BffiError {
     fn from(error: CallbackError) -> Self {
         let code = match &error {
             CallbackError::InvalidHandle(_) => ErrorCode::InvalidHandle,
-            CallbackError::SignatureMismatch { .. } | CallbackError::WrongThread => {
-                ErrorCode::InvalidArgument
-            }
+            CallbackError::SignatureMismatch { .. } => ErrorCode::InvalidArgument,
+            CallbackError::WrongThread => ErrorCode::WrongThread,
             CallbackError::TableFull => ErrorCode::TableFull,
             CallbackError::TagInUse(_) => ErrorCode::InvalidTag,
         };
@@ -212,7 +214,7 @@ mod tests {
                 },
                 ErrorCode::InvalidArgument,
             ),
-            (CallbackError::WrongThread, ErrorCode::InvalidArgument),
+            (CallbackError::WrongThread, ErrorCode::WrongThread),
             (CallbackError::TableFull, ErrorCode::TableFull),
             (CallbackError::TagInUse(tag), ErrorCode::InvalidTag),
         ];

@@ -122,6 +122,7 @@ type Handle = u64;
 | Формат ошибок          | `BffiError` = код + сообщение + источник; доменные ошибки конвертируются без потерь через `From` |
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry`; один тег = один тип на процесс (диапазон 0x0100-0x01FF); release освобождает слот, держатели `Arc` сохраняют значение |
 | Колбэки | Явные `register`/`revoke`; мёртв после revoke; wrong-thread - reject (маршалирование = P2) |
+| Build ABI | Runtime-экспорты (`bffi_error_*`, пара `bffi_buffer`/`bffi_buffer_length`, `bffi_types_free`) через `bffi_runtime_abi!()`, раскрываемый в юзер-крейте; `bffi-build` владеет тегами 0x0400-0x04FF |
 | Кодировка строк на границе | UTF-8 каноническая (`bun:ffi cstring`)                   |
 | Конкурентность таблиц  | Lock-free; reclamation через hazard-указатели; закреплённые двухуровневые страницы ячеек |
 | UTF-8 валидация        | SIMD (x86 SSSE3, aarch64 NEON); скалярный DFA - эталонная семантика |
