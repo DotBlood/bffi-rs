@@ -128,6 +128,8 @@ job - the macro never depends on it.
   `::bffi_core`, `::bffi_types`, and `::bffi_dts` at the call site.
 - Unique function names: each shim is `#[unsafe(no_mangle)]`, so two `#[bffi]`
   functions with the same name collide at link time as duplicate symbols.
+- Rust **edition 2024**: the generated shims use `#[unsafe(no_mangle)]`, which
+  only the 2024 edition and later accept.
 
 ## Quick start
 

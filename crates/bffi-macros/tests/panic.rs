@@ -1,6 +1,8 @@
+//! Acceptance test for the release panic boundary (DESIGN §6.5): a
+//! panic inside the `#[bffi]` body becomes `ErrorCode::Panic` plus a
+//! stored last error instead of unwinding into the host.
+
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-// The generated `pub extern "C"` shims carry no doc comments.
-#![allow(missing_docs)]
 #![cfg(not(debug_assertions))] // debug aborts by design (DESIGN §6.5)
 
 use bffi_core::{ErrorCode, take_last_error};

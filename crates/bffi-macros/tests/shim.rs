@@ -8,8 +8,6 @@
 //! the shim's own checks.
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-// The generated `pub extern "C"` shims carry no doc comments.
-#![allow(missing_docs)]
 
 use bffi_core::{ErrorCode, take_last_error};
 
@@ -96,7 +94,7 @@ fn shim_converts_cstrings_and_rejects_invalid_utf8() {
 
 #[test]
 fn shim_without_return_has_no_out_parameter() {
-    // Two arguments only: the signature itself proves there is no
-    // out-parameter.
+    // No out-parameter: the unit-returning shim takes only the fn's
+    // own parameters.
     assert_eq!(bffi_touch(7), ErrorCode::Ok);
 }

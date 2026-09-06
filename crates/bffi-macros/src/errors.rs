@@ -95,6 +95,19 @@ impl MacroDiagnostic {
             .to_compile_error(span)
     }
 
+    /// `E001` - the parameter pattern is outside the P1 rules: only
+    /// identifiers and `_` name a boundary parameter. Anchored at the
+    /// offending pattern.
+    pub(crate) fn param_pattern(span: Span) -> syn::Error {
+        Self::new(
+            "E001",
+            "unsupported function shape: non-identifier parameter pattern".to_owned(),
+        )
+        .with_help("use `name: Type` or `_`: Type")
+        .with_note(DESIGN_NOTE)
+        .to_compile_error(span)
+    }
+
     /// `E002` - a parameter type outside the P1 boundary set, anchored
     /// at the offending type.
     pub(crate) fn param_type<T: ToTokens>(span: Span, ty_tokens: &T, name: &str) -> syn::Error {

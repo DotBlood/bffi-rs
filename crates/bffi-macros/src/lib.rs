@@ -139,7 +139,7 @@ use proc_macro::TokenStream;
 ///
 /// | Code   | Meaning                                                          |
 /// | ------ | ---------------------------------------------------------------- |
-/// | `E001` | unsupported function shape (async/generic/unsafe/self/variadic/extern/const) |
+/// | `E001` | unsupported function shape (async/generic/unsafe/self/variadic/extern/const/non-ident param patterns) |
 /// | `E002` | unsupported parameter type                                       |
 /// | `E003` | unsupported return type                                          |
 /// | `E004` | the attribute takes no options                                   |
@@ -157,7 +157,8 @@ use proc_macro::TokenStream;
 /// These codes are the compile-time counterpart of the runtime
 /// `BffiError` scheme (code + message + source in `bffi-core`);
 /// mapping runtime errors to JS is `bffi-error`'s job - the macro
-/// never depends on it.
+/// never depends on it. Items that are not plain functions fail with a
+/// plain `syn` parse error, outside the E-code scheme.
 ///
 /// # Requirements on the user crate
 ///
@@ -167,6 +168,8 @@ use proc_macro::TokenStream;
 /// - Function names must be unique: each shim is `#[unsafe(no_mangle)]`,
 ///   so two `#[bffi]` functions with the same name collide at link
 ///   time as duplicate symbols.
+/// - The user crate must use edition 2024: the generated shims carry
+///   `#[unsafe(no_mangle)]`, which the 2024 edition gates.
 ///
 /// Inputs outside these rules produce a spanned compile error with the
 /// documented help lines; see

@@ -4,8 +4,6 @@
 //! through `bffi-dts` into the expected TypeScript declarations.
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-// The generated `pub extern "C"` shims carry no doc comments.
-#![allow(missing_docs)]
 
 use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType};
 

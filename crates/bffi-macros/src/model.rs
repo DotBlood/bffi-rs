@@ -9,7 +9,6 @@
 use crate::errors::MacroDiagnostic;
 use crate::mapping;
 use proc_macro2::TokenStream;
-use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{FnArg, ItemFn, Pat, ReturnType};
 
@@ -71,7 +70,7 @@ pub(crate) enum FnReturn {
 /// One validated parameter.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct FnParam {
-    /// Parameter name as written (identifier or rendered pattern).
+    /// Parameter name as written (identifier or `_`).
     pub name: String,
     /// Boundary kind of the parameter type.
     pub kind: ShimKind,
@@ -116,11 +115,15 @@ impl FnModel {
             // Receivers are rejected by `validate_shape`, so every
             // remaining argument is a typed parameter.
             let FnArg::Typed(arg) = arg else { continue };
+            // Only identifiers name a boundary parameter; `_` is
+            // accepted and keeps the positional shim fallback. Anything
+            // else (parenthesized, destructuring, renaming, ...) is
+            // rejected so the descriptor never carries a non-identifier
+            // name.
             let name = match &*arg.pat {
                 Pat::Ident(pat) => pat.ident.to_string(),
-                // Non-identifier patterns cannot be named; keep the
-                // rendered pattern so diagnostics stay lossless.
-                other => other.to_token_stream().to_string(),
+                Pat::Wild(_) => "_".to_owned(),
+                other => return Err(MacroDiagnostic::param_pattern(other.span())),
             };
             let kind = mapping::classify_param(&arg.ty, &name)?;
             params.push(FnParam { name, kind });
