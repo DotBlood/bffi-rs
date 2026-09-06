@@ -128,7 +128,7 @@ type Handle = u64;
 | Буферы                 | Копирование по умолчанию                                  |
 | Zero-copy              | Только через `bffi::unsafe_zero_copy`                     |
 | Event loop             | Старт с `run()`; `pump()` пока заглушка                   |
-| TypeScript-типы        | Генерация с первого дня (`bffi-dts`)                      |
+| TypeScript-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
 | Паника (prod)          | Преобразуется в JS Error                                  |
 | Паника (dev)           | Может прерываться (abort)                                 |
 | Совместимость          | Только Bun                                                |

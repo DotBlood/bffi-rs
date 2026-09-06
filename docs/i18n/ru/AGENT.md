@@ -201,7 +201,7 @@ chore: pin rust-toolchain to 1.98.0
 | Буферы        | Копирование по умолчанию                |
 | Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
 | Event loop    | Старт с `run()`, `pump()` пока заглушка |
-| TS-типы       | Генерация с первого дня (`bffi-dts`)    |
+| TS-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
 | Паника (prod) | Преобразуется в JS Error                |
 | Паника (dev)  | Может прерываться (abort)               |
 | Совместимость | Только Bun                              |

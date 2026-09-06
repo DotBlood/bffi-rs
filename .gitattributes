@@ -1,0 +1,2 @@
+*.d.ts text eol=lf
+*.stderr text eol=lf

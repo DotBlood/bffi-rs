@@ -201,7 +201,7 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Buffers       | Copy by default                              |
 | Zero-copy     | Only via `bffi::unsafe_zero_copy`            |
 | Event loop    | Start with `run()`, `pump()` is mock for now |
-| TS types      | Generate from day one (`bffi-dts`)           |
+| TS types      | IR (ModuleDef/FunctionDef) + deterministic render; export_name = bffi_-prefix |
 | Panic (prod)  | Convert to JS Error                          |
 | Panic (dev)   | May abort                                    |
 | Compatibility | Bun only                                     |
