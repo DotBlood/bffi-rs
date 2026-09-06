@@ -191,6 +191,7 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Topic         | Decision                                     |
 | ------------- | -------------------------------------------- |
 | Macro         | `#[bffi]`: shim (debug bare / release catch_unwind) + bffi_meta_* descriptor |
+| `#[bffi]` returns | primitives/bigints via out-param; `String`/`Vec<u8>`/`CopiedBuf` (and `Option` of those) as buffer handles; `Result<T, E>` -> DomainError(13) |
 | Min Bun       | 1.4.0                                        |
 | Rust/Cargo    | 1.98.0                                       |
 | Handles       | Generational Index + type-tag                |

@@ -191,6 +191,7 @@ chore: pin rust-toolchain to 1.98.0
 | Тема          | Решение                                 |
 | ------------- | --------------------------------------- |
 | Макрос        | `#[bffi]`: шим (debug bare / release catch_unwind) + дескриптор bffi_meta_* |
+| Возвраты `#[bffi]` | примитивы/bigint через out-param; `String`/`Vec<u8>`/`CopiedBuf` (и `Option` от них) как хендлы буферов; `Result<T, E>` -> DomainError(13) |
 | Мин. Bun      | 1.4.0                                   |
 | Rust/Cargo    | 1.98.0                                  |
 | Хендлы        | Generational Index + type-tag           |

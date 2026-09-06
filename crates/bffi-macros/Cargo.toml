@@ -24,4 +24,5 @@ proc-macro2.workspace = true
 bffi-core = { path = "../bffi-core" }
 bffi-types = { path = "../bffi-types" }
 bffi-dts = { path = "../bffi-dts" }
+bffi-build = { path = "../bffi-build" }
 trybuild.workspace = true

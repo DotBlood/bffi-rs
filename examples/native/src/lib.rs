@@ -43,6 +43,32 @@ pub fn greet_len() -> u32 {
     LAST_GREET_LEN.load(Ordering::Relaxed)
 }
 
+/// Returns an uppercased greeting as a buffer handle.
+#[bffi]
+pub fn shout(name: &str) -> String {
+    format!("HELLO {name}!")
+}
+
+/// The `E` side of the err channel.
+#[derive(Debug)]
+pub struct MathError {
+    divisor: u32,
+}
+
+impl std::fmt::Display for MathError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "division by {}", self.divisor)
+    }
+}
+
+impl std::error::Error for MathError {}
+
+/// Divides, reporting a domain error through the err channel.
+#[bffi]
+pub fn checked_div(a: u32, b: u32) -> Result<u32, MathError> {
+    a.checked_div(b).ok_or(MathError { divisor: b })
+}
+
 /// Always panics: the release build must convert this into
 /// `ErrorCode::Panic` plus a last error, not abort Bun.
 #[bffi]

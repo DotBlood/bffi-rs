@@ -56,8 +56,21 @@ pub(crate) enum ShimKind {
     Str,
 }
 
-/// The return side of a validated function.
+/// An owned byte-carrying return type: stored in the `bffi-build`
+/// transient-buffer table and handed to JS as a handle.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum BufferTy {
+    /// `String` - UTF-8 bytes; rendered as `string`.
+    String,
+    /// `Vec<u8>` - raw bytes; rendered as `Uint8Array`.
+    ByteVec,
+    /// `CopiedBuf` - raw bytes; rendered as `Uint8Array`.
+    CopiedBuf,
+}
+
+/// The return side of a validated function.
+// Not `Copy`: `Result` boxes its inner return.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum FnReturn {
     /// No return value (`()`).
     Unit,
@@ -65,6 +78,13 @@ pub(crate) enum FnReturn {
     Prim(PrimTy),
     /// A 64-bit integer (`i64`/`u64`).
     BigInt(BigIntTy),
+    /// An owned byte payload returned as a transient-buffer handle.
+    Buffer(BufferTy),
+    /// `Option` of a buffer payload: `None` writes the `0` handle.
+    Nullable(BufferTy),
+    /// `Result<T, E>`: `Ok` transports `T`, `Err` reports the domain
+    /// error through the last-error channel (`ErrorCode::DomainError`).
+    Result(Box<FnReturn>),
 }
 
 /// One validated parameter.

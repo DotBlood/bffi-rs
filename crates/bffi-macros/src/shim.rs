@@ -12,7 +12,7 @@
 //! which converts the panic into `ErrorCode::Panic` plus a stored
 //! thread-local last error.
 
-use crate::model::{BigIntTy, FnModel, FnReturn, PrimTy, ShimKind};
+use crate::model::{BigIntTy, BufferTy, FnModel, FnReturn, PrimTy, ShimKind};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
@@ -32,7 +32,7 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
         .enumerate()
         .map(|(index, param)| shim_param(param, index))
         .collect();
-    let out = out_param(model.ret);
+    let out = out_param(&model.ret);
     let body = body(model);
 
     // Variant A (dev): the body runs directly - a panic escapes and
@@ -87,18 +87,21 @@ fn shim_param(param: &crate::model::FnParam, index: usize) -> TokenStream {
 }
 
 /// Declares the out-parameter that carries the return value across the
-/// C ABI (`()` returns have none).
-fn out_param(ret: FnReturn) -> Vec<TokenStream> {
+/// C ABI (`()` returns have none; buffer payloads travel as `u64`
+/// handles; `Result` carries its inner type).
+fn out_param(ret: &FnReturn) -> Vec<TokenStream> {
     match ret {
         FnReturn::Unit => Vec::new(),
         FnReturn::Prim(prim) => {
-            let ty = prim_ty(prim);
+            let ty = prim_ty(*prim);
             vec![quote! { __ret: *mut #ty }]
         }
         FnReturn::BigInt(big) => {
-            let ty = bigint_ty(big);
+            let ty = bigint_ty(*big);
             vec![quote! { __ret: *mut #ty }]
         }
+        FnReturn::Buffer(_) | FnReturn::Nullable(_) => vec![quote! { __ret: *mut u64 }],
+        FnReturn::Result(inner) => out_param(inner),
     }
 }
 
@@ -108,7 +111,7 @@ fn out_param(ret: FnReturn) -> Vec<TokenStream> {
 fn body(model: &FnModel) -> TokenStream {
     let mut body = TokenStream::new();
 
-    if !matches!(model.ret, FnReturn::Unit) {
+    if has_out(&model.ret) {
         body.extend(quote! {
             if __ret.is_null() {
                 let error = ::bffi_core::BffiError::new(
@@ -162,22 +165,119 @@ fn body(model: &FnModel) -> TokenStream {
             ShimKind::Prim(_) | ShimKind::BigInt(_) => quote! { #name },
         }
     });
+    let call = quote! { #ident(#(#args,)*) };
 
-    match model.ret {
-        FnReturn::Unit => body.extend(quote! {
-            #ident(#(#args,)*);
+    body.extend(ret_body(&model.ret, call));
+    body
+}
+
+/// Generates the return-transport tail from the call expression: the
+/// final expression of the shim body, an [`ErrorCode`](::bffi_core::ErrorCode).
+fn ret_body(ret: &FnReturn, call: TokenStream) -> TokenStream {
+    match ret {
+        FnReturn::Unit => quote! {
+            #call;
             ::bffi_core::ErrorCode::Ok
-        }),
-        FnReturn::Prim(_) | FnReturn::BigInt(_) => body.extend(quote! {
-            let __value = #ident(#(#args,)*);
+        },
+        FnReturn::Result(inner) => {
+            let ok_tail = value_tail(inner);
+            quote! {
+                match #call {
+                    ::std::result::Result::Ok(__value) => { #ok_tail }
+                    ::std::result::Result::Err(__err) => {
+                        let __msg = ::std::string::ToString::to_string(&__err);
+                        ::bffi_core::set_last_error(::bffi_core::BffiError::with_source(
+                            ::bffi_core::ErrorCode::DomainError,
+                            __msg,
+                            ::std::boxed::Box::new(__err),
+                        ));
+                        ::bffi_core::ErrorCode::DomainError
+                    }
+                }
+            }
+        }
+        other => {
+            let tail = value_tail(other);
+            quote! {
+                let __value = #call;
+                #tail
+            }
+        }
+    }
+}
+
+/// Consumes an already-bound `__value` and yields the transport tail
+/// for `ret`'s shape.
+fn value_tail(ret: &FnReturn) -> TokenStream {
+    match ret {
+        FnReturn::Unit => quote! { ::bffi_core::ErrorCode::Ok },
+        FnReturn::Prim(_) | FnReturn::BigInt(_) => quote! {
             // SAFETY: `__ret` is non-null (checked above) and valid for one
             // `T` write per the bun:ffi out-parameter contract.
             unsafe { ::std::ptr::write(__ret, __value); }
             ::bffi_core::ErrorCode::Ok
-        }),
+        },
+        FnReturn::Buffer(ty) => {
+            let conv = buffer_conv(*ty);
+            quote! {
+                #conv
+                match ::bffi_build::runtime::store_bytes(__bytes) {
+                    ::std::result::Result::Ok(__handle) => {
+                        // SAFETY: `__ret` is non-null (checked above) and valid
+                        // for one `u64` write per the bun:ffi out-parameter contract.
+                        unsafe { ::std::ptr::write(__ret, __handle.as_u64()); }
+                        ::bffi_core::ErrorCode::Ok
+                    }
+                    ::std::result::Result::Err(__e) => {
+                        ::bffi_core::set_last_error(::bffi_core::BffiError::from(__e));
+                        ::bffi_core::ErrorCode::TableFull
+                    }
+                }
+            }
+        }
+        FnReturn::Nullable(ty) => {
+            let some_tail = value_tail(&FnReturn::Buffer(*ty));
+            quote! {
+                match __value {
+                    ::std::option::Option::Some(__value) => { #some_tail }
+                    ::std::option::Option::None => {
+                        // SAFETY: `__ret` is non-null (checked above) and valid for one
+                        // `u64` write per the bun:ffi out-parameter contract; `0`
+                        // is the documented null handle.
+                        unsafe { ::std::ptr::write(__ret, 0_u64); }
+                        ::bffi_core::ErrorCode::Ok
+                    }
+                }
+            }
+        }
+        // Unreachable: `ret_body` unwraps `Result` before the value is
+        // bound; handled here only for exhaustiveness (no-op).
+        FnReturn::Result(_) => quote! { ::bffi_core::ErrorCode::Ok },
     }
+}
 
-    body
+/// Whether the return shape needs the `__ret` out-parameter.
+fn has_out(ret: &FnReturn) -> bool {
+    match ret {
+        FnReturn::Unit => false,
+        FnReturn::Result(inner) => has_out(inner),
+        _ => true,
+    }
+}
+
+/// Converts a bound `__value` into `__bytes: CopiedBuf`.
+fn buffer_conv(ty: BufferTy) -> TokenStream {
+    match ty {
+        BufferTy::String => quote! {
+            let __bytes = ::bffi_types::CopiedBuf::from_vec(__value.into_bytes());
+        },
+        BufferTy::ByteVec => quote! {
+            let __bytes = ::bffi_types::CopiedBuf::from_vec(__value);
+        },
+        BufferTy::CopiedBuf => quote! {
+            let __bytes = __value;
+        },
+    }
 }
 
 /// Sanitizes a model parameter name into a usable shim identifier.

@@ -58,6 +58,8 @@ const DECLARATIONS = {
   bffi_greet: { args: ["cstring"], returns: "u32" },
   bffi_greet_len: { args: ["pointer"], returns: "u32" },
   bffi_boom: { args: ["pointer"], returns: "u32" },
+  bffi_shout: { args: ["cstring", "pointer"], returns: "u32" },
+  bffi_checked_div: { args: ["u32", "u32", "pointer"], returns: "u32" },
   // bffi_runtime_abi!() exports
   bffi_error_take_last: { args: [], returns: "u64" },
   bffi_error_name: { args: ["u64"], returns: "u32" },
@@ -159,6 +161,25 @@ export const native = {
     const status = lib().bffi_greet_len(ptr(out));
     if (status !== ErrorCode.Ok) {
       throw takeError() ?? new Error(`bffi_greet_len failed: ${status}`);
+    }
+    return out[0] ?? 0;
+  },
+  /** Returns the shout as a JS string through the buffer pair. */
+  shout(name: string): string {
+    const out = new BigUint64Array(1);
+    const status = lib().bffi_shout(name, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`bffi_shout failed: ${status}`);
+    }
+    const bytes = readBuffer(out[0] ?? 0n);
+    return new TextDecoder().decode(bytes);
+  },
+  /** Divides; a domain `Err` surfaces as the thrown JS Error. */
+  checkedDiv(a: number, b: number): number {
+    const out = new Uint32Array(1);
+    const status = lib().bffi_checked_div(a, b, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`bffi_checked_div failed: ${status}`);
     }
     return out[0] ?? 0;
   },

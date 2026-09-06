@@ -19,8 +19,12 @@
 use proc_macro2::Span;
 use quote::ToTokens;
 
-/// The P1 type set, listed in every type-rejection help line.
-const P1_TYPES: &str = "supported in P1: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()";
+/// The accepted parameter set, listed in every type-rejection help
+/// line.
+const PARAM_TYPES: &str = "supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()";
+/// The accepted return set: parameters plus the P2 buffer payloads and
+/// the `Result` error channel.
+const RETURN_TYPES: &str = "supported returns: parameters|String|Vec<u8>|CopiedBuf|Option<buffer>|Result<T, E: Error + Send + Sync>";
 /// Note pointing at the boundary rules in DESIGN.md (shared by all
 /// diagnostics).
 const DESIGN_NOTE: &str =
@@ -108,8 +112,8 @@ impl MacroDiagnostic {
         .to_compile_error(span)
     }
 
-    /// `E002` - a parameter type outside the P1 boundary set, anchored
-    /// at the offending type.
+    /// `E002` - a parameter type outside the accepted boundary set,
+    /// anchored at the offending type.
     pub(crate) fn param_type<T: ToTokens>(span: Span, ty_tokens: &T, name: &str) -> syn::Error {
         Self::new(
             "E002",
@@ -119,15 +123,14 @@ impl MacroDiagnostic {
                 name,
             ),
         )
-        .with_help(P1_TYPES)
-        .with_note("buffers, Option, structs and Result arrive with bffi-build (P2)")
+        .with_help(PARAM_TYPES)
+        .with_note("buffer parameters are future work; owned buffers are return-only (CALLING-CONVENTION.md)")
         .with_note(DESIGN_NOTE)
         .to_compile_error(span)
     }
 
-    /// `E003` - a return type outside the P1 boundary set (everything
-    /// but primitives, `i64`/`u64` and `()`), anchored at the
-    /// offending type.
+    /// `E003` - a return type outside the accepted boundary set,
+    /// anchored at the offending type.
     pub(crate) fn return_type<T: ToTokens>(span: Span, ty_tokens: &T) -> syn::Error {
         Self::new(
             "E003",
@@ -136,8 +139,8 @@ impl MacroDiagnostic {
                 ty_tokens.to_token_stream(),
             ),
         )
-        .with_help(P1_TYPES)
-        .with_note("buffers, Option, structs and Result arrive with bffi-build (P2)")
+        .with_help(RETURN_TYPES)
+        .with_note("Option covers buffer payloads only; `E` in `Result` must impl `std::error::Error + Send + Sync`")
         .with_note(DESIGN_NOTE)
         .to_compile_error(span)
     }
@@ -163,14 +166,27 @@ mod tests {
         assert!(
             text.contains("bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`")
                 && text.contains(
-                    "  = help: supported in P1: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()"
+                    "  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()"
                 )
                 && text.contains(
-                    "  = note: buffers, Option, structs and Result arrive with bffi-build (P2)"
+                    "  = note: buffer parameters are future work; owned buffers are return-only (CALLING-CONVENTION.md)"
                 )
                 && text.contains(
                     "  = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)"
                 )
         );
+    }
+
+    #[test]
+    fn return_type_diagnostic_lists_the_p2_return_set() {
+        let err = MacroDiagnostic::return_type(Span::call_site(), &quote! { Option<i32> });
+        let text = err.to_string();
+        assert!(text.contains("bffi[E003]: unsupported type `Option < i32 >` for the return type"));
+        assert!(text.contains(
+            "  = help: supported returns: parameters|String|Vec<u8>|CopiedBuf|Option<buffer>|Result<T, E: Error + Send + Sync>"
+        ));
+        assert!(text.contains(
+            "  = note: Option covers buffer payloads only; `E` in `Result` must impl `std::error::Error + Send + Sync`"
+        ));
     }
 }

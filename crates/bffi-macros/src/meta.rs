@@ -9,9 +9,8 @@
 
 use crate::mapping;
 use crate::model::FnModel;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::Ident;
 
 /// Renders the descriptor module of a validated model: a documented
 /// `bffi_meta_<name>` module exposing the `FUNCTION` const.
@@ -24,13 +23,16 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
     );
     let const_doc = format!("The [`::bffi_dts::FunctionDef`] descriptor for `{js_name}`.");
 
-    let docs = model.docs.iter().map(|doc| quote! { #doc });
+    let mut docs: Vec<String> = model.docs.clone();
+    docs.extend(auto_notes(&model.ret));
+    let docs = docs.iter().map(|doc| quote! { #doc });
+
     let params = model.params.iter().map(|param| {
         let name = &param.name;
-        let ty = ts_variant(mapping::ts_type(&param.kind));
+        let ty = mapping::ts_type(&param.kind).tokens();
         quote! { ::bffi_dts::ParamDef { name: #name, ty: #ty } }
     });
-    let ret = ts_variant(mapping::ts_return(&model.ret));
+    let ret = mapping::ts_return(&model.ret).tokens();
 
     quote! {
         #[doc = #module_doc]
@@ -47,50 +49,36 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
     }
 }
 
-/// The [`::bffi_dts::TsType`] variant token for a TypeScript name
-/// produced by the mapping helpers (`"number"` -> `Number`, ...).
-fn ts_variant(name: &str) -> TokenStream {
-    let variant = match name {
-        "number" => "Number",
-        "bigint" => "BigInt",
-        "boolean" => "Boolean",
-        "string" => "String",
-        "void" => "Void",
-        // Unreachable: the mapping helpers only produce the five
-        // names above. Instead of panicking, emit a nonexistent
-        // variant so a bug surfaces as a compile error at the use
-        // site.
-        _ => "__BffiUnsupportedTsType",
-    };
-    let variant = Ident::new(variant, Span::call_site());
-    quote! { ::bffi_dts::TsType::#variant }
+/// Deterministic auto-generated doc lines for return kinds the TS type
+/// alone cannot express.
+fn auto_notes(ret: &crate::model::FnReturn) -> Vec<String> {
+    match ret {
+        crate::model::FnReturn::Nullable(_) => {
+            vec!["Returns the byte payload as an opaque handle; `0` means `None`.".to_owned()]
+        }
+        crate::model::FnReturn::Result(inner) => auto_notes(inner),
+        _ => Vec::new(),
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::ts_variant;
+    use super::auto_notes;
+    use crate::model::{BufferTy, FnReturn};
 
     #[test]
-    fn ts_variant_covers_all_five_names() {
-        assert_eq!(
-            ts_variant("number").to_string(),
-            ":: bffi_dts :: TsType :: Number"
-        );
-        assert_eq!(
-            ts_variant("bigint").to_string(),
-            ":: bffi_dts :: TsType :: BigInt"
-        );
-        assert_eq!(
-            ts_variant("boolean").to_string(),
-            ":: bffi_dts :: TsType :: Boolean"
-        );
-        assert_eq!(
-            ts_variant("string").to_string(),
-            ":: bffi_dts :: TsType :: String"
-        );
-        assert_eq!(
-            ts_variant("void").to_string(),
-            ":: bffi_dts :: TsType :: Void"
-        );
+    fn nullable_returns_carry_the_handle_doc_line() {
+        let notes = auto_notes(&FnReturn::Nullable(BufferTy::ByteVec));
+        assert_eq!(notes.len(), 1);
+        assert!(notes[0].contains("`0` means `None`"));
+    }
+
+    #[test]
+    fn result_forward_and_plain_returns_add_nothing() {
+        assert!(auto_notes(&FnReturn::Prim(crate::model::PrimTy::U32)).is_empty());
+        let notes = auto_notes(&FnReturn::Result(Box::new(FnReturn::Nullable(
+            BufferTy::CopiedBuf,
+        ))));
+        assert_eq!(notes.len(), 1);
     }
 }

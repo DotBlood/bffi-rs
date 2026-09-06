@@ -45,6 +45,24 @@ describe.skipIf(skip)("native artifact (release cdylib)", () => {
     expect(takeError()).toBeNull();
   });
 
+  test("shout returns a JS string through the buffer pair", () => {
+    expect(native.shout("Bun")).toBe("HELLO Bun!");
+  });
+
+  test("checked_div transports Ok through the out-parameter", () => {
+    expect(native.checkedDiv(10, 2)).toBe(5);
+  });
+
+  test("checked_div reports Err as a domain JS Error (code 13)", () => {
+    try {
+      native.checkedDiv(1, 0);
+      throw new Error("expected checkedDiv to throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("division by 0");
+    }
+  });
+
   test("echo_buffer roundtrips bytes through the buffer pair", () => {
     const payload = Uint8Array.from([1, 2, 3, 250, 251]);
     const { status, error, handle } = native.echoBuffer(payload);

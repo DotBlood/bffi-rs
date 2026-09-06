@@ -116,6 +116,7 @@ type Handle = u64;
 | Тема                   | Решение                                                   |
 |------------------------|-----------------------------------------------------------|
 | Макрос                 | `#[bffi]` - шим (debug без обёртки / release catch_unwind) + const-дескриптор `bffi_meta_*` |
+| Возвраты `#[bffi]` | примитивы/bigint через out-param; `String`/`Vec<u8>`/`CopiedBuf` (и `Option` от них) как хендлы транзитных буферов; `Result<T, E>` -> `ErrorCode::DomainError` с `E` в source |
 | Минимальная версия Bun | 1.4.0                                                     |
 | Rust / Cargo           | 1.98.0                                                    |
 | Хендлы                 | Generational Index + type-tag                             |
