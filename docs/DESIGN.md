@@ -138,6 +138,7 @@ Outside only the opaque handle is visible.
 | Compatibility    | Bun only                                            |
 | Distribution     | Source in repo; prebuilt binaries later for npm     |
 | Facade           | `bffi`: flat re-exports of the stack; `unsafe_zero_copy` is the only zero-copy door; macro expansions stay on the user's direct deps |
+| Async            | `#[bffi_async]`: spawn shim returns a task handle; N-worker executor (tokio runtime - opt-in feature: mode switch + `spawn_on_tokio`; cancel aborts tokio tasks); cancel (cooperative drop) and timeout combinators; resolution delivered through the event loop on the JS thread; descriptors `Promise<T>` |
 | License          | MIT                                                 |
 
 ---
@@ -154,11 +155,11 @@ Outside only the opaque handle is visible.
 | `bffi-dts`         | TypeScript `.d.ts` generation                        | P1       |
 | `bffi-macros`      | Procedural macros (`#[bffi]`, attributes)            | P1       |
 | `bffi-class`       | Class declaration macros                             | P2       |
-| `bffi-macro-support` | Shared macro internals (kinds, classification, codegen) | P3   |
+| `bffi-macro-support` | Shared macro internals (kinds, classification, codegen) | P2.5 |
 | `bffi-event-loop`  | `run()` / `pump()` abstraction                       | P2       |
 | `bffi-build`       | Build helpers, C ABI generation, Bun integration     | P2       |
-| `bffi-rs`          | Public facade that re-exports the stack              | P2       |
-| `bffi-async`       | Promise / async support                              | P3       |
+| `bffi`             | Public facade that re-exports the stack              | P2       |
+| `bffi-async`       | Promise / async support (spawn, cancel, timeout, tokio opt-in) | P3 |
 
 ---
 

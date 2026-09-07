@@ -54,6 +54,7 @@
 #[allow(unused_extern_crates)]
 extern crate proc_macro;
 
+mod async_fn;
 mod errors;
 mod mapping;
 mod meta;
@@ -206,5 +207,44 @@ pub fn bffi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             }
             Err(err) => err.to_compile_error().into(),
         },
+    }
+}
+
+/// Marks an async function for bffi-rs spawn-shim generation.
+///
+/// # Syntax
+///
+/// `#[bffi_async]` (optionally with `crate = "<name>"`, facade-only
+/// mode) on a plain `async fn` whose parameters are the owned matrix
+/// (primitives, `i64`/`u64`, `bool`, `String`, `Vec<u8>`) and whose
+/// return is the P2 matrix (`()`, primitives, `i64`/`u64`,
+/// `String`, `Vec<u8>`, `CopiedBuf`, `Result<T, E>`). Borrowed
+/// parameters (`&str`, `&[u8]`) cannot cross the spawn boundary and
+/// are rejected with `E002`; `Option` async returns are rejected with
+/// `E003`.
+///
+/// # Expansion
+///
+/// The original async fn unchanged plus a spawn shim
+/// `bffi_<name>(params..., __ret: *mut u64) -> ErrorCode`: the shim
+/// moves the parameters into the future, spawns it on the built-in
+/// executor and writes the task handle to `__ret`. JavaScript turns
+/// the handle into a `Promise` with the loader's `wrapTask`; the
+/// descriptor return type is `Promise<T>`.
+///
+/// Resolutions are delivered while the JS thread drains the event
+/// loop (`pump()` / `run()`).
+#[proc_macro_attribute]
+pub fn bffi_async(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    let attrs = proc_macro2::TokenStream::from(attrs);
+    let item = proc_macro2::TokenStream::from(item);
+    let item2 = item.clone();
+    match async_fn::AsyncFnModel::parse(&attrs, item) {
+        Ok(model) => {
+            let shim = async_fn::expand(&model);
+            let meta = async_fn::async_meta(&model);
+            quote::quote! { #item2 #shim #meta }.into()
+        }
+        Err(err) => err.to_compile_error().into(),
     }
 }

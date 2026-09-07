@@ -45,7 +45,8 @@ const _: () = assert!(TAG_BITS + GENERATION_BITS + INDEX_BITS == 64);
 /// | `0x0200`–`0x02FF`| `bffi-callback`                    |
 /// | `0x0300`–`0x03FF`| `bffi-class`                       |
 /// | `0x0400`–`0x04FF`| `bffi-build` (runtime ABI tables)  |
-/// | `0x0500`–`0x7FFF`| future `bffi-*` crates (reserve here) |
+/// | `0x0500`–`0x05FF`| `bffi-async` (task table)          |
+/// | `0x0600`–`0x7FFF`| future `bffi-*` crates (reserve here) |
 /// | `0x8000`–`0xFFFF`| user native modules                |
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(transparent)]
