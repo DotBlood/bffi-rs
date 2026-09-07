@@ -138,8 +138,8 @@ describe.skipIf(skip)("callback surface (criteria 5.1-5.3)", () => {
       // -----------------------------------------------------------
       // Phase C - Worker + wrong-thread + marshal (criterion 5.3).
       // The worker binds ITS thread (first binder wins, sticky for the
-      // process) and enters the blocking run() drain (pump() is the
-      // documented mock - see js/worker.ts for the choice).
+      // process) and enters the blocking run() drain (see js/worker.ts
+      // for the pump-vs-run choice).
       // -----------------------------------------------------------
       const phaseC = native.callbackRegister();
       expect(phaseC.status).toBe(ErrorCode.Ok);
@@ -177,7 +177,7 @@ describe.skipIf(skip)("callback surface (criteria 5.1-5.3)", () => {
       expect(invoked).toBe(42);
 
       // Loop probes: the queue is drained, the global executed counter
-      // advanced, and pump() is the documented always-0 mock.
+      // advanced, and pump() on the empty queue executes nothing.
       expect(native.loopPending()).toBe(0n);
       expect(native.loopExecuted() >= 1n).toBe(true);
       expect(native.loopPump()).toBe(0n);

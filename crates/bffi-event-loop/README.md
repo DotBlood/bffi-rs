@@ -5,15 +5,16 @@
 
 Event-loop crate of [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the Bun-only
 native binding framework. Native code cannot hook Bun's real loop, so
-this is the honest next thing: a thread-safe job queue plus a blocking
-drain, per DESIGN.md §7 ("Start with `run()`; `pump()` is a mock for
-now").
+this is the honest next thing: a thread-safe job queue with two drains -
+a blocking one ([`run`]) and a non-blocking one ([`pump`]), per
+DESIGN.md §7.
 
 **Status:** P2 core complete - [`enqueue`] / [`marshal`] from any
 thread, [`run`] as the blocking executor with per-job panic
 containment, sticky [`stop`], [`pending`] / [`executed_total`] /
-[`is_running`] introspection, and [`pump`] as the documented mock.
-The real Bun-tick integration is future work.
+[`is_running`] introspection, and [`pump`] as a non-blocking drain.
+The Bun-tick integration (calling `pump` periodically from a JS
+loader) is loader-side work.
 
 ---
 
@@ -48,7 +49,7 @@ where the `ensure_js_thread` gate passes.
 | `marshal(job)` | `enqueue` + a runner check; `NotRunning` when no runner is active |
 | `run()` | blocks the calling thread until `stop`; executes every job under `run_extern_body` (panic -> last error, loop lives); returns THIS runner's executed count |
 | `stop()` | wakes all runners (current job finishes, queued jobs stay queued); sticky; idempotent |
-| `pump()` | mock: always `0`, executes nothing (DESIGN §7) |
+| `pump()` | non-blocking drain: executes queued jobs without waiting (never touches the condvar); returns THIS call's executed count; safe alongside `run()` |
 
 Extra runners (nested or parallel `run` calls) are allowed but
 discouraged: they drain and exit on an empty queue while the first
@@ -91,7 +92,8 @@ cargo test -p bffi-event-loop
 ```
 
 `tests/loop.rs` - the full lifecycle in one sequential test (stop is
-process-global and sticky, so phases, not separate tests). 
+process-global and sticky, so phases, not separate tests), including
+the `run()`-vs-`pump()` exactly-once race. 
 `tests/threading.rs` - the reference pattern for binding a helper
 "JS thread" and marshalling `invoke` calls onto it, including the
 wrong-thread reject -> `ErrorCode::WrongThread` mapping.

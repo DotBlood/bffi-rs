@@ -33,7 +33,7 @@ tsc) with Bun 1.4.
 | 5.1                | callback register/invoke/revoke; Rust -> JS bind/get | `js/callbacks.test.ts` phases A and B           |
 | 5.2                | signature mismatch -> 11; revocation is terminal     | `js/callbacks.test.ts` phase A                  |
 | 5.3                | wrong-thread reject (12) + marshal to the bound thread | `js/callbacks.test.ts` phase C (real Worker)  |
-| 5.3 (probes)       | pending/executed counters; `pump()` mock contract    | `js/callbacks.test.ts` phase C                  |
+| 5.3 (probes)       | pending/executed counters; `pump()` drain probe      | `js/callbacks.test.ts` phase C                  |
 | P1 type matrix     | i64/u64 bigint-exact roundtrips; bool path           | `js/numbers.test.ts`                            |
 | 6.1                | `.d.ts` rendered from the `bffi_meta` IR (deterministic, LF) | `tests/dts.rs` (golden `js/api.d.ts`)    |
 | 6.2                | the generated declarations compile under real tsc    | `js/api-usage.ts` via `bun run typecheck`       |

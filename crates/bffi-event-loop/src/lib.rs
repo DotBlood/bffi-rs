@@ -1,17 +1,19 @@
 //! # bffi-event-loop
 //!
 //! The event loop abstraction of the bffi-rs framework (DESIGN §7:
-//! "Start with `run()`; `pump()` is a mock for now").
+//! `enqueue`/`marshal` queue; blocking `run()`, non-blocking `pump()`).
 //!
 //! Native code cannot hook Bun's real event loop, so this crate is the
-//! honest next thing: a thread-safe job queue plus a blocking drain -
+//! honest next thing: a thread-safe job queue plus two drains -
 //!
 //! - background threads deliver work with [`enqueue`] / [`marshal`];
 //! - one thread (typically the JS thread, started with
 //!   `bffi_callback::set_js_thread()`) calls [`run`] and executes the
 //!   jobs - each under [`bffi_core::run_extern_body`], so a panicking
 //!   job becomes a stored last error and the loop lives on;
-//! - [`stop`] ends the (sticky) loop; [`pump`] is a documented mock.
+//! - [`stop`] ends the (sticky) loop; [`pump`] drains whatever is
+//!   queued without waiting - the Bun-tick integration that calls it
+//!   periodically lives in the JS loader, not here.
 //!
 //! The queue is a `Mutex<VecDeque>` + `Condvar` on purpose: the
 //! lock-free machinery of P0 exists for handle tables (CAS traffic on
@@ -228,21 +230,85 @@ pub fn is_running() -> bool {
     RUNNERS.load(Ordering::Acquire) > 0
 }
 
-/// MOCK per DESIGN §7: a non-blocking drain attempt. Always returns
-/// `0` and executes nothing; the real integration with Bun's tick
-/// arrives in a later phase. Callers must not build behavior on it.
+/// Non-blocking drain: pops the queue front and executes each job
+/// through [`bffi_core::boundary::run_extern_body`], exactly like
+/// [`run`] does (the `EXECUTED` counter advances; a panicking job
+/// becomes a stored last error and the drain continues), and stops
+/// once the queue is empty. It never touches the condvar - it does
+/// not wait and it does not wake runners - so it is safe from any
+/// thread and concurrently with a blocking [`run`]: the queue mutex
+/// serializes pops, and only the popper runs the job it popped, so
+/// every job executes exactly once.
+///
+/// Returns the number of jobs executed by THIS call. The Bun-tick
+/// integration (calling `pump` periodically from a JS loader) is
+/// loader-side work, not native.
 #[must_use]
 pub fn pump() -> u64 {
-    0
+    let mut executed = 0_u64;
+    loop {
+        let job = {
+            let mut q = lock_queue();
+            q.pop_front()
+        };
+        let Some(job) = job else { break };
+        executed += 1;
+        EXECUTED.fetch_add(1, Ordering::Relaxed);
+        let _ = bffi_core::boundary::run_extern_body(|| {
+            job();
+            bffi_core::ErrorCode::Ok
+        });
+    }
+    executed
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// Serializes the queue-touching unit tests: libtest runs them in
+    /// parallel, and `pending` / `pump` observe the process-wide
+    /// queue, so concurrent enqueue-drain cycles would race.
+    static QUEUE_LOCK: Mutex<()> = Mutex::new(());
+
     #[test]
-    fn pump_is_the_documented_mock() {
+    fn pump_drains_the_queue_without_blocking() {
+        let _guard = QUEUE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+
+        // Phase 1: three queued jobs, one non-blocking drain.
+        static COUNTER: AtomicUsize = AtomicUsize::new(0);
+        for _ in 0..3 {
+            enqueue(Box::new(|| {
+                COUNTER.fetch_add(1, Ordering::Relaxed);
+            }))
+            .expect("unit tests never stop the loop");
+        }
+        assert_eq!(pending(), 3);
+        assert_eq!(pump(), 3);
+        assert_eq!(COUNTER.load(Ordering::Relaxed), 3);
+        assert_eq!(pending(), 0);
+
+        // Phase 2: an empty queue drains nothing.
         assert_eq!(pump(), 0);
+
+        // Phase 3: a panicking job becomes a stored last error and
+        // the drain continues with the next job.
+        enqueue(Box::new(|| panic!("pump boom"))).expect("unit tests never stop the loop");
+        enqueue(Box::new(|| {})).expect("unit tests never stop the loop");
+        assert_eq!(pump(), 2, "the panic is contained, the drain continues");
+        assert_eq!(pending(), 0, "the loop state stays healthy");
+        // pump ran the jobs on THIS thread, so the last error is in
+        // this thread's slot.
+        let error = bffi_core::take_last_error().expect("the panic must be stored");
+        assert_eq!(error.code, bffi_core::ErrorCode::Panic);
+        assert_eq!(error.message, "pump boom");
+    }
+
+    #[test]
+    fn pump_and_pending_report_an_empty_queue() {
+        let _guard = QUEUE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+        assert_eq!(pump(), 0);
+        assert_eq!(pending(), 0);
     }
 
     #[test]
@@ -267,13 +333,5 @@ mod tests {
         let stopped = BffiError::from(EventLoopError::Stopped);
         assert_eq!(stopped.code, ErrorCode::Error);
         assert!(stopped.source.is_some());
-    }
-
-    #[test]
-    fn empty_queue_reports_zero_pending() {
-        // Nothing in this binary's unit tests enqueues, so the
-        // process-wide queue is empty; the full lifecycle with real
-        // enqueue/drain lives in tests/loop.rs.
-        assert_eq!(pending(), 0);
     }
 }
