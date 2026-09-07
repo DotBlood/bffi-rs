@@ -132,14 +132,6 @@ impl TaskRecord {
         Ok(())
     }
 
-    /// Whether a resolver pair is attached.
-    pub(crate) fn has_resolvers(&self) -> bool {
-        self.resolvers
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .is_some()
-    }
-
     /// The attached `(resolve_ptr, reject_ptr)` pair.
     pub(crate) fn resolver_pair(&self) -> Option<(usize, usize)> {
         *self
@@ -257,7 +249,6 @@ mod tests {
     fn attach_then_terminal_state_is_visible_in_the_snapshot() {
         let task = fresh();
         task.attach(1, 2).expect("attach ok");
-        assert!(task.has_resolvers());
         assert_eq!(task.resolver_pair(), Some((1, 2)));
         assert!(task.outcome_snapshot().is_none(), "still running");
 

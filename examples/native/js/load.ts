@@ -9,7 +9,7 @@
  * not been built yet.
  */
 
-import { dlopen, ptr, toArrayBuffer } from "bun:ffi";
+import { dlopen, JSCallback, ptr, toArrayBuffer } from "bun:ffi";
 
 /** ErrorCode values that cross the C ABI (bffi-core/src/error.rs). */
 export const ErrorCode = {
@@ -93,6 +93,18 @@ const DECLARATIONS = {
   example_loop_pump: { args: ["pointer"], returns: "u32" },
   example_loop_marshal_invoke: { args: ["u64", "i32"], returns: "u32" },
   example_last_invoked: { args: ["pointer"], returns: "u32" },
+  // bffi-async verification exports
+  example_async_double: { args: ["u32", "pointer"], returns: "u32" },
+  example_async_shout: { args: ["cstring", "pointer"], returns: "u32" },
+  example_async_fail: { args: ["pointer"], returns: "u32" },
+  example_async_panic: { args: ["pointer"], returns: "u32" },
+  example_async_timeout: { args: ["pointer"], returns: "u32" },
+  example_async_pending: { args: ["pointer"], returns: "u32" },
+  bffi_async_attach: {
+    args: ["u64", "u64", "u64", "pointer"],
+    returns: "u32",
+  },
+  bffi_async_cancel: { args: ["u64"], returns: "u32" },
   // #[bffi_class] Counter
   bffi_counter_new: { args: ["u32", "pointer"], returns: "u32" },
   bffi_counter_value_get: { args: ["u64", "pointer"], returns: "u32" },
@@ -425,6 +437,141 @@ export const native = {
 const counterFinalizers = new FinalizationRegistry((handle: bigint) => {
   lib().bffi_counter_release(handle);
 });
+
+/** Decodes an encoded `AsyncValue` payload ([tag][payload]) into a JS
+ * value: 0 = undefined, 1 = i32, 2 = i64 (bigint), 3 = f64, 4 = bool,
+ * 5 = UTF-8 string, 6 = raw bytes. */
+export function decodeValue(bytes: Uint8Array): unknown {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const tag = bytes[0] ?? 255;
+  switch (tag) {
+    case 0:
+      return undefined;
+    case 1:
+      return view.getInt32(1, true);
+    case 2:
+      return view.getBigInt64(1, true);
+    case 3:
+      return view.getFloat64(1, true);
+    case 4:
+      return bytes[1] !== 0;
+    case 5: {
+      const len = view.getUint32(1, true);
+      return decoder.decode(
+        bytes.subarray(5, 5 + len),
+      );
+    }
+    case 6: {
+      const len = view.getUint32(1, true);
+      return bytes.slice(5, 5 + len);
+    }
+    default:
+      throw new Error(`unknown async value tag: ${tag}`);
+  }
+}
+
+/**
+ * Wraps a bffi-async task handle into a JS `Promise`.
+ *
+ * The resolve/reject callbacks are handed to the native side as
+ * bun:ffi `JSCallback` pointers; the native side invokes them on the
+ * JS thread while it drains the event loop - so keep pumping
+ * (`native.loopPump()`) until the promise settles.
+ *
+ * The resolved value is decoded from the transient-buffer payload;
+ * the rejection is a plain `Error` carrying the native message.
+ */
+export function wrapTask<T = unknown>(task: bigint): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const resolveCb = new JSCallback(
+      (valueHandle: bigint) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        const bytes = readBuffer(valueHandle);
+        try {
+          resolve(decodeValue(bytes) as T);
+        } catch (error) {
+          reject(error as Error);
+        }
+      },
+      { args: ["u64"], returns: "void" },
+    );
+    const rejectCb = new JSCallback(
+      (message: string) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        reject(new Error(message));
+      },
+      { args: ["cstring"], returns: "void" },
+    );
+    if (resolveCb.ptr === null || rejectCb.ptr === null) {
+      throw new Error("bun:ffi produced a null JSCallback pointer");
+    }
+    const out = new Uint32Array(1);
+    const status = lib().bffi_async_attach(
+      task,
+      BigInt(resolveCb.ptr),
+      BigInt(rejectCb.ptr),
+      out,
+    );
+    if (status !== ErrorCode.Ok) {
+      reject(takeError() ?? new Error(`bffi_async_attach failed: ${status}`));
+    }
+  });
+}
+
+/** The async verification surface: spawn a task through an example
+ * export, then `await wrapTask(handle)` while pumping the loop. */
+export const nativeAsync = {
+  double(x: number): bigint {
+    const out = new BigUint64Array(1);
+    const status = lib().example_async_double(x, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`example_async_double failed: ${status}`);
+    }
+    return out[0] ?? 0n;
+  },
+  shout(name: string): bigint {
+    const out = new BigUint64Array(1);
+    const status = lib().example_async_shout(name, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`example_async_shout failed: ${status}`);
+    }
+    return out[0] ?? 0n;
+  },
+  fail(): bigint {
+    const out = new BigUint64Array(1);
+    const status = lib().example_async_fail(out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`example_async_fail failed: ${status}`);
+    }
+    return out[0] ?? 0n;
+  },
+  panic(): bigint {
+    const out = new BigUint64Array(1);
+    const status = lib().example_async_panic(out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`example_async_panic failed: ${status}`);
+    }
+    return out[0] ?? 0n;
+  },
+  timeout(): bigint {
+    const out = new BigUint64Array(1);
+    const status = lib().example_async_timeout(out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`example_async_timeout failed: ${status}`);
+    }
+    return out[0] ?? 0n;
+  },
+  cancel(task: bigint): number {
+    return lib().bffi_async_cancel(task);
+  },
+};
 
 export class Counter {
   private handle: bigint;

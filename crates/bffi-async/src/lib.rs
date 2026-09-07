@@ -65,6 +65,7 @@
 // code; tests assert invariants and intentionally trigger panics.
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
+pub mod abi;
 pub mod value;
 
 mod executor;
@@ -158,8 +159,10 @@ pub fn spawn_on_tokio<F>(future: F) -> Result<Handle, AsyncError>
 where
     F: Future<Output = Result<AsyncValue, bffi_core::BffiError>> + Send + 'static,
 {
-    let _ = future;
-    Err(AsyncError::TableFull) // wired in the tokio follow-up of T2
+    // Wired in the tokio follow-up of T2; the future is dropped (the
+    // task never runs) until then.
+    drop(future);
+    Err(AsyncError::TableFull)
 }
 
 /// Requests cancellation of the task behind `handle`.

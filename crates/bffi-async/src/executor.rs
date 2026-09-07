@@ -213,20 +213,22 @@ pub(crate) fn task_finished(handle: Handle) {
 /// Enqueues the resolve/reject delivery when the task has an attached
 /// resolver pair and its outcome was not delivered yet.
 pub(crate) fn try_deliver(record: &TaskRecord) {
-    if !record.has_resolvers() || !record.take_delivery_slot() {
-        return;
-    }
+    // Order matters: the delivery slot is taken ONLY when there is a
+    // terminal outcome - an attach-time attempt on a running task
+    // must not consume it.
     let Some((resolve, reject)) = record.resolver_pair() else {
         return;
     };
     let Some(outcome) = record.outcome_snapshot() else {
         return;
     };
-    if bffi_event_loop::enqueue(Box::new(move || {
-        deliver_on_js_thread(resolve, reject, outcome)
-    }))
-    .is_err()
-    {
+    if !record.take_delivery_slot() {
+        return;
+    }
+    let queued = bffi_event_loop::enqueue(Box::new(move || {
+        deliver_on_js_thread(resolve, reject, outcome);
+    }));
+    if queued.is_err() {
         // The event loop was stopped: the delivery is undeliverable
         // (documented contract - do not stop the loop with live tasks).
     }
