@@ -66,6 +66,8 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
 pub mod abi;
+#[cfg(feature = "tokio")]
+pub mod runtime;
 pub mod value;
 
 mod executor;
@@ -78,6 +80,8 @@ use std::time::Duration;
 
 use bffi_core::Handle;
 
+#[cfg(feature = "tokio")]
+pub use runtime::ExecutorKind;
 pub use timer::Sleep;
 pub use value::AsyncValue;
 
@@ -93,6 +97,8 @@ pub enum AsyncError {
     InvalidHandle,
     /// A resolver pair is already attached to this task.
     AlreadyAttached,
+    /// The tokio runtime could not be built (sticky; feature `tokio`).
+    RuntimeUnavailable,
 }
 
 impl std::fmt::Display for AsyncError {
@@ -104,6 +110,7 @@ impl std::fmt::Display for AsyncError {
             Self::AlreadyAttached => {
                 write!(f, "a resolver pair is already attached to this task")
             }
+            Self::RuntimeUnavailable => write!(f, "the tokio runtime is unavailable"),
         }
     }
 }
@@ -120,6 +127,7 @@ impl From<AsyncError> for bffi_core::BffiError {
             AsyncError::TagInUse => ErrorCode::InvalidTag,
             AsyncError::InvalidHandle => ErrorCode::InvalidHandle,
             AsyncError::AlreadyAttached => ErrorCode::InvalidArgument,
+            AsyncError::RuntimeUnavailable => ErrorCode::Error,
         };
         bffi_core::BffiError::with_source(code, error.to_string(), error)
     }
@@ -140,6 +148,12 @@ pub fn spawn<F>(future: F) -> Result<Handle, AsyncError>
 where
     F: Future<Output = Result<AsyncValue, bffi_core::BffiError>> + Send + 'static,
 {
+    // The process-global executor mode (feature `tokio`): macro shims
+    // call `spawn`, so they follow the mode automatically.
+    #[cfg(feature = "tokio")]
+    if runtime::spawn_routes_to_tokio() {
+        return spawn_on_tokio(future);
+    }
     executor::launch(Box::pin(future)).map_err(|error| match error {
         bffi_core::RegistryError::TableFull(_) => AsyncError::TableFull,
         _ => AsyncError::TagInUse,
@@ -151,18 +165,45 @@ where
 /// while the Bun-support invariant stays intact - completion is still
 /// delivered through the event loop on the JS thread.
 ///
+/// The built-in executor stays available: [`spawn`] keeps using it
+/// unless the process-wide mode is switched with
+/// [`set_executor_kind`]. Cancellation of a tokio task aborts it at
+/// the next await point (`JoinHandle::abort`).
+///
 /// # Errors
 ///
-/// The same as [`spawn`].
+/// The same as [`spawn`], plus
+/// [`AsyncError::RuntimeUnavailable`] when the runtime cannot be
+/// built (sticky).
 #[cfg(feature = "tokio")]
 pub fn spawn_on_tokio<F>(future: F) -> Result<Handle, AsyncError>
 where
     F: Future<Output = Result<AsyncValue, bffi_core::BffiError>> + Send + 'static,
 {
-    // Wired in the tokio follow-up of T2; the future is dropped (the
-    // task never runs) until then.
-    drop(future);
-    Err(AsyncError::TableFull)
+    let handle = task::register().map_err(|error| match error {
+        bffi_core::RegistryError::TableFull(_) => AsyncError::TableFull,
+        _ => AsyncError::TagInUse,
+    })?;
+    executor::task_started();
+    runtime::launch_on_tokio(handle, Box::pin(future));
+    Ok(handle)
+}
+
+/// The process-wide executor used by [`spawn`] (and therefore by
+/// `#[bffi_async]` shims). Requires the `tokio` feature.
+///
+/// Set it once at startup, before the first spawn: tasks already
+/// spawned stay on their original executor.
+#[cfg(feature = "tokio")]
+pub fn set_executor_kind(kind: ExecutorKind) {
+    runtime::set_kind(kind);
+}
+
+/// The current process-wide executor kind.
+#[cfg(feature = "tokio")]
+#[must_use]
+pub fn executor_kind() -> ExecutorKind {
+    runtime::kind()
 }
 
 /// Requests cancellation of the task behind `handle`.
@@ -178,8 +219,11 @@ pub fn cancel(handle: Handle) -> bool {
     if !record.mark_cancelled() {
         return false;
     }
-    // The cancel won the transition: it owns the terminal bookkeeping
-    // (the live-count drop and the parked-future drop).
+    // The cancel won the transition: it owns the terminal bookkeeping.
+    // A registered aborter (a tokio task) runs first - abort drops the
+    // future at its next await point - then the live count drops and
+    // the delivery is enqueued.
+    executor::run_aborter(handle);
     executor::task_finished(handle);
     executor::try_deliver(&record);
     true

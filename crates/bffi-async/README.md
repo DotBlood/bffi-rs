@@ -55,9 +55,24 @@ decodes the tag in the loader (`decodeValue`) and frees the buffer with
 bffi-async = { features = ["tokio"] }
 ```
 
-With the feature, `spawn_on_tokio` polls futures on a tokio runtime
-(sockets, tokio timers), while the delivery path is unchanged. The
-default build carries no tokio dependency.
+With the feature, two things unlock:
+
+- `spawn_on_tokio` polls a future on a lazily built multi-thread
+  tokio runtime (worker threads = machine parallelism, capped at 8) -
+  sockets and tokio timers work inside the future;
+- `set_executor_kind(ExecutorKind::Tokio)` switches the process-wide
+  mode, so `spawn` (and therefore every `#[bffi_async]` shim) routes
+  to tokio.
+
+Cancellation aborts the tokio task (`JoinHandle::abort`) - the future
+is dropped at its next await point, the promise rejects with "task
+cancelled". Panicking futures are caught by the completion wrapper
+before tokio sees them: the task fails with the panic message and the
+runtime survives. Set the mode once at startup, before the first
+spawn; `spawn_on_tokio` works regardless of the mode.
+
+The default build carries no tokio dependency - the built-in N-worker
+executor and the timer thread cover sleep/timeout without it.
 
 ## What does _not_ belong here
 

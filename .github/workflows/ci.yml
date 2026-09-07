@@ -45,6 +45,14 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: cargo test --workspace --release
 
+      # the tokio opt-in feature of bffi-async: keep the gated code
+      # compiling and tested (one OS keeps the matrix cheap)
+      - name: cargo test bffi-async (tokio feature)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo clippy -p bffi-async --features tokio --all-targets -- -D warnings
+          cargo test -p bffi-async --features tokio
+
   js:
     runs-on: ubuntu-latest
     steps:

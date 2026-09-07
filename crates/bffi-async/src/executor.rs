@@ -203,11 +203,56 @@ fn poll_task(handle: Handle) {
 }
 
 /// Terminal bookkeeping for the transition winner: the live count
-/// drops and any parked future is dropped. Callers that lose the
-/// transition must NOT call this (the winner already did).
+/// drops, any parked future is dropped and any registered aborter is
+/// discarded. Callers that lose the transition must NOT call this
+/// (the winner already did).
 pub(crate) fn task_finished(handle: Handle) {
     executor().live_tasks.fetch_sub(1, Ordering::AcqRel);
     drop_parked(handle);
+    take_aborter(handle);
+}
+/// The registered aborters of tasks running on foreign executors
+/// (feature `tokio`): `cancel` runs the closure to abort the tokio
+/// task immediately.
+type Aborter = Box<dyn FnOnce() + Send>;
+type Aborters = Mutex<HashMap<Handle, Aborter>>;
+
+static ABORTERS: OnceLock<Aborters> = OnceLock::new();
+
+fn aborters() -> &'static Aborters {
+    ABORTERS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Registers an aborter closure for `handle` (foreign-executor tasks).
+// Used only by the gated runtime module; dead in a default build.
+#[cfg_attr(not(feature = "tokio"), allow(dead_code))]
+pub(crate) fn register_aborter(handle: Handle, abort: Aborter) {
+    aborters()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .insert(handle, abort);
+}
+
+/// Takes the aborter out (without running it).
+fn take_aborter(handle: Handle) -> Option<Aborter> {
+    aborters()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .remove(&handle)
+}
+
+/// Runs and removes the aborter for `handle`, if any.
+#[cfg_attr(not(feature = "tokio"), allow(dead_code))]
+pub(crate) fn run_aborter(handle: Handle) {
+    if let Some(abort) = take_aborter(handle) {
+        abort();
+    }
+}
+
+/// The live-count increment for a freshly spawned task.
+#[cfg_attr(not(feature = "tokio"), allow(dead_code))]
+pub(crate) fn task_started() {
+    executor().live_tasks.fetch_add(1, Ordering::AcqRel);
 }
 
 /// Enqueues the resolve/reject delivery when the task has an attached

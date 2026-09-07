@@ -138,8 +138,7 @@ Outside only the opaque handle is visible.
 | Compatibility    | Bun only                                            |
 | Distribution     | Source in repo; prebuilt binaries later for npm     |
 | Facade           | `bffi`: flat re-exports of the stack; `unsafe_zero_copy` is the only zero-copy door; macro expansions stay on the user's direct deps |
-| Async            | `#[bffi_async]`: spawn shim returns a task handle; N-worker executor polls futures; cancel (cooperative drop) and timeout combinators; resolution delivered through the event loop on the JS thread; tokio runtime - opt-in feature; descriptors `Promise<T>` |
-| Async            | `#[bffi_async]`: spawn shim returns a task handle; N-worker executor polls futures; cancel (cooperative drop) and timeout combinators; resolution delivered through the event loop on the JS thread; tokio runtime - opt-in feature; descriptors `Promise<T>` |
+| Async            | `#[bffi_async]`: spawn shim returns a task handle; N-worker executor (tokio runtime - opt-in feature: mode switch + `spawn_on_tokio`; cancel aborts tokio tasks); cancel (cooperative drop) and timeout combinators; resolution delivered through the event loop on the JS thread; descriptors `Promise<T>` |
 | License          | MIT                                                 |
 
 ---
