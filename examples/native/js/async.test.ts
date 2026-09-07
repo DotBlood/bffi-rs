@@ -9,7 +9,7 @@ import { describe, expect, test } from "bun:test";
 
 import { ErrorCode, hasArtifact, native, nativeAsync, wrapTask } from "./load.ts";
 
-const skip = !hasArtifact();
+const skip = !(await hasArtifact());
 
 /** Wraps a task handle into a Promise (see load.ts wrapTask). */
 function wrap(task: bigint): Promise<unknown> {

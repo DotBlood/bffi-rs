@@ -37,6 +37,10 @@ const LIB_EXT =
       ? "dylib"
       : "so";
 
+// cdylib output name: cargo prefixes `lib` on unix targets and none
+// on Windows.
+const LIB_PREFIX = process.platform === "win32" ? "" : "lib";
+
 // js/ -> native/ -> examples/ -> repository root. Forward slashes are
 // used everywhere: Bun's fs/ffi accept them on every platform.
 const ROOT = (() => {
@@ -47,7 +51,7 @@ const ROOT = (() => {
 
 /** Absolute path of the release cdylib artifact. */
 export function artifactPath(): string {
-  return `${ROOT}/target/release/bffi_example_native.${LIB_EXT}`;
+  return `${ROOT}/target/release/${LIB_PREFIX}bffi_example_native.${LIB_EXT}`;
 }
 
 /** Whether the release artifact has been built (`bun run build`). */

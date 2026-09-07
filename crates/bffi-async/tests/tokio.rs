@@ -5,7 +5,7 @@
 //! side effects the future performs before returning. Delivery to
 //! resolver trampolines is exercised by the real bun:ffi e2e suite.
 #![cfg(feature = "tokio")]
-#![allow(clippy::expect_used, clippy::unwrap_used)]
+#![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
