@@ -72,6 +72,11 @@ fn on_loop<R: Send + 'static>(make: impl FnOnce() -> R + Send + 'static) -> R {
 
 #[test]
 fn marshal_delivers_invoke_onto_the_js_thread() {
+    // Make sure the helper (and therefore the runner) exists first:
+    // libtest starts both tests in parallel, and this test must not
+    // depend on the other one winning the initialization race.
+    js_thread();
+
     let handle = register(
         CallbackSig::new(ValueType::I32, &[ValueType::I32]),
         Arc::new(|args: &[Value]| {

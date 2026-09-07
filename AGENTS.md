@@ -202,7 +202,7 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | UTF-8 checks  | SIMD (x86 SSSE3, aarch64 NEON); scalar ref   |
 | Buffers       | Copy by default                              |
 | Zero-copy     | Only via `bffi::unsafe_zero_copy`            |
-| Event loop    | `run()` drains a job queue on the runner thread; `marshal` = wrong-thread path (code 12); `pump()` is mock |
+| Event loop    | `run()` drains blocking; `pump()` drains non-blocking; `marshal` = wrong-thread path (code 12) |
 | TS types      | IR (ModuleDef/FunctionDef/ClassDef) + deterministic render; export_name = bffi_-prefix |
 | Class macros | `#[bffi_class]`/`#[bffi_impl]` over ObjectWrap (tags 0x0100-0x01FF): field getters, `&self` methods, generated release; metadata split bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; E005-E008 |
 | Macro support | `bffi-macro-support`: shared model/mapping/codegen for the proc-macro crates (bffi-macros, bffi-class); tooling crate - no runtime code, no ABI |

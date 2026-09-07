@@ -129,7 +129,7 @@ type Handle = u64;
 | UTF-8 校验       | SIMD(x86 SSSE3,aarch64 NEON);标量 DFA 为参考语义      |
 | 缓冲区           | 默认复制                                            |
 | 零拷贝           | 仅通过 `bffi::unsafe_zero_copy`                     |
-| 事件循环         | `enqueue`/`marshal` 队列 + 在运行线程上阻塞的 `run()`（任务经 `run_extern_body`）;`stop()` 是粘性的;`pump()` 为 mock;无运行线程时 marshal -> WrongThread(12) |
+| 事件循环         | `enqueue`/`marshal` 队列;`run()` 在运行线程上阻塞并排空（任务经 `run_extern_body`）;`pump()` 非阻塞排空（不等待）;`stop()` 是粘性的;无运行线程时 marshal -> WrongThread(12);Bun tick 在加载器侧 |
 | TypeScript 类型 | IR（ModuleDef/FunctionDef/ClassDef）+ 确定性 render；export_name = bffi_ 前缀 |
 | 类宏 | 基于,ObjectWrap（标签 0x0100-0x01FF）的 `#[bffi_class]`/`#[bffi_impl]`:pub 原始字段的 getter、`&self` 方法、自动生成 release;元数据拆分为 `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`;诊断 E005-E008 |
 | 宏支持 | `bffi-macro-support`:为 proc-macro crate(`bffi-macros`、`bffi-class`)提供共享的模型/映射/代码生成;工具 crate - 无运行时代码、无 ABI |

@@ -61,7 +61,11 @@ fn callback_and_event_loop_names_are_reexported() {
     );
     assert!(bffi::revoke(handle));
 
-    assert_eq!(bffi::pump(), 0, "pump stays the documented mock");
+    assert_eq!(
+        bffi::pump(),
+        0,
+        "empty queue: the non-blocking drain executes nothing"
+    );
     assert!(!bffi::is_running(), "no runner in this test");
     assert_eq!(bffi::pending(), 0);
     let _executed: u64 = bffi::executed_total();

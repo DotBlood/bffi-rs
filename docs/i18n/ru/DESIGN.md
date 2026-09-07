@@ -129,7 +129,7 @@ type Handle = u64;
 | UTF-8 валидация        | SIMD (x86 SSSE3, aarch64 NEON); скалярный DFA - эталонная семантика |
 | Буферы                 | Копирование по умолчанию                                  |
 | Zero-copy              | Только через `bffi::unsafe_zero_copy`                     |
-| Event loop             | Очередь `enqueue`/`marshal` + блокирующий `run()` на потоке-исполнителе (задачи через `run_extern_body`); `stop()` липкий; `pump()` заглушка; marshal без раннера -> WrongThread(12) |
+| Event loop             | Очередь `enqueue`/`marshal`; `run()` блокирует и дренирует на потоке-исполнителе (задачи через `run_extern_body`); `pump()` дренирует без блокировки (без ожидания); `stop()` липкий; marshal без раннера -> WrongThread(12); Bun-tick - на стороне лоадера |
 | TypeScript-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
 | Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх `ObjectWrap` (теги 0x0100-0x01FF): геттеры `pub`-примитивных полей, `&self`-методы, генерируемый release; метаданные split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; диагностика E005-E008 |
 | Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (`bffi-macros`, `bffi-class`); tooling-крейт - без runtime-кода и ABI |

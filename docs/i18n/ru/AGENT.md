@@ -202,7 +202,7 @@ chore: pin rust-toolchain to 1.98.0
 | UTF-8 проверка| SIMD (x86 SSSE3, aarch64 NEON)          |
 | Буферы        | Копирование по умолчанию                |
 | Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
-| Event loop    | `run()` дренирует очередь задач на потоке-исполнителе; `marshal` - путь wrong-thread (код 12); `pump()` заглушка |
+| Event loop    | `run()` дренирует блокирующе; `pump()` дренирует без блокировки; `marshal` - путь wrong-thread (код 12) |
 | TS-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
 | Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх ObjectWrap (теги 0x0100-0x01FF): геттеры полей, `&self`-методы, генерируемый release; метаданные bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; E005-E008 |
 | Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (bffi-macros, bffi-class); tooling-крейт - без runtime-кода и ABI |

@@ -478,8 +478,8 @@ bffi_extern! {
 
 bffi_extern! {
     /// Verification export (criterion 5.3, loop probes): writes the
-    /// documented `pump()` mock result into `__ret` (always `0` - the
-    /// real non-blocking drain is a later phase).
+    /// `pump()` non-blocking drain result into `__ret` (the number of
+    /// jobs executed by this call - `0` on an empty queue).
     #[unsafe(no_mangle)]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub extern "C" fn example_loop_pump(__ret: *mut u64) -> ErrorCode {

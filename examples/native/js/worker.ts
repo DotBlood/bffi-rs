@@ -5,10 +5,8 @@
  * library, its Rust statics and the process-global JS-thread binding
  * are shared with the main thread.
  *
- * Pump-vs-run choice (spike-verified): `pump()` is the documented
- * bffi-event-loop mock - it always returns 0 and executes nothing, so
- * a `setInterval(example_loop_pump)` loop can never drain marshalled
- * jobs. The worker therefore enters the BLOCKING drain
+ * Pump-vs-run choice: `pump()` is a real non-blocking drain now, but
+ * the worker still enters the BLOCKING drain
  * (`example_loop_run`, i.e. `bffi_event_loop::run`). Blocking is
  * intentional and safe here: the worker has already reported
  * "bound", `run()` only returns once the main thread calls

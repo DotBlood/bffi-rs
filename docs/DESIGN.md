@@ -129,7 +129,7 @@ Outside only the opaque handle is visible.
 | UTF-8 validation | SIMD (x86 SSSE3, aarch64 NEON); scalar DFA is the reference semantics |
 | Buffers          | Copy by default                                     |
 | Zero-copy        | Only via `bffi::unsafe_zero_copy`                   |
-| Event loop       | `enqueue`/`marshal` queue + blocking `run()` on the runner thread (jobs via `run_extern_body`); `stop()` is sticky; `pump()` is a mock; marshal without a runner -> WrongThread(12) |
+| Event loop       | `enqueue`/`marshal` queue; `run()` blocks and drains on the runner thread (jobs via `run_extern_body`); `pump()` drains without blocking (no waiting); `stop()` is sticky; marshal without a runner -> WrongThread(12); the Bun tick is loader-side |
 | TypeScript types | IR (ModuleDef/FunctionDef/ClassDef) + deterministic render; export_name = bffi_-prefix |
 | Class macros | `#[bffi_class]`/`#[bffi_impl]` over `ObjectWrap` (tags 0x0100-0x01FF): getters for `pub` primitive fields, `&self` methods, generated release; metadata split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; diagnostics E005-E008 |
 | Macro support | `bffi-macro-support`: shared model/mapping/codegen for the proc-macro crates (`bffi-macros`, `bffi-class`); tooling crate - no runtime code, no ABI |

@@ -354,7 +354,7 @@ export const native = {
     }
     return out[0] ?? 0n;
   },
-  /** The documented pump() mock: always 0 (5.3). */
+  /** Non-blocking drain probe: jobs executed by this call (5.3). */
   loopPump(): bigint {
     const out = new BigUint64Array(1);
     const status = lib().example_loop_pump(out);

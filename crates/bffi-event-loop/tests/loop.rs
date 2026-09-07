@@ -8,11 +8,11 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use bffi_event_loop::{enqueue, executed_total, marshal, pending, run, stop};
+use bffi_event_loop::{enqueue, executed_total, marshal, pending, pump, run, stop};
 
 fn wait_for(what: &str, mut check: impl FnMut() -> bool) {
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -89,6 +89,46 @@ fn loop_lifecycle() {
     // Phase 4: marshal works while running; stop is sticky.
     marshal(Box::new(|| {})).expect("a runner is active");
     wait_for("marshalled job", || pending() == 0);
+
+    // Phase 5: the runner (still inside run()) and two pump() threads
+    // race for the same queue. A job is executed exactly once no
+    // matter how the three drains interleave: the queue mutex hands
+    // every job to exactly one popper, and only the popper runs it.
+    const RACE_JOBS: u32 = 256;
+    let race_counter = Arc::new(AtomicU32::new(0));
+    let raced_before = executed_total();
+    for _ in 0..RACE_JOBS {
+        let race_counter = Arc::clone(&race_counter);
+        enqueue(Box::new(move || {
+            race_counter.fetch_add(1, Ordering::Relaxed);
+        }))
+        .expect("not stopped");
+    }
+    let pumps_done = Arc::new(AtomicBool::new(false));
+    std::thread::scope(|scope| {
+        for _ in 0..2 {
+            let pumps_done = Arc::clone(&pumps_done);
+            scope.spawn(move || {
+                while !pumps_done.load(Ordering::Acquire) {
+                    let _ = pump();
+                }
+            });
+        }
+        wait_for("the race jobs", || {
+            race_counter.load(Ordering::Relaxed) == RACE_JOBS
+        });
+        pumps_done.store(true, Ordering::Release);
+    });
+    assert_eq!(
+        race_counter.load(Ordering::Relaxed),
+        RACE_JOBS,
+        "every raced job executed exactly once (none lost, none doubled)"
+    );
+    assert_eq!(
+        executed_total() - raced_before,
+        u64::from(RACE_JOBS),
+        "executed_total counts the raced jobs exactly"
+    );
 
     stop();
     let executed = runner.join().expect("runner must not panic");
