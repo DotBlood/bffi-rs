@@ -13,6 +13,15 @@ export function greet_len(): number;
 /** Returns an uppercased greeting as a buffer handle. */
 export function shout(name: string): string;
 
+/**
+ * Copies the borrowed bytes into a fresh buffer and returns its
+ * handle: the borrowed `&[u8]` parameter travels as a `(ptr, len)`
+ * pair (CALLING-CONVENTION.md §3) and stays valid only for the
+ * duration of the call, so the documented copy-on-return policy
+ * applies.
+ */
+export function echo_buffer(data: Uint8Array): Uint8Array;
+
 /** Divides, reporting a domain error through the err channel. */
 export function checked_div(a: number, b: number): number;
 

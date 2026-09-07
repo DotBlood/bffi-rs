@@ -18,7 +18,7 @@
 
 use crate::model::FnModel;
 use bffi_macro_support::codegen::{
-    has_out, out_param, param_ident, ret_body, shim_param, str_conversions,
+    has_out, out_param, param_conversions, param_ident, ret_body, shim_param,
 };
 use bffi_macro_support::kind::ShimKind;
 use proc_macro2::TokenStream;
@@ -71,8 +71,8 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
 }
 
 /// Renders the shim body shared by both cfg variants: pointer
-/// validation first, cstring conversion per `&str` parameter, then the
-/// call and the out-parameter write.
+/// validation first, the borrowed-parameter conversion per `&str` /
+/// `&[u8]` parameter, then the call and the out-parameter write.
 fn body(model: &FnModel) -> TokenStream {
     let mut body = TokenStream::new();
 
@@ -89,7 +89,7 @@ fn body(model: &FnModel) -> TokenStream {
         });
     }
 
-    body.extend(str_conversions(
+    body.extend(param_conversions(
         model
             .params
             .iter()
@@ -102,6 +102,11 @@ fn body(model: &FnModel) -> TokenStream {
         match param.kind {
             // `ZeroCopyStr` derefs to `str`.
             ShimKind::Str => {
+                let view = format_ident!("{name}_view");
+                quote! { &#view }
+            }
+            // `ZeroCopyBuf` derefs to `[u8]`.
+            ShimKind::BufferView => {
                 let view = format_ident!("{name}_view");
                 quote! { &#view }
             }

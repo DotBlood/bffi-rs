@@ -78,9 +78,11 @@ let module = bffi_dts::ModuleDef { name: "app", fns: &[], classes: CLASSES };
   (`E007` on other types); `&str`/owned fields cannot be served.
 - Exactly one `#[bffi_constructor]` returning `Self` per impl (`E008`);
   a JS class cannot be instantiated without one.
-- Method parameters/returns follow the `#[bffi]` matrix, including the
-  P2 buffer payloads and `Result<T, E>` err channel. An `#[bffi_impl]`
-  without a matching `#[bffi_class]` surfaces as a missing
+- Method parameters/returns follow the `#[bffi]` matrix, including
+  the borrowed `&[u8]` parameters (a `(ptr, len)` pair at the ABI
+  level, descriptor sees one `Uint8Array`), the P2 buffer payloads
+  and `Result<T, E>` err channel. An `#[bffi_impl]` without a
+  matching `#[bffi_class]` surfaces as a missing
   `__bffi_<name>_wrap` function.
 
 ## Diagnostics

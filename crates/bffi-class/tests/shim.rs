@@ -44,6 +44,11 @@ impl Counter {
         format!("{prefix}-{}", self.value)
     }
 
+    /// Sums the bytes and adds the stored value.
+    pub fn byte_sum(&self, data: &[u8]) -> u32 {
+        data.iter().map(|byte| u32::from(*byte)).sum::<u32>() + self.value
+    }
+
     /// Falls back to the err channel on zero.
     pub fn divided(&self, divisor: u32) -> Result<u32, DivError> {
         self.value.checked_div(divisor).ok_or(DivError { divisor })
@@ -148,6 +153,22 @@ fn string_and_result_method_returns_travel_the_p2_channels() {
     );
     let error = take_last_error().expect("an Err must store the domain error");
     assert_eq!(error.message, "division by 0");
+
+    // The `&[u8]` method parameter: the shim receives the (ptr, len)
+    // pair and the method sees a borrowed view.
+    let data = [5_u8, 10, 20];
+    assert_eq!(
+        bffi_counter_byte_sum(handle, data.as_ptr(), data.len() as u64, &mut out),
+        ErrorCode::Ok
+    );
+    assert_eq!(out, 42);
+
+    // Empty view through a null pointer is fine.
+    assert_eq!(
+        bffi_counter_byte_sum(handle, std::ptr::null(), 0, &mut out),
+        ErrorCode::Ok
+    );
+    assert_eq!(out, 7);
 
     bffi_counter_release(handle);
 }

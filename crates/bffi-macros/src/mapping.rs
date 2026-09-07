@@ -108,6 +108,15 @@ mod tests {
     }
 
     #[test]
+    fn buffer_view_params_map_to_uint8array() {
+        for src in ["&[u8]", "&'a [u8]"] {
+            let kind = classify_param(&ty(src), "x").expect("accepted");
+            assert_eq!(kind, ShimKind::BufferView, "param type `{src}`");
+            assert_eq!(ts_type(&kind), TsKind::Uint8Array, "param type `{src}`");
+        }
+    }
+
+    #[test]
     fn bigints_classify_distinctly() {
         assert_eq!(
             classify_param(&ty("i64"), "x").expect("accepted"),
@@ -213,11 +222,9 @@ mod tests {
         let err = classify_param(&ty("Vec<u8>"), "data").expect_err("rejected");
         let text = err.to_string();
         assert!(text.starts_with("bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`"));
-        assert!(
-            text.contains(
-                "  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()"
-            )
-        );
+        assert!(text.contains(
+            "  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]|()"
+        ));
         assert!(text.contains("DESIGN.md"));
     }
 
@@ -235,12 +242,13 @@ mod tests {
     fn rejected_param_types_fail_classification() {
         let cases = [
             ("&mut str", "mutability would break the copy guarantee"),
-            ("&u32", "only `&str` may be borrowed"),
+            ("&mut [u8]", "mutability would break the copy guarantee"),
+            ("&[i32]", "only byte slices may be borrowed"),
+            ("&u32", "only `&str` and `&[u8]` may be borrowed"),
             ("str", "bare `str` is unsized"),
             ("i128", "integer width outside the matrix"),
             ("usize", "integer width outside the matrix"),
             ("char", "not in the matrix"),
-            ("&[u8]", "buffer parameters are future work"),
             ("String", "owned strings are return-only"),
         ];
         for (src, why) in cases {

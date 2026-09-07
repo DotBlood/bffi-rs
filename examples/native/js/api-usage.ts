@@ -5,7 +5,7 @@
  * non-existent specifier never reaches module resolution), so no test
  * imports this file and tsc alone guards the declared surface.
  */
-import type { add, checked_div, is_even, mirror_i64, mirror_u64 } from "./api";
+import type { add, checked_div, echo_buffer, is_even, mirror_i64, mirror_u64 } from "./api";
 
 /** Compile-time assertion helper: `T` must be exactly `true`. */
 export type Expect<T extends boolean> = T;
@@ -50,6 +50,15 @@ export const isEvenReturnsBoolean: Expect<
 // travels through the last-error mechanism, not the TS signature)
 export const checkedDivReturnsNumber: Expect<
   Equal<ReturnType<typeof checked_div>, number>
+> = true;
+
+// echo_buffer: (data: Uint8Array) => Uint8Array (the borrowed `&[u8]`
+// parameter renders as ONE Uint8Array: the ptr/len pair is ABI-level)
+export const echoBufferTakesUint8Array: Expect<
+  Equal<Parameters<typeof echo_buffer>[0], Uint8Array>
+> = true;
+export const echoBufferReturnsUint8Array: Expect<
+  Equal<ReturnType<typeof echo_buffer>, Uint8Array>
 > = true;
 
 // Structural direction checks: the imported functions fit where their

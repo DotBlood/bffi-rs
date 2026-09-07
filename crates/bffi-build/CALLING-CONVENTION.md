@@ -7,9 +7,10 @@
 > it. Sources of truth above this document: `docs/DESIGN.md` §6 and
 > `AGENTS.md`.
 
-**Status:** P2. Covers function shims (P1) and the runtime exports
-(P2). Buffers as _parameters_, class method shims, and struct-by-value
-/ cstring _returns_ are future work (see "Non-goals").
+**Status:** P2. Covers function shims (P1), the runtime exports
+(P2), class method shims, and borrowed `&[u8]` buffer parameters.
+Structs-by-value and cstring _returns_ are future work (see
+"Non-goals").
 
 ---
 
@@ -44,7 +45,8 @@ Both variants are generated under `#[cfg(debug_assertions)]` /
 | `i64` `u64`                | `i64` / `u64`                              | JS sees `bigint` |
 | `Handle` (objects, buffers, callbacks) | `u64`                          | JS sees `bigint`; `0` = null |
 | `&str`                     | `*const c_char`                            | NUL-terminated UTF-8 ("cstring"); validated by `bffi_types::str_view`, invalid UTF-8 -> `ErrorCode::InvalidUtf8` + last error |
-| `String`, buffers, `Option`, `Vec`, structs | **not supported as parameters** | see Non-goals |
+| `&[u8]`                    | `ptr: *const u8` + `len: u64` pair (in parameter order) | borrowed view: bun:ffi keeps the `TypedArray` pointer valid for the duration of the call; null allowed iff `len == 0`; non-empty null -> `ErrorCode::NullPointer` + last error; the descriptor carries ONE `Uint8Array` parameter |
+| `String`, `Vec` (owned), `Option`, structs | **not supported as parameters** | see Non-goals |
 
 ## 4. Returns
 
@@ -112,8 +114,7 @@ Today: `0x0100-0x01FF` bffi-object, `0x0200-0x02FF` bffi-callback,
   pointer into Rust memory the JS side would free differently);
   strings travel as buffer handles instead.
 - Structures by value (parameters or returns).
-- Buffers as direct parameters (a `ptr, len` parameter pair is a
-  future candidate; the hand-written `example_echo_buffer` export in
-  `examples/native` is the reference sketch).
+- Owned buffers as parameters (`String`, `Vec<u8>`, `CopiedBuf`):
+  only the borrowed `&[u8]` view (§3) crosses as a parameter.
 
 [`ErrorCode`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core

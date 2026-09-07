@@ -37,6 +37,12 @@ fn find_name(hit: bool) -> Option<String> {
     if hit { Some("ada".to_owned()) } else { None }
 }
 
+#[bffi_macros::bffi]
+/// Sums the bytes.
+fn byte_sum(data: &[u8]) -> u32 {
+    data.iter().map(|byte| u32::from(*byte)).sum()
+}
+
 #[test]
 fn descriptor_matches_the_expected_literal() {
     assert_eq!(
@@ -110,6 +116,21 @@ fn descriptor_matches_the_expected_literal() {
             ret: TsType::NullableString,
         }
     );
+    // A borrowed `&[u8]` parameter renders as ONE `Uint8Array`
+    // ParamDef: the `(ptr, len)` C pair is ABI-level only.
+    assert_eq!(
+        bffi_meta_byte_sum::FUNCTION,
+        FunctionDef {
+            js_name: "byte_sum",
+            export_name: "bffi_byte_sum",
+            docs: &["Sums the bytes."],
+            params: &[ParamDef {
+                name: "data",
+                ty: TsType::Uint8Array
+            }],
+            ret: TsType::Number,
+        }
+    );
 }
 
 #[test]
@@ -120,6 +141,7 @@ fn descriptors_render_through_bffi_dts() {
         bffi_meta_build_greeting::FUNCTION,
         bffi_meta_payload::FUNCTION,
         bffi_meta_find_name::FUNCTION,
+        bffi_meta_byte_sum::FUNCTION,
     ];
     let module = ModuleDef {
         name: "math",
@@ -133,4 +155,5 @@ fn descriptors_render_through_bffi_dts() {
     assert!(rendered.contains("export function build_greeting(who: string): string;"));
     assert!(rendered.contains("export function payload(): Uint8Array | null;"));
     assert!(rendered.contains("export function find_name(hit: boolean): string | null;"));
+    assert!(rendered.contains("export function byte_sum(data: Uint8Array): number;"));
 }

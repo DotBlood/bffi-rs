@@ -2,10 +2,11 @@
 //!
 //! Every helper here emits the same tokens for both proc-macro
 //! consumers: the out-parameter plumbing, the return-transport tail,
-//! the cstring conversions for `&str` parameters, and the small
-//! Rust-type renderers. The generated code names `::bffi_core`,
-//! `::bffi_types` and `::bffi_build` by absolute path - the expansion
-//! lands in the user crate, which depends on them.
+//! the borrowed-parameter conversions (`&str` cstrings, `&[u8]`
+//! ptr+len views), and the small Rust-type renderers. The generated
+//! code names `::bffi_core`, `::bffi_types` and `::bffi_build` by
+//! absolute path - the expansion lands in the user crate, which
+//! depends on them.
 
 use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
 use proc_macro2::TokenStream;
@@ -16,13 +17,20 @@ use syn::Ident;
 ///
 /// Primitives and bigints keep their Rust type; a `&str` parameter
 /// arrives as a NUL-terminated cstring pointer per the `bun:ffi`
-/// convention (DESIGN §6.3).
+/// convention (DESIGN §6.3); a `&[u8]` parameter arrives as a
+/// `(ptr, len)` pair per the borrowed-buffer convention
+/// (CALLING-CONVENTION.md §3).
 pub fn shim_param(name: &str, kind: ShimKind, index: usize) -> TokenStream {
     let name = param_ident(name, index);
     match kind {
         ShimKind::Str => {
             let ptr = format_ident!("{name}_ptr");
             quote! { #ptr: *const ::std::os::raw::c_char }
+        }
+        ShimKind::BufferView => {
+            let ptr = format_ident!("{name}_ptr");
+            let len = format_ident!("{name}_len");
+            quote! { #ptr: *const u8, #len: u64 }
         }
         ShimKind::Prim(prim) => {
             let ty = prim_ty(prim);
@@ -161,41 +169,73 @@ pub fn buffer_conv(ty: BufferTy) -> TokenStream {
     }
 }
 
-/// The `&str` parameter conversion preamble (cstring -> UTF-8 view):
-/// one null-checked block per borrowed parameter, in order.
-pub fn str_conversions<'a, I>(params: I) -> TokenStream
+/// The borrowed-parameter conversion preamble: one null-checked
+/// conversion block per `&str` (cstring -> UTF-8 view) or `&[u8]`
+/// (ptr+len -> byte view) parameter, in order.
+pub fn param_conversions<'a, I>(params: I) -> TokenStream
 where
     I: IntoIterator<Item = (&'a str, ShimKind)>,
 {
     let mut body = TokenStream::new();
     for (index, (name, kind)) in params.into_iter().enumerate() {
-        if !matches!(kind, ShimKind::Str) {
-            continue;
-        }
         let name = param_ident(name, index);
-        let ptr = format_ident!("{name}_ptr");
-        let bytes = format_ident!("{name}_bytes");
-        let view = format_ident!("{name}_view");
-        body.extend(quote! {
-            if #ptr.is_null() {
-                let error = ::bffi_core::BffiError::new(
-                    ::bffi_core::ErrorCode::NullPointer,
-                    "string argument pointer is null",
-                );
-                ::bffi_core::set_last_error(error);
-                return ::bffi_core::ErrorCode::NullPointer;
+        match kind {
+            ShimKind::Str => {
+                let ptr = format_ident!("{name}_ptr");
+                let bytes = format_ident!("{name}_bytes");
+                let view = format_ident!("{name}_view");
+                body.extend(quote! {
+                    if #ptr.is_null() {
+                        let error = ::bffi_core::BffiError::new(
+                            ::bffi_core::ErrorCode::NullPointer,
+                            "string argument pointer is null",
+                        );
+                        ::bffi_core::set_last_error(error);
+                        return ::bffi_core::ErrorCode::NullPointer;
+                    }
+                    // SAFETY: bun:ffi hands out NUL-terminated cstrings for `&str`
+                    // parameters (DESIGN.md §6.3); the pointer is null-checked above.
+                    let #bytes = unsafe { ::std::ffi::CStr::from_ptr(#ptr) }.to_bytes();
+                    let #view = match ::bffi_types::unsafe_zero_copy::str_view(#bytes) {
+                        ::std::result::Result::Ok(v) => v,
+                        ::std::result::Result::Err(e) => {
+                            ::bffi_core::set_last_error(e);
+                            return ::bffi_core::ErrorCode::InvalidUtf8;
+                        }
+                    };
+                });
             }
-            // SAFETY: bun:ffi hands out NUL-terminated cstrings for `&str`
-            // parameters (DESIGN.md §6.3); the pointer is null-checked above.
-            let #bytes = unsafe { ::std::ffi::CStr::from_ptr(#ptr) }.to_bytes();
-            let #view = match ::bffi_types::unsafe_zero_copy::str_view(#bytes) {
-                ::std::result::Result::Ok(v) => v,
-                ::std::result::Result::Err(e) => {
-                    ::bffi_core::set_last_error(e);
-                    return ::bffi_core::ErrorCode::InvalidUtf8;
-                }
-            };
-        });
+            ShimKind::BufferView => {
+                let ptr = format_ident!("{name}_ptr");
+                let len = format_ident!("{name}_len");
+                let view = format_ident!("{name}_view");
+                body.extend(quote! {
+                    if #len > 0_u64 && #ptr.is_null() {
+                        let error = ::bffi_core::BffiError::new(
+                            ::bffi_core::ErrorCode::NullPointer,
+                            "buffer argument pointer is null",
+                        );
+                        ::bffi_core::set_last_error(error);
+                        return ::bffi_core::ErrorCode::NullPointer;
+                    }
+                    // SAFETY: bun:ffi keeps the TypedArray pointer valid
+                    // for the duration of the call (CALLING-CONVENTION.md
+                    // §3). `len == 0` takes the empty-slice branch, so
+                    // `from_raw_parts` never sees a null pointer (`len ==
+                    // 0` permits one per the ABI contract); otherwise the
+                    // pointer is non-null (checked above) and valid for
+                    // exactly `len` bytes.
+                    let #view = if #len == 0_u64 {
+                        ::bffi_types::buf_view(&[])
+                    } else {
+                        ::bffi_types::buf_view(unsafe {
+                            ::std::slice::from_raw_parts(#ptr, #len as usize)
+                        })
+                    };
+                });
+            }
+            ShimKind::Prim(_) | ShimKind::BigInt(_) => {}
+        }
     }
     body
 }
@@ -236,8 +276,8 @@ pub fn bigint_ty(big: BigIntTy) -> TokenStream {
 #[cfg(test)]
 mod tests {
     use super::{
-        bigint_ty, buffer_conv, has_out, out_param, param_ident, prim_ty, ret_body,
-        str_conversions, value_tail,
+        bigint_ty, buffer_conv, has_out, out_param, param_conversions, param_ident, prim_ty,
+        ret_body, shim_param, value_tail,
     };
     use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
     use quote::quote;
@@ -340,13 +380,40 @@ mod tests {
     }
 
     #[test]
-    fn str_conversions_skip_non_str_params_in_order() {
-        let tokens =
-            str_conversions([("a", ShimKind::Prim(PrimTy::U32)), ("b", ShimKind::Str)]).to_string();
+    fn param_conversions_skip_non_borrowed_params_in_order() {
+        let tokens = param_conversions([
+            ("a", ShimKind::Prim(PrimTy::U32)),
+            ("b", ShimKind::Str),
+            ("c", ShimKind::BigInt(BigIntTy::U64)),
+        ])
+        .to_string();
         assert!(tokens.contains("b_ptr"));
         assert!(tokens.contains("b_view"));
         assert!(!tokens.contains("a_ptr"));
+        assert!(!tokens.contains("c_ptr"));
         assert!(tokens.contains("str_view"));
         assert!(tokens.contains("InvalidUtf8"));
+    }
+
+    #[test]
+    fn buffer_view_shim_param_expands_to_the_ptr_len_pair() {
+        let tokens = shim_param("data", ShimKind::BufferView, 0).to_string();
+        assert!(tokens.contains("data_ptr : * const u8"));
+        assert!(tokens.contains("data_len : u64"));
+    }
+
+    #[test]
+    fn buffer_view_conversion_null_checks_and_builds_the_view() {
+        let tokens = param_conversions([("data", ShimKind::BufferView)]).to_string();
+        assert!(tokens.contains("data_len > 0_u64 && data_ptr . is_null ()"));
+        assert!(tokens.contains("buffer argument pointer is null"));
+        assert!(tokens.contains("NullPointer"));
+        assert!(tokens.contains("from_raw_parts (data_ptr , data_len as usize)"));
+        assert!(
+            tokens.contains("data_len == 0_u64"),
+            "the empty view must not feed a null pointer to `from_raw_parts`"
+        );
+        assert!(tokens.contains("buf_view"));
+        assert!(tokens.contains("data_view"));
     }
 }

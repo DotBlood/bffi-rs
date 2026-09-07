@@ -64,6 +64,9 @@ const DECLARATIONS = {
   bffi_boom: { args: ["pointer"], returns: "u32" },
   bffi_shout: { args: ["cstring", "pointer"], returns: "u32" },
   bffi_checked_div: { args: ["u32", "u32", "pointer"], returns: "u32" },
+  // #[bffi] borrowed `&[u8]` parameter: a (ptr, len) pair where the
+  // pointer is null when the buffer is empty.
+  bffi_echo_buffer: { args: ["ptr", "u64", "pointer"], returns: "u32" },
   // #[bffi] verification exports (P1 type matrix)
   bffi_mirror_i64: { args: ["i64", "pointer"], returns: "u32" },
   bffi_mirror_u64: { args: ["u64", "pointer"], returns: "u32" },
@@ -103,8 +106,6 @@ const DECLARATIONS = {
   bffi_buffer: { args: ["u64"], returns: "ptr" },
   bffi_buffer_length: { args: ["u64"], returns: "u64" },
   bffi_types_free: { args: ["u64"], returns: "u32" },
-  // hand-written example export (ptr, len parameter sketch)
-  example_echo_buffer: { args: ["ptr", "u64", "pointer"], returns: "u32" },
 } as const;
 
 function loadSymbols() {
@@ -390,9 +391,9 @@ export const native = {
   echoBuffer(bytes: Uint8Array): { handle: bigint; status: number; error: Error | null } {
     const out = new BigUint64Array(1);
     // bun:ffi cannot convert an empty TypedArray to a pointer; the
-    // Rust side accepts a null data pointer when len == 0.
+    // generated `&[u8]` shim accepts a null data pointer when len == 0.
     const dataPtr = bytes.length > 0 ? ptr(bytes) : null;
-    const status = lib().example_echo_buffer(dataPtr, bytes.length, out);
+    const status = lib().bffi_echo_buffer(dataPtr, bytes.length, out);
     return {
       handle: out[0] ?? 0n,
       status,

@@ -18,6 +18,7 @@ const FUNCTIONS: &[FunctionDef] = &[
     bffi_example_native::bffi_meta_greet::FUNCTION,
     bffi_example_native::bffi_meta_greet_len::FUNCTION,
     bffi_example_native::bffi_meta_shout::FUNCTION,
+    bffi_example_native::bffi_meta_echo_buffer::FUNCTION,
     bffi_example_native::bffi_meta_checked_div::FUNCTION,
     bffi_example_native::bffi_meta_boom::FUNCTION,
     bffi_example_native::bffi_meta_mirror_i64::FUNCTION,

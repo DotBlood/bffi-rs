@@ -81,6 +81,15 @@ pointer, converts with `CStr::from_ptr`, and validates UTF-8 through
 `bffi_types::unsafe_zero_copy::str_view` - invalid UTF-8 returns
 `ErrorCode::InvalidUtf8`.
 
+**`&[u8]` parameters (borrowed buffers).** A `&[u8]` parameter arrives as a
+`ptr: *const u8` + `len: u64` pair (in parameter order). bun:ffi keeps the
+`TypedArray` pointer valid for the duration of the call; a null pointer is allowed
+only when `len == 0` (empty view), otherwise the shim returns
+`ErrorCode::NullPointer` with the last error set. The view is zero-copy and
+borrowed: it never outlives the call, so owned returns copy
+(`CopiedBuf::from_slice`). The descriptor carries ONE `Uint8Array`
+`ParamDef` - the `(ptr, len)` pair is ABI-level only.
+
 **Buffer returns (P2).** `String` / `Vec<u8>` / `CopiedBuf` / `Option` of these are
 copied into the [`bffi-build`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build)
 transient-buffer table; the shim returns a handle the JS side reads through the
@@ -103,6 +112,7 @@ returns the matching `ErrorCode`; success returns `ErrorCode::Ok` and stores not
 | `i64` `u64`                      | yes   | yes    | `bigint`  |
 | `bool`                           | yes   | yes    | `boolean` |
 | `&str` (borrowed; lifetimes ok)  | yes   | -      | `string`  |
+| `&[u8]` (borrowed; lifetimes ok) | yes   | -      | `Uint8Array` |
 | `()`                             | -     | yes    | `void`    |
 | `String`                         | -     | yes    | `string`  |
 | `Vec<u8>`, `CopiedBuf`           | -     | yes    | `Uint8Array` |
@@ -111,7 +121,8 @@ returns the matching `ErrorCode`; success returns `ErrorCode::Ok` and stores not
 | `Result<T, E>`                   | -     | yes    | `T`'s kind; `Err` -> code 13 |
 
 Everything else is rejected at compile time - `E002` for parameters, `E003` for returns.
-Buffer parameters, structs and non-buffer `Option`/`Vec` are future work.
+Owned buffers (`String`/`Vec<u8>`) as parameters, structs and non-buffer `Option`/`Vec`
+are future work.
 
 Shape violations are rejected too (`E001`): `async`, generic, `unsafe`, method receivers
 (`self`), variadic, `extern`, and `const` functions are outside the rules.
@@ -132,8 +143,8 @@ Format - `bffi[<code>]: <message>` first line, then `  = help: ` and `  = note: 
 
 ```text
 error: bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`
-  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()
-  = note: buffer parameters are future work; owned buffers are return-only (CALLING-CONVENTION.md)
+  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]|()
+  = note: borrowed `&[u8]` is the only buffer parameter; owned buffers are return-only (CALLING-CONVENTION.md)
   = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
 ```
 

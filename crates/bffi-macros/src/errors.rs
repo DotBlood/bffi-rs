@@ -19,7 +19,7 @@ use quote::ToTokens;
 
 /// The accepted parameter set, listed in every type-rejection help
 /// line.
-const PARAM_TYPES: &str = "supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()";
+const PARAM_TYPES: &str = "supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]|()";
 /// The accepted return set: parameters plus the P2 buffer payloads and
 /// the `Result` error channel.
 const RETURN_TYPES: &str = "supported returns: parameters|String|Vec<u8>|CopiedBuf|Option<buffer>|Result<T, E: Error + Send + Sync>";
@@ -67,7 +67,7 @@ pub(crate) fn param_type<T: ToTokens>(span: Span, ty_tokens: &T, name: &str) -> 
     )
     .with_help(PARAM_TYPES)
     .with_note(
-        "buffer parameters are future work; owned buffers are return-only (CALLING-CONVENTION.md)",
+        "borrowed `&[u8]` is the only buffer parameter; owned buffers are return-only (CALLING-CONVENTION.md)",
     )
     .with_note(DESIGN_NOTE)
     .to_compile_error(span)
@@ -112,10 +112,10 @@ mod tests {
         assert!(
             text.contains("bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`")
                 && text.contains(
-                    "  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()"
+                    "  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]|()"
                 )
                 && text.contains(
-                    "  = note: buffer parameters are future work; owned buffers are return-only (CALLING-CONVENTION.md)"
+                    "  = note: borrowed `&[u8]` is the only buffer parameter; owned buffers are return-only (CALLING-CONVENTION.md)"
                 )
                 && text.contains(
                     "  = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)"
