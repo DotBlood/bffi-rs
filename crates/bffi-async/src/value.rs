@@ -80,6 +80,96 @@ impl AsyncValue {
     }
 }
 
+/// Lossless conversions feeding the `#[bffi_async]` codegen: an
+/// async fn's return value is turned into an [`AsyncValue`] with
+/// `.into()` at the spawn boundary.
+///
+/// `u8`/`u16` widen into [`AsyncValue::I32`]; `u32` widens into
+/// [`AsyncValue::I64`] (its range exceeds `i32`).
+macro_rules! impl_from_into_i32 {
+    ($($ty:ty),* $(,)?) => {$(
+        impl From<$ty> for AsyncValue {
+            fn from(value: $ty) -> Self {
+                Self::I32(i32::from(value))
+            }
+        }
+    )*};
+}
+
+impl_from_into_i32!(i8, i16, i32, u8, u16);
+
+macro_rules! impl_from_into_i64 {
+    ($($ty:ty),* $(,)?) => {$(
+        impl From<$ty> for AsyncValue {
+            fn from(value: $ty) -> Self {
+                Self::I64(i64::from(value))
+            }
+        }
+    )*};
+}
+
+impl_from_into_i64!(u32);
+
+impl From<i64> for AsyncValue {
+    fn from(value: i64) -> Self {
+        Self::I64(value)
+    }
+}
+
+impl From<u64> for AsyncValue {
+    fn from(value: u64) -> Self {
+        Self::I64(value as i64)
+    }
+}
+
+impl From<f64> for AsyncValue {
+    fn from(value: f64) -> Self {
+        Self::F64(value)
+    }
+}
+
+impl From<f32> for AsyncValue {
+    fn from(value: f32) -> Self {
+        Self::F64(f64::from(value))
+    }
+}
+
+impl From<bool> for AsyncValue {
+    fn from(value: bool) -> Self {
+        Self::Bool(value)
+    }
+}
+
+impl From<String> for AsyncValue {
+    fn from(value: String) -> Self {
+        Self::Str(value)
+    }
+}
+
+impl From<&'static str> for AsyncValue {
+    fn from(value: &'static str) -> Self {
+        Self::Str(value.to_owned())
+    }
+}
+
+impl From<Vec<u8>> for AsyncValue {
+    fn from(value: Vec<u8>) -> Self {
+        Self::Bytes(CopiedBuf::from_vec(value))
+    }
+}
+
+impl From<CopiedBuf> for AsyncValue {
+    fn from(value: CopiedBuf) -> Self {
+        Self::Bytes(value)
+    }
+}
+
+impl From<()> for AsyncValue {
+    fn from((): ()) -> Self {
+        Self::Unit
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

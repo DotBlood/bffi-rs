@@ -38,7 +38,7 @@ use bffi_callback::{
 use bffi_class::{bffi_class, bffi_constructor, bffi_impl};
 use bffi_core::{BffiError, Handle, bffi_extern, set_last_error};
 use bffi_event_loop::{Job, executed_total, marshal, pending, pump, run, stop};
-use bffi_macros::bffi;
+use bffi_macros::{bffi, bffi_async};
 
 // The eight JS-facing runtime exports (bffi_error_*, bffi_buffer pair,
 // bffi_types_free) generated into this cdylib.
@@ -663,4 +663,12 @@ bffi_extern! {
             ),
         )
     }
+}
+
+/// The `#[bffi_async]` macro: the spawn shim and `Promise<u32>`
+/// descriptor are generated; `js/async.test.ts` awaits the value.
+#[bffi_async]
+pub async fn example_compute(x: u32) -> u32 {
+    async_sleep(Duration::from_millis(15)).await;
+    x * 2
 }

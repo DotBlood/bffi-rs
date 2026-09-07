@@ -280,6 +280,25 @@ pub fn ts_return(ret: &RetKind) -> TsKind {
     }
 }
 
+/// TypeScript kind of an `#[bffi_async]` return: the `Promise*`
+/// family wrapping the plain mapping. `Nullable` async returns are
+/// rejected at classification time (v1 scope) and never reach this
+/// mapping.
+pub fn ts_promise(ret: &RetKind) -> TsKind {
+    match ret {
+        RetKind::Unit => TsKind::PromiseVoid,
+        RetKind::Prim(prim) => match ts_prim(*prim) {
+            TsKind::Boolean => TsKind::PromiseBoolean,
+            _ => TsKind::PromiseNumber,
+        },
+        RetKind::BigInt(_) => TsKind::PromiseBigInt,
+        RetKind::Buffer(BufferTy::String) => TsKind::PromiseString,
+        RetKind::Buffer(_) => TsKind::PromiseUint8Array,
+        RetKind::Result(inner) => ts_promise(inner),
+        RetKind::Nullable(inner) => ts_promise(&RetKind::Buffer(*inner)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{

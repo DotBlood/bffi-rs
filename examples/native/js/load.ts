@@ -100,6 +100,7 @@ const DECLARATIONS = {
   example_async_panic: { args: ["pointer"], returns: "u32" },
   example_async_timeout: { args: ["pointer"], returns: "u32" },
   example_async_pending: { args: ["pointer"], returns: "u32" },
+  bffi_example_compute: { args: ["u32", "pointer"], returns: "u32" },
   bffi_async_attach: {
     args: ["u64", "u64", "u64", "pointer"],
     returns: "u32",
@@ -570,6 +571,14 @@ export const nativeAsync = {
   },
   cancel(task: bigint): number {
     return lib().bffi_async_cancel(task);
+  },
+  compute(x: number): bigint {
+    const out = new BigUint64Array(1);
+    const status = lib().bffi_example_compute(x, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`example_compute failed: ${status}`);
+    }
+    return out[0] ?? 0n;
   },
 };
 

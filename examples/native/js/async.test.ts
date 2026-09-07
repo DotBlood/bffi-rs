@@ -70,6 +70,11 @@ describe.skipIf(skip)("bffi-async through real bun:ffi", () => {
     expect(() => wrap(task)).toThrow(/already attached/);
   });
 
+  test("the bffi_async macro drives a full async roundtrip", async () => {
+    const task = nativeAsync.compute(5);
+    await expect(withPump(wrap(task))).resolves.toBe(10n);
+  });
+
   test("resolutions are delivered by pumping, not by magic", async () => {
     const task = nativeAsync.double(21);
     const settled: { value?: unknown; error?: Error } = {};
