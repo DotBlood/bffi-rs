@@ -8,6 +8,9 @@
 //! the shim's own checks.
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
+// The probe namespace modules mirror the facade namespaces; the
+// generated shims carry the docs.
+#![allow(missing_docs)]
 
 use bffi_core::{ErrorCode, take_last_error};
 use bffi_types::CopiedBuf;
@@ -97,6 +100,38 @@ fn slice_len(data: &[u8]) -> u32 {
 #[bffi_macros::bffi]
 fn echo_bytes(data: &[u8]) -> CopiedBuf {
     CopiedBuf::from_slice(data)
+}
+
+// Facade-only mode without the facade: `crate = "bffi_macros_probe"`
+// makes the generated shim resolve through `::bffi_macros_probe::{core,
+// types, dts, build}` instead of the direct deps. The `extern crate
+// self` alias puts THIS crate into the extern prelude under the probe
+// name, so the absolute paths resolve to the re-export modules below.
+extern crate self as bffi_macros_probe;
+
+pub mod core {
+    pub use bffi_core::*;
+}
+pub mod types {
+    pub use bffi_types::*;
+}
+pub mod dts {
+    pub use bffi_dts::*;
+}
+pub mod build {
+    pub use bffi_build::*;
+}
+
+#[bffi_macros::bffi(crate = "bffi_macros_probe")]
+/// Triples through the probe namespaces.
+fn triple(x: u32) -> u32 {
+    x * 3
+}
+
+#[bffi_macros::bffi(crate = "bffi_macros_probe")]
+/// Greets through the probe namespaces (cstring + buffer paths).
+fn probe_shout(phrase: &str) -> String {
+    format!("{phrase}!")
 }
 
 /// Converts `bytes` into a NUL-terminated cstring pointer for the
@@ -314,4 +349,20 @@ fn buffer_view_param_rejects_null_pointer_with_nonzero_len() {
     let error = take_last_error().expect("a null data pointer must store a last error");
     assert_eq!(error.code, ErrorCode::NullPointer);
     assert_eq!(error.message, "buffer argument pointer is null");
+}
+
+#[test]
+fn crate_option_shim_calls_through_the_probe_namespaces() {
+    let mut out = 0_u32;
+    assert_eq!(bffi_triple(7, &mut out), ErrorCode::Ok);
+    assert_eq!(out, 21);
+}
+
+#[test]
+fn crate_option_shim_walks_the_string_and_buffer_paths() {
+    let mut handle = 0_u64;
+    let hey = cstring(b"hey");
+    assert_eq!(bffi_probe_shout(hey, &mut handle), ErrorCode::Ok);
+    assert_ne!(handle, 0);
+    assert_eq!(read_buffer(bffi_core::Handle::from_raw(handle)), b"hey!");
 }

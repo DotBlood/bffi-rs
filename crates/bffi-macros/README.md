@@ -104,6 +104,21 @@ surfaces in the expansion if violated.
 **Errors.** Every failure stores a `BffiError` via `::bffi_core::set_last_error` and
 returns the matching `ErrorCode`; success returns `ErrorCode::Ok` and stores nothing.
 
+## Attribute options: `crate = "..."`
+
+`#[bffi]` takes one optional option:
+
+- `#[bffi]` - default mode: the expansion names the direct dependencies
+  (`::bffi_core`, `::bffi_types`, `::bffi_dts`, `::bffi_build`).
+- `#[bffi(crate = "bffi")]` - **facade-only mode**: the expansion names
+  `::bffi::core`, `::bffi::types`, `::bffi::dts`, `::bffi::build`, the
+  re-export namespaces of the [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  facade. A user crate whose only dependency is `bffi` can then use the
+  macro.
+
+Anything else (unknown keys, non-literal or invalid `crate` values,
+duplicates) is rejected with `E004`.
+
 ## Type matrix v2
 
 | Rust type                        | Param | Return | TsType    |
@@ -137,7 +152,7 @@ Rejections carry stable codes - do not renumber, the golden `.stderr` files in
 | `E001` | unsupported function shape (async/generic/unsafe/self/variadic/extern/const) |
 | `E002` | unsupported parameter type                                       |
 | `E003` | unsupported return type                                          |
-| `E004` | the attribute takes no options                                   |
+| `E004` | unknown option; only `crate = "..."` is supported                |
 
 Format - `bffi[<code>]: <message>` first line, then `  = help: ` and `  = note: ` lines:
 
@@ -155,10 +170,15 @@ job - the macro never depends on it.
 
 ## Requirements on the user crate
 
-- Dependencies on `bffi-core`, `bffi-types`, and `bffi-dts`: the expansion names
-  `::bffi_core`, `::bffi_types`, and `::bffi_dts` at the call site. Buffer and
-  `Result` returns additionally name `::bffi_build` - add it when those returns
-  are used (or unconditionally).
+- Default mode: dependencies on `bffi-core`, `bffi-types`, and `bffi-dts`:
+  the expansion names `::bffi_core`, `::bffi_types`, and `::bffi_dts` at
+  the call site. Buffer and `Result` returns additionally name
+  `::bffi_build` - add it when those returns are used (or
+  unconditionally).
+- Facade-only mode (`#[bffi(crate = "bffi")]`): the
+  [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  facade alone - the expansion names `::bffi::core`, `::bffi::types`,
+  `::bffi::dts`, and `::bffi::build`, which the facade re-exports.
 - Unique function names: each shim is `#[unsafe(no_mangle)]`, so two `#[bffi]`
   functions with the same name collide at link time as duplicate symbols.
 - Rust **edition 2024**: the generated shims use `#[unsafe(no_mangle)]`, which

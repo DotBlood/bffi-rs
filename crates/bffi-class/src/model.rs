@@ -12,8 +12,9 @@
 //! `bffi_macro_support`; this crate keeps the `ItemStruct`/`ItemImpl`
 //! parsing and its own `E005`-`E008` diagnostics.
 
-use crate::errors::{class_shape, field_type, impl_binding, method_shape, tag};
+use crate::errors::{attr_options, class_shape, field_type, impl_binding, method_shape, tag};
 use crate::mapping::{self, RetKind};
+use bffi_macro_support::paths::{PathCtx, is_crate_name};
 use bffi_macro_support::util::{extract_docs, to_snake_case};
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;
@@ -48,6 +49,9 @@ pub(crate) struct ClassModel {
     pub tag: u16,
     /// Exported (`pub`, primitive-typed) fields, declaration order.
     pub fields: Vec<FieldModel>,
+    /// The crate roots the generated code names (default: the direct
+    /// dependencies; `crate = "..."`: the facade namespaces).
+    pub paths: PathCtx,
 }
 
 /// One validated method parameter.
@@ -90,12 +94,16 @@ pub(crate) struct ImplModel {
     pub constructor: ConstructorModel,
     /// The `&self` methods, declaration order.
     pub methods: Vec<MethodModel>,
+    /// The crate roots the generated code names (default: the direct
+    /// dependencies; `crate = "..."`: the facade namespaces).
+    pub paths: PathCtx,
 }
 
 impl ClassModel {
-    /// Parses `#[bffi_class(tag = 0x01xx)]` on a named struct.
+    /// Parses `#[bffi_class(tag = 0x01xx)]` (optionally with
+    /// `crate = "<name>"`) on a named struct.
     pub(crate) fn parse(attrs: &TokenStream, item: TokenStream) -> syn::Result<ClassModel> {
-        let tag_value = parse_tag(attrs)?;
+        let (tag_value, paths) = parse_class_args(attrs)?;
         let struc: ItemStruct = syn::parse2(item)
             .map_err(|err| class_shape(err.span(), "only `struct` declarations are supported"))?;
         if !struc.generics.params.is_empty() || struc.generics.where_clause.is_some() {
@@ -129,48 +137,87 @@ impl ClassModel {
             docs: extract_docs(&struc.attrs),
             tag: tag_value,
             fields: exported,
+            paths,
         })
     }
 }
 
-/// The parsed `tag = <literal>` attribute argument.
+/// The parsed `tag = <literal>` (required) and `crate = "<name>"`
+/// (optional) attribute arguments.
 struct ClassArgs {
-    tag: syn::LitInt,
+    tag: Option<syn::LitInt>,
+    paths: PathCtx,
 }
 
 impl syn::parse::Parse for ClassArgs {
     fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
-        let key: syn::Ident = input.parse()?;
-        if key != "tag" {
-            return Err(syn::Error::new(
-                key.span(),
-                format!("unknown option `{key}`; only `tag` is supported"),
-            ));
+        let mut tag: Option<syn::LitInt> = None;
+        let mut paths = PathCtx::default();
+        let mut crate_seen = false;
+        while !input.is_empty() {
+            // `parse_any`: `crate` is a Rust keyword, which the plain
+            // `Ident` parse rejects.
+            let key: syn::Ident = input.call(syn::ext::IdentExt::parse_any)?;
+            input.parse::<syn::Token![=]>()?;
+            match key.to_string().as_str() {
+                "tag" => {
+                    if tag.is_some() {
+                        return Err(syn::Error::new(key.span(), "duplicate `tag` option"));
+                    }
+                    tag = Some(input.parse()?);
+                }
+                "crate" => {
+                    if crate_seen {
+                        return Err(syn::Error::new(key.span(), "duplicate `crate` option"));
+                    }
+                    crate_seen = true;
+                    let value: syn::LitStr = input.parse()?;
+                    let name = value.value();
+                    if !is_crate_name(&name) {
+                        return Err(syn::Error::new(
+                            value.span(),
+                            format!("invalid crate name `{name}`"),
+                        ));
+                    }
+                    paths = PathCtx::from_attr(&name);
+                }
+                other => {
+                    return Err(syn::Error::new(
+                        key.span(),
+                        format!("unknown option `{other}`; only `tag` and `crate` are supported"),
+                    ));
+                }
+            }
+            if !input.is_empty() {
+                input.parse::<syn::Token![,]>()?;
+            }
         }
-        input.parse::<syn::Token![=]>()?;
-        let tag: syn::LitInt = input.parse()?;
-        Ok(Self { tag })
+        Ok(Self { tag, paths })
     }
 }
 
-/// Parses and range-checks the `tag = <literal>` attribute argument.
-fn parse_tag(attrs: &TokenStream) -> syn::Result<u16> {
+/// Parses and range-checks the class attribute arguments: `tag =
+/// <literal>` is required and `crate = "<name>"` optional, in any
+/// order.
+fn parse_class_args(attrs: &TokenStream) -> syn::Result<(u16, PathCtx)> {
     if attrs.is_empty() {
         return Err(tag(attrs.span(), "missing `tag = ...`"));
     }
     let args: ClassArgs = syn::parse2(attrs.clone())
         .map_err(|err| tag(err.span(), format!("expected `tag = <literal>` ({})", err)))?;
-    let value: u16 = args
-        .tag
+    let Some(tag_lit) = args.tag else {
+        return Err(tag(attrs.span(), "missing `tag = ...`"));
+    };
+    let value: u16 = tag_lit
         .base10_parse()
-        .map_err(|_| tag(args.tag.span(), "the tag must fit in u16"))?;
+        .map_err(|_| tag(tag_lit.span(), "the tag must fit in u16"))?;
     if !(0x0100..=0x01FF).contains(&value) {
         return Err(tag(
-            args.tag.span(),
+            tag_lit.span(),
             format!("tag {value:#06x} is outside the bffi-object range 0x0100..=0x01FF"),
         ));
     }
-    Ok(value)
+    Ok((value, args.paths))
 }
 
 /// The getter kind of a field type: plain primitives and `i64`/`u64`.
@@ -185,8 +232,10 @@ fn field_kind(ty: &syn::Type) -> Option<FieldTy> {
 }
 
 impl ImplModel {
-    /// Parses an `impl Type` block under `#[bffi_impl]`.
-    pub(crate) fn parse(item: TokenStream) -> syn::Result<ImplModel> {
+    /// Parses an `impl Type` block under `#[bffi_impl]` (optionally
+    /// with `crate = "<name>"`).
+    pub(crate) fn parse(attrs: &TokenStream, item: TokenStream) -> syn::Result<ImplModel> {
+        let paths = parse_impl_paths(attrs)?;
         let imp: ItemImpl = syn::parse2(item)
             .map_err(|err| impl_binding(err.span(), "only `impl Type` blocks are supported"))?;
         if !imp.generics.params.is_empty() || imp.generics.where_clause.is_some() {
@@ -248,8 +297,62 @@ impl ImplModel {
             type_ident,
             constructor,
             methods,
+            paths,
         })
     }
+}
+
+/// The parsed `crate = "<name>"` attribute argument of
+/// `#[bffi_impl]`: at most one, optional.
+struct ImplPaths {
+    paths: PathCtx,
+}
+
+impl syn::parse::Parse for ImplPaths {
+    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
+        let mut paths = PathCtx::default();
+        let mut crate_seen = false;
+        while !input.is_empty() {
+            // `parse_any`: `crate` is a Rust keyword, which the plain
+            // `Ident` parse rejects.
+            let key: syn::Ident = input.call(syn::ext::IdentExt::parse_any)?;
+            if key != "crate" {
+                return Err(syn::Error::new(
+                    key.span(),
+                    format!("unknown option `{key}`; only `crate` is supported"),
+                ));
+            }
+            if crate_seen {
+                return Err(syn::Error::new(key.span(), "duplicate `crate` option"));
+            }
+            crate_seen = true;
+            input.parse::<syn::Token![=]>()?;
+            let value: syn::LitStr = input.parse()?;
+            let name = value.value();
+            if !is_crate_name(&name) {
+                return Err(syn::Error::new(
+                    value.span(),
+                    format!("invalid crate name `{name}`"),
+                ));
+            }
+            paths = PathCtx::from_attr(&name);
+            if !input.is_empty() {
+                input.parse::<syn::Token![,]>()?;
+            }
+        }
+        Ok(Self { paths })
+    }
+}
+
+/// Resolves the `#[bffi_impl]` attribute options into the path
+/// context. No attribute selects the default direct-dependency roots;
+/// anything unparsable or invalid is the `E006` rejection.
+fn parse_impl_paths(attrs: &TokenStream) -> syn::Result<PathCtx> {
+    if attrs.is_empty() {
+        return Ok(PathCtx::default());
+    }
+    let ImplPaths { paths } = syn::parse2(attrs.clone()).map_err(|_| attr_options(attrs.span()))?;
+    Ok(paths)
 }
 
 /// Parses one `#[bffi_constructor]` fn: no receiver, returns `Self`,

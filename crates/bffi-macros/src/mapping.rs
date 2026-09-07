@@ -60,24 +60,25 @@ mod tests {
 
     #[test]
     fn ts_kind_tokens_quote_the_ir_variant() {
+        let ctx = bffi_macro_support::paths::PathCtx::default();
         assert_eq!(
-            TsKind::Number.tokens().to_string(),
+            TsKind::Number.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: Number"
         );
         assert_eq!(
-            TsKind::Uint8Array.tokens().to_string(),
+            TsKind::Uint8Array.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: Uint8Array"
         );
         assert_eq!(
-            TsKind::NullableString.tokens().to_string(),
+            TsKind::NullableString.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: NullableString"
         );
         assert_eq!(
-            TsKind::NullableUint8Array.tokens().to_string(),
+            TsKind::NullableUint8Array.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: NullableUint8Array"
         );
         assert_eq!(
-            TsKind::Void.tokens().to_string(),
+            TsKind::Void.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: Void"
         );
     }
@@ -288,7 +289,75 @@ mod tests {
         let err = result.err().expect("rejected");
         assert!(
             err.to_string()
-                .starts_with("bffi[E004]: this attribute takes no options")
+                .starts_with("bffi[E004]: unknown option; only `crate = \"...\"` is supported")
+        );
+    }
+
+    #[test]
+    fn no_attribute_selects_the_default_paths() {
+        let item = quote! { fn f(x: u32) -> u32 { x } };
+        let model = FnModel::parse(&proc_macro2::TokenStream::new(), item).expect("accepted");
+        assert_eq!(
+            model.paths.core.to_string(),
+            ":: bffi_core",
+            "no attribute keeps the direct-dependency roots"
+        );
+    }
+
+    #[test]
+    fn crate_option_redirects_the_generated_paths() {
+        let item = quote! { fn f(x: u32) -> u32 { x } };
+        let model = FnModel::parse(&quote! { crate = "bffi" }, item).expect("accepted");
+        assert_eq!(model.paths.core.to_string(), ":: bffi :: core");
+        assert_eq!(model.paths.types.to_string(), ":: bffi :: types");
+        assert_eq!(model.paths.dts.to_string(), ":: bffi :: dts");
+        assert_eq!(model.paths.build.to_string(), ":: bffi :: build");
+    }
+
+    #[test]
+    fn non_literal_crate_value_is_rejected_with_e004() {
+        let item = quote! { fn f(x: u32) {} };
+        let result = FnModel::parse(&quote! { crate = bffi }, item);
+        let err = result.err().expect("rejected");
+        assert!(err.to_string().starts_with("bffi[E004]:"));
+    }
+
+    #[test]
+    fn invalid_crate_name_is_rejected_with_e004() {
+        for name in ["", "1bad", "core", "std", "has space"] {
+            let item = quote! { fn f(x: u32) {} };
+            let src = format!(r#"crate = "{name}""#);
+            let attr: proc_macro2::TokenStream = syn::parse_str(&src).expect("attribute source");
+            let result = FnModel::parse(&attr, item);
+            assert!(result.is_err(), "crate = {name:?} must be rejected");
+            let err = result.err().expect("rejected");
+            assert!(
+                err.to_string().starts_with("bffi[E004]:"),
+                "crate = {name:?} must carry E004"
+            );
+        }
+    }
+
+    #[test]
+    fn duplicate_and_unknown_options_are_rejected_with_e004() {
+        let item = quote! { fn f(x: u32) {} };
+        let result = FnModel::parse(&quote! { crate = "a", crate = "b" }, item);
+        assert!(
+            result
+                .err()
+                .expect("rejected")
+                .to_string()
+                .starts_with("bffi[E004]:")
+        );
+
+        let item = quote! { fn f(x: u32) {} };
+        let result = FnModel::parse(&quote! { crate = "a", rename = "x" }, item);
+        assert!(
+            result
+                .err()
+                .expect("rejected")
+                .to_string()
+                .starts_with("bffi[E004]:")
         );
     }
 }

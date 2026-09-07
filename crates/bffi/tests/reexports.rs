@@ -1,7 +1,8 @@
 //! Compile-level checks of the facade surface: every documented name
-//! is reachable through `bffi::`, the macros resolve through it, and
-//! the zero-copy view types live only behind the unsafe_zero_copy
-//! door.
+//! is reachable through `bffi::`, the macros resolve through it (in
+//! default mode and via the `crate = "bffi"` facade-only mode), the
+//! namespaced modules resolve, and the zero-copy view types live only
+//! behind the unsafe_zero_copy door.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 #![allow(missing_docs)]
 
@@ -122,4 +123,41 @@ fn bffi_attribute_resolves_through_the_facade() {
     let mut out = 0_u32;
     assert_eq!(bffi_facade_probe(1, &mut out), bffi::ErrorCode::Ok);
     assert_eq!(out, 2);
+}
+
+// Facade-only mode: `crate = "bffi"` - the expansion names
+// `::bffi::{core, types, dts, build}`, so the facade alone resolves
+// every generated path.
+#[bffi::bffi(crate = "bffi")]
+fn facade_only_probe(a: u32) -> u32 {
+    a * 3
+}
+
+#[test]
+fn bffi_attribute_crate_option_resolves_through_the_facade() {
+    let mut out = 0_u32;
+    assert_eq!(bffi_facade_only_probe(7, &mut out), bffi::ErrorCode::Ok);
+    assert_eq!(out, 21);
+}
+
+#[test]
+fn namespace_modules_resolve() {
+    let _: bffi::core::ErrorCode = bffi::core::ErrorCode::Ok;
+    let _: bffi::core::Handle = bffi::core::Handle::NULL;
+
+    let copied: bffi::types::CopiedBuf = bffi::types::CopiedBuf::from_slice(b"ns");
+    assert_eq!(copied.as_slice(), b"ns");
+
+    let _: bffi::dts::TsType = bffi::dts::TsType::Number;
+
+    let _: u16 = bffi::object::TAG_MIN;
+    assert!(bffi::object::tag_in_range(bffi::core::TypeTag(
+        bffi::object::TAG_MIN
+    )));
+
+    // The buffer path the facade-mode shims take: store + free.
+    let handle =
+        bffi::build::runtime::store_bytes(bffi::types::CopiedBuf::from_slice(b"roundtrip"))
+            .expect("stored");
+    assert!(bffi::build::runtime::free_buffer(handle));
 }

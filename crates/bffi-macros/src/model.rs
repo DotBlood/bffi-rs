@@ -13,6 +13,7 @@
 use crate::errors::{attr_options, fn_shape, param_pattern};
 use crate::mapping;
 use bffi_macro_support::kind::{RetKind, ShimKind};
+use bffi_macro_support::paths::{PathCtx, is_crate_name};
 use bffi_macro_support::util::extract_docs;
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;
@@ -44,20 +45,22 @@ pub(crate) struct FnModel {
     pub params: Vec<FnParam>,
     /// Validated return type.
     pub ret: RetKind,
+    /// The crate roots the generated code names (default: the direct
+    /// dependencies; `crate = "..."`: the facade namespaces).
+    pub paths: PathCtx,
 }
 
 impl FnModel {
     /// Parses and validates the annotated item against the P1
     /// boundary rules.
     ///
-    /// `attrs` must be empty (the attribute takes no options); `item`
-    /// must be a plain, non-generic, non-async, safe `fn` over the P1
-    /// type set. Rejections are spanned on the offending tokens and
-    /// carry the documented help lines.
+    /// `attrs` may carry at most one `crate = "<name>"` option (the
+    /// facade-only mode); `item` must be a plain, non-generic,
+    /// non-async, safe `fn` over the P1 type set. Rejections are
+    /// spanned on the offending tokens and carry the documented help
+    /// lines.
     pub(crate) fn parse(attrs: &TokenStream, item: TokenStream) -> syn::Result<FnModel> {
-        if !attrs.is_empty() {
-            return Err(attr_options(attrs.span()));
-        }
+        let paths = parse_paths(attrs)?;
         let func: ItemFn = syn::parse2(item)?;
         validate_shape(&func.sig)?;
 
@@ -91,7 +94,55 @@ impl FnModel {
             docs: extract_docs(&func.attrs),
             params,
             ret,
+            paths,
         })
+    }
+}
+
+/// The parsed attribute options of `#[bffi]`: at most one
+/// `crate = "<name>"`.
+struct AttrPaths {
+    crate_name: Option<String>,
+}
+
+impl syn::parse::Parse for AttrPaths {
+    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
+        let mut crate_name: Option<String> = None;
+        while !input.is_empty() {
+            // `parse_any`: `crate` is a Rust keyword, which the plain
+            // `Ident` parse rejects.
+            let key: syn::Ident = input.call(syn::ext::IdentExt::parse_any)?;
+            if key != "crate" {
+                return Err(syn::Error::new(key.span(), "unknown option"));
+            }
+            if crate_name.is_some() {
+                return Err(syn::Error::new(key.span(), "duplicate `crate` option"));
+            }
+            input.parse::<syn::Token![=]>()?;
+            let value: syn::LitStr = input.parse()?;
+            crate_name = Some(value.value());
+            if !input.is_empty() {
+                input.parse::<syn::Token![,]>()?;
+            }
+        }
+        Ok(Self { crate_name })
+    }
+}
+
+/// Resolves the attribute options into the path context: no attribute
+/// selects the default direct-dependency roots; `crate = "<name>"`
+/// redirects every generated path to `::<name>::{core, types, dts,
+/// build}`. Anything else (unknown keys, non-literal or invalid
+/// values, duplicates) is the `E004` rejection.
+fn parse_paths(attrs: &TokenStream) -> syn::Result<PathCtx> {
+    if attrs.is_empty() {
+        return Ok(PathCtx::default());
+    }
+    let AttrPaths { crate_name } =
+        syn::parse2(attrs.clone()).map_err(|_| attr_options(attrs.span()))?;
+    match crate_name {
+        Some(name) if is_crate_name(&name) => Ok(PathCtx::from_attr(&name)),
+        _ => Err(attr_options(attrs.span())),
     }
 }
 

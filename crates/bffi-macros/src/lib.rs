@@ -24,7 +24,8 @@
 //!
 //! ## The contract at a glance
 //!
-//! - **Syntax.** The attribute takes no options; any option is
+//! - **Syntax.** The attribute takes one optional option,
+//!   `crate = "<name>"` (facade-only mode); any other option is
 //!   rejected with `E004`.
 //! - **Expansion.** On a plain `fn add(a: u32, b: u32) -> u32` the
 //!   macro emits the function unchanged, a `bffi_add` C ABI shim, and
@@ -42,9 +43,11 @@
 //!   type), `E003` (return type), `E004` (attribute options), each
 //!   with `help:`/`note:` lines pointing at DESIGN.md.
 //! - **User-crate requirements.** The expansion names `::bffi_core`,
-//!   `::bffi_types`, and `::bffi_dts`, so the user crate must depend
-//!   on them, and function names must be unique - the `no_mangle`
-//!   shims collide at link time otherwise.
+//!   `::bffi_types`, and `::bffi_dts` by default, so the user crate
+//!   must depend on them, and function names must be unique - the
+//!   `no_mangle` shims collide at link time otherwise. With
+//!   `crate = "<name>"` the expansion names `::<name>::{core, types,
+//!   dts, build}` instead (facade-only mode).
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
@@ -63,8 +66,17 @@ use proc_macro::TokenStream;
 ///
 /// # Syntax
 ///
-/// The attribute takes no options - `#[bffi]` exactly. Any option
-/// (`#[bffi(rename = "x")]`, ...) is rejected with `E004`.
+/// The attribute takes at most one option:
+///
+/// - `#[bffi]` - the generated code names the direct dependencies
+///   (`::bffi_core`, `::bffi_types`, `::bffi_dts`, `::bffi_build`),
+///   so the user crate keeps them in its `Cargo.toml`;
+/// - `#[bffi(crate = "bffi")]` - facade-only mode: the generated code
+///   names `::bffi::core`, `::bffi::types`, `::bffi::dts` and
+///   `::bffi::build`, so the `bffi` facade alone suffices.
+///
+/// Any other option (`#[bffi(rename = "x")]`, a non-literal or
+/// invalid `crate` value) is rejected with `E004`.
 ///
 /// # Expansion
 ///
@@ -142,7 +154,7 @@ use proc_macro::TokenStream;
 /// | `E001` | unsupported function shape (async/generic/unsafe/self/variadic/extern/const/non-ident param patterns) |
 /// | `E002` | unsupported parameter type                                       |
 /// | `E003` | unsupported return type                                          |
-/// | `E004` | the attribute takes no options                                   |
+/// | `E004` | unknown option; only `crate = "..."` is supported                |
 ///
 /// Format - `bffi[<code>]: <message>` first line, then `  = help: `
 /// and `  = note: ` lines ending with the DESIGN.md URL:
@@ -162,9 +174,13 @@ use proc_macro::TokenStream;
 ///
 /// # Requirements on the user crate
 ///
-/// - The expansion names `::bffi_core`, `::bffi_types`, and
-///   `::bffi_dts`, so the user crate must depend on `bffi-core`,
-///   `bffi-types`, and `bffi-dts`.
+/// - Default mode: dependencies on `bffi-core`, `bffi-types`, and
+///   `bffi-dts` - the expansion names `::bffi_core`, `::bffi_types`,
+///   and `::bffi_dts` at the call site. Buffer and `Result` returns
+///   additionally name `::bffi_build`.
+/// - Facade-only mode (`#[bffi(crate = "bffi")]`): the `bffi` facade
+///   alone - the expansion names `::bffi::core`, `::bffi::types`,
+///   `::bffi::dts`, and `::bffi::build`, which the facade re-exports.
 /// - Function names must be unique: each shim is `#[unsafe(no_mangle)]`,
 ///   so two `#[bffi]` functions with the same name collide at link
 ///   time as duplicate symbols.

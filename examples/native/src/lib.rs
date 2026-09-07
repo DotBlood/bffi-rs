@@ -10,6 +10,10 @@
 //!   `CopiedBuf` return;
 //! - [`boom`] - the release panic path (debug builds abort by design,
 //!   so the e2e suite only ever loads the release artifact);
+//! - [`facade_probe`] - the facade-only mode: annotated with
+//!   `#[bffi(crate = "bffi")]`, its shim and descriptor resolve
+//!   through the `bffi` facade namespaces while every other function
+//!   here stays in the default direct-dependency mode;
 //! - the verification exports (`mirror_*`, `is_even`,
 //!   `example_callback_*`, `example_js_callback_*`,
 //!   `example_set_js_thread`, `example_loop_*`,
@@ -145,6 +149,16 @@ impl Counter {
 #[allow(clippy::panic)]
 pub fn boom() -> u32 {
     panic!("boom")
+}
+
+/// Facade-only mode probe: `crate = "bffi"` makes the generated shim
+/// and descriptor resolve through the `bffi` facade namespaces
+/// (`::bffi::core`, `::bffi::dts`, ...) instead of the direct
+/// dependencies. The other functions above stay in default mode, so
+/// both modes compile side by side in one crate.
+#[bffi(crate = "bffi")]
+pub fn facade_probe(x: u32) -> u32 {
+    x * 3
 }
 
 // ---------------------------------------------------------------------------

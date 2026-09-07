@@ -15,28 +15,29 @@ use quote::{format_ident, quote};
 /// Renders the descriptor module of a validated model: a documented
 /// `bffi_meta_<name>` module exposing the `FUNCTION` const.
 pub(crate) fn expand(model: &FnModel) -> TokenStream {
+    let dts = &model.paths.dts;
     let module = format_ident!("bffi_meta_{}", model.ident);
     let js_name = model.ident.to_string();
     let export_name = format!("bffi_{js_name}");
     let module_doc = format!(
         "Metadata for the `{js_name}` function descriptor (consumed by bffi-dts / bffi-build)."
     );
-    let const_doc = format!("The [`::bffi_dts::FunctionDef`] descriptor for `{js_name}`.");
+    let const_doc = format!("The [`FunctionDef`] descriptor for `{js_name}`.");
 
     let docs = model.docs.iter().map(|doc| quote! { #doc });
 
     let params = model.params.iter().map(|param| {
         let name = &param.name;
-        let ty = mapping::ts_type(&param.kind).tokens();
-        quote! { ::bffi_dts::ParamDef { name: #name, ty: #ty } }
+        let ty = mapping::ts_type(&param.kind).tokens(&model.paths);
+        quote! { #dts::ParamDef { name: #name, ty: #ty } }
     });
-    let ret = mapping::ts_return(&model.ret).tokens();
+    let ret = mapping::ts_return(&model.ret).tokens(&model.paths);
 
     quote! {
         #[doc = #module_doc]
         pub mod #module {
             #[doc = #const_doc]
-            pub const FUNCTION: ::bffi_dts::FunctionDef = ::bffi_dts::FunctionDef {
+            pub const FUNCTION: #dts::FunctionDef = #dts::FunctionDef {
                 js_name: #js_name,
                 export_name: #export_name,
                 docs: &[#(#docs),*],

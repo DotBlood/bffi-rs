@@ -5,6 +5,9 @@
 //! Test tags (0x0150/0x0151) are unique per class: one binary shares
 //! the process-wide Registry.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
+// The probe namespace modules mirror the facade namespaces; the
+// generated shims carry the docs.
+#![allow(missing_docs)]
 
 use bffi_core::{ErrorCode, Handle, take_last_error};
 
@@ -83,6 +86,56 @@ impl Gate {
     /// Creates a gate.
     pub fn new(open: bool) -> Self {
         Self { open }
+    }
+}
+
+// Facade-only mode without the facade: `crate = "bffi_class_probe"`
+// on BOTH macros makes the generated shims and descriptor resolve
+// through `::bffi_class_probe::{core, types, dts, object, build}`
+// instead of the direct deps. The `extern crate self` alias puts THIS
+// crate into the extern prelude under the probe name, so the absolute
+// paths resolve to the re-export modules below.
+extern crate self as bffi_class_probe;
+
+pub mod core {
+    pub use bffi_core::*;
+}
+pub mod types {
+    pub use bffi_types::*;
+}
+pub mod dts {
+    pub use bffi_dts::*;
+}
+pub mod object {
+    pub use bffi_object::*;
+}
+pub mod build {
+    pub use bffi_build::*;
+}
+
+#[bffi_class::bffi_class(tag = 0x0152, crate = "bffi_class_probe")]
+/// A meter.
+pub struct Meter {
+    /// The level.
+    pub level: u32,
+}
+
+#[bffi_class::bffi_impl(crate = "bffi_class_probe")]
+impl Meter {
+    #[bffi_class::bffi_constructor]
+    /// Creates a meter.
+    pub fn new(level: u32) -> Self {
+        Self { level }
+    }
+
+    /// Doubles the level.
+    pub fn doubled(&self) -> u32 {
+        self.level * 2
+    }
+
+    /// Labels through the buffer path (store_bytes via the probe).
+    pub fn label(&self) -> String {
+        format!("level {}", self.level)
     }
 }
 
@@ -212,4 +265,37 @@ fn constructor_null_out_pointer_is_rejected() {
     assert_eq!(code, ErrorCode::NullPointer);
     let error = take_last_error().expect("null out-pointer must store a last error");
     assert_eq!(error.code, ErrorCode::NullPointer);
+}
+
+#[test]
+fn crate_option_class_lifecycle_runs_through_the_probe_namespaces() {
+    let mut handle = 0_u64;
+    assert_eq!(bffi_meter_new(8, &mut handle), ErrorCode::Ok);
+    assert_ne!(handle, 0);
+
+    let mut level = 0_u32;
+    assert_eq!(bffi_meter_level_get(handle, &mut level), ErrorCode::Ok);
+    assert_eq!(level, 8);
+
+    let mut out = 0_u32;
+    assert_eq!(bffi_meter_doubled(handle, &mut out), ErrorCode::Ok);
+    assert_eq!(out, 16);
+
+    // The buffer path through `bffi_class_probe::build`.
+    let mut label = 0_u64;
+    assert_eq!(bffi_meter_label(handle, &mut label), ErrorCode::Ok);
+    // SAFETY: `buffer_ptr` handed out the pointer to exactly
+    // `buffer_len(label)` owned bytes; the handle is still live.
+    let bytes = unsafe {
+        std::slice::from_raw_parts(
+            bffi_build::runtime::buffer_ptr(bffi_core::Handle::from_raw(label)),
+            bffi_build::runtime::buffer_len(bffi_core::Handle::from_raw(label)) as usize,
+        )
+    };
+    assert_eq!(bytes, b"level 8");
+    assert!(bffi_build::runtime::free_buffer(
+        bffi_core::Handle::from_raw(label)
+    ));
+
+    assert_eq!(bffi_meter_release(handle), ErrorCode::Ok);
 }
