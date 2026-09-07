@@ -26,6 +26,15 @@ impl Wallet {
     pub fn topped(&self, amount: u64) -> u64 {
         self.balance + amount
     }
+
+    /// Finds a note.
+    pub fn find_note(&self, hit: bool) -> Option<String> {
+        if hit {
+            Some(format!("balance {}", self.balance))
+        } else {
+            None
+        }
+    }
 }
 
 #[test]
@@ -52,16 +61,31 @@ fn class_descriptor_matches_the_expected_literal() {
                 docs: &[],
                 ty: TsType::BigInt,
             }],
-            methods: &[MethodDef {
-                js_name: "topped",
-                export_name: "bffi_wallet_topped",
-                docs: &["Adds an amount."],
-                params: &[ParamDef {
-                    name: "amount",
-                    ty: TsType::BigInt,
-                }],
-                ret: TsType::BigInt,
-            }],
+            methods: &[
+                MethodDef {
+                    js_name: "topped",
+                    export_name: "bffi_wallet_topped",
+                    docs: &["Adds an amount."],
+                    params: &[ParamDef {
+                        name: "amount",
+                        ty: TsType::BigInt,
+                    }],
+                    ret: TsType::BigInt,
+                },
+                // `Option` method returns render honest `| null`
+                // types; `docs` contain only the author lines (no
+                // auto-generated notes).
+                MethodDef {
+                    js_name: "find_note",
+                    export_name: "bffi_wallet_find_note",
+                    docs: &["Finds a note."],
+                    params: &[ParamDef {
+                        name: "hit",
+                        ty: TsType::Boolean,
+                    }],
+                    ret: TsType::NullableString,
+                },
+            ],
         }
     );
 }
@@ -80,5 +104,6 @@ fn class_descriptor_renders_through_bffi_dts() {
     assert!(rendered.contains("  constructor(start: bigint);"));
     assert!(rendered.contains("  get balance(): bigint;"));
     assert!(rendered.contains("  topped(amount: bigint): bigint;"));
+    assert!(rendered.contains("  find_note(hit: boolean): string | null;"));
     assert!(rendered.ends_with("}\n"));
 }

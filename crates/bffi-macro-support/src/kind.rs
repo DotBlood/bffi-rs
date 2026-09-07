@@ -99,6 +99,11 @@ pub enum TsKind {
     String,
     /// `Uint8Array`
     Uint8Array,
+    /// `string | null` (`Option<String>` returns).
+    NullableString,
+    /// `Uint8Array | null` (`Option<Vec<u8>>` / `Option<CopiedBuf>`
+    /// returns).
+    NullableUint8Array,
     /// `void`
     Void,
 }
@@ -112,6 +117,8 @@ impl TsKind {
             TsKind::Boolean => quote! { ::bffi_dts::TsType::Boolean },
             TsKind::String => quote! { ::bffi_dts::TsType::String },
             TsKind::Uint8Array => quote! { ::bffi_dts::TsType::Uint8Array },
+            TsKind::NullableString => quote! { ::bffi_dts::TsType::NullableString },
+            TsKind::NullableUint8Array => quote! { ::bffi_dts::TsType::NullableUint8Array },
             TsKind::Void => quote! { ::bffi_dts::TsType::Void },
         }
     }
@@ -130,6 +137,14 @@ mod tests {
         assert_eq!(
             TsKind::Uint8Array.tokens().to_string(),
             ":: bffi_dts :: TsType :: Uint8Array"
+        );
+        assert_eq!(
+            TsKind::NullableString.tokens().to_string(),
+            ":: bffi_dts :: TsType :: NullableString"
+        );
+        assert_eq!(
+            TsKind::NullableUint8Array.tokens().to_string(),
+            ":: bffi_dts :: TsType :: NullableUint8Array"
         );
         assert_eq!(
             TsKind::Void.tokens().to_string(),

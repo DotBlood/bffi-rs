@@ -29,13 +29,29 @@ static ADD_PARAMS: &[ParamDef] = &[
     },
 ];
 
-static MATH_FNS: &[FunctionDef] = &[FunctionDef {
-    js_name: "add",
-    export_name: "bffi_add",
-    docs: &["Adds two numbers."],
-    params: ADD_PARAMS,
-    ret: TsType::Number,
-}];
+static MATH_FNS: &[FunctionDef] = &[
+    FunctionDef {
+        js_name: "add",
+        export_name: "bffi_add",
+        docs: &["Adds two numbers."],
+        params: ADD_PARAMS,
+        ret: TsType::Number,
+    },
+    FunctionDef {
+        js_name: "find_name",
+        export_name: "bffi_find_name",
+        docs: &["Finds a name."],
+        params: &[],
+        ret: TsType::NullableString,
+    },
+    FunctionDef {
+        js_name: "read_payload",
+        export_name: "bffi_read_payload",
+        docs: &["Reads a payload."],
+        params: &[],
+        ret: TsType::NullableUint8Array,
+    },
+];
 
 static MATH: ModuleDef = ModuleDef {
     name: "math",
