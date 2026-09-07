@@ -102,7 +102,7 @@ pub mod handle;
 pub(crate) mod hazard;
 pub mod table;
 
-pub use boundary::{catch_panic, panic_message, run_extern_body};
+pub use boundary::{catch_panic, panic_message, run_extern_body, run_extern_body_or};
 pub use catalog::{Registry, RegistryError};
 pub use error::{BffiError, ErrorCode, set_last_error, take_last_error};
 pub use handle::{Handle, MAX_GENERATION, MAX_INDEX, TypeTag};

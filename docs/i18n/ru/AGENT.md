@@ -208,3 +208,4 @@ chore: pin rust-toolchain to 1.98.0
 | Лицензия      | MIT                                     |
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry` (тег 0x0100-0x01FF); release освобождает слот |
 | Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; wrong-thread - reject |
+| Build ABI | Runtime-экспорты (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в юзер-крейте; теги 0x0400-0x04FF; канонический контракт: bffi-build/CALLING-CONVENTION.md |

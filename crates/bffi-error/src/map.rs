@@ -15,7 +15,8 @@ use crate::js_error::{JsErrorName, JsErrorShape};
 /// - **value out of an allowed range** -> [`JsErrorName::RangeError`]:
 ///   `NumberOutOfRange`, `BufferTooSmall`;
 /// - **everything else** (generic failures, caught panics, stale handles,
-///   exhausted tables) -> [`JsErrorName::Error`].
+///   exhausted tables, unmarshalled wrong-thread calls, domain errors
+///   from `Result` returns) -> [`JsErrorName::Error`].
 #[must_use]
 pub const fn js_error_name(code: ErrorCode) -> JsErrorName {
     match code {
@@ -88,6 +89,8 @@ mod tests {
             (ErrorCode::InvalidArgument, JsErrorName::TypeError),
             (ErrorCode::NumberOutOfRange, JsErrorName::RangeError),
             (ErrorCode::BufferTooSmall, JsErrorName::RangeError),
+            (ErrorCode::WrongThread, JsErrorName::Error),
+            (ErrorCode::DomainError, JsErrorName::Error),
         ];
         for (code, name) in expected {
             assert_eq!(&js_error_name(*code), name, "code {code:?}");

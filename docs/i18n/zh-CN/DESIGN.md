@@ -122,6 +122,7 @@ type Handle = u64;
 | 错误格式         | `BffiError` = 代码 + 消息 + 来源;领域错误通过 `From` 无损转换 |
 | 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`;一个标签对应一个类型(范围 0x0100-0x01FF);release 释放槽位,`Arc` 持有者保持对象存活 |
 | 回调 | 显式 `register`/`revoke`；revoke 后即失效；跨线程调用 - 拒绝（转发 = P2）|
+| 构建 ABI | 运行时导出（`bffi_error_*`、`bffi_buffer`/`bffi_buffer_length` 对、`bffi_types_free`）通过在用户 crate 中展开的 `bffi_runtime_abi!()` 生成；`bffi-build` 拥有标签 0x0400-0x04FF |
 | 边界字符串编码   | UTF-8 为规范编码(`bun:ffi cstring`)                         |
 | 句柄并发         | 无锁;危险指针回收;固定的两层单元页                     |
 | UTF-8 校验       | SIMD(x86 SSSE3,aarch64 NEON);标量 DFA 为参考语义      |

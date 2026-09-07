@@ -122,6 +122,7 @@ Outside only the opaque handle is visible.
 | Error format     | `BffiError` = code + message + source; domain errors convert losslessly via `From` |
 | Object ownership | `ObjectWrap<T>` over the global `Registry`; one tag = one type per process (range 0x0100-0x01FF); release frees the slot, `Arc` holders keep the value alive |
 | Callbacks | Explicit `register`/`revoke`; dead after revoke; wrong-thread reject (marshal = P2) |
+| Build ABI | Runtime exports (`bffi_error_*`, the `bffi_buffer`/`bffi_buffer_length` pair, `bffi_types_free`) via `bffi_runtime_abi!()` expanded in the user crate; `bffi-build` owns tags 0x0400-0x04FF |
 | Boundary string encoding | UTF-8 canonical (`bun:ffi cstring`)                    |
 | Handle concurrency | Lock-free; hazard-pointer reclamation; pinned two-level cell pages |
 | UTF-8 validation | SIMD (x86 SSSE3, aarch64 NEON); scalar DFA is the reference semantics |

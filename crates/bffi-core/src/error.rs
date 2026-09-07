@@ -53,6 +53,12 @@ pub enum ErrorCode {
     BufferTooSmall = 10,
     /// An argument violated its documented contract.
     InvalidArgument = 11,
+    /// A call arrived from a non-JS thread and could not be marshalled
+    /// to it (see `bffi-event-loop`).
+    WrongThread = 12,
+    /// A domain error reported by the native function through the
+    /// `Result` error channel.
+    DomainError = 13,
 }
 
 impl ErrorCode {
@@ -81,6 +87,8 @@ impl ErrorCode {
             9 => Some(Self::NullPointer),
             10 => Some(Self::BufferTooSmall),
             11 => Some(Self::InvalidArgument),
+            12 => Some(Self::WrongThread),
+            13 => Some(Self::DomainError),
             _ => None,
         }
     }
@@ -101,6 +109,8 @@ impl fmt::Display for ErrorCode {
             Self::NullPointer => "unexpected null pointer",
             Self::BufferTooSmall => "output buffer is too small",
             Self::InvalidArgument => "invalid argument",
+            Self::WrongThread => "call from a non-JS thread that could not be marshalled",
+            Self::DomainError => "domain error reported by the native function",
         };
         f.write_str(text)
     }
@@ -245,6 +255,8 @@ mod tests {
             ErrorCode::NullPointer,
             ErrorCode::BufferTooSmall,
             ErrorCode::InvalidArgument,
+            ErrorCode::WrongThread,
+            ErrorCode::DomainError,
         ] {
             assert_eq!(ErrorCode::from_u32(code.as_u32()), Some(code));
         }
