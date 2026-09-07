@@ -7,6 +7,7 @@
 //! typed bridge to the `bffi-dts` IR - its [`TsKind::tokens`] quote
 //! the IR variants directly, no string round-trip.
 
+use crate::paths::PathCtx;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -90,7 +91,8 @@ pub enum RetKind {
 }
 
 /// The TypeScript type of an accepted boundary item, as a
-/// `::bffi_dts::TsType` variant token stream.
+/// `<dts>::TsType` variant token stream (the `dts` root comes from
+/// the [`PathCtx`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TsKind {
     /// `number`
@@ -113,17 +115,19 @@ pub enum TsKind {
 }
 
 impl TsKind {
-    /// The `::bffi_dts::TsType` variant tokens for this kind.
-    pub fn tokens(self) -> TokenStream {
+    /// The `<dts>::TsType` variant tokens for this kind, rooted at
+    /// `ctx`'s `dts` crate path.
+    pub fn tokens(self, ctx: &PathCtx) -> TokenStream {
+        let dts = &ctx.dts;
         match self {
-            TsKind::Number => quote! { ::bffi_dts::TsType::Number },
-            TsKind::BigInt => quote! { ::bffi_dts::TsType::BigInt },
-            TsKind::Boolean => quote! { ::bffi_dts::TsType::Boolean },
-            TsKind::String => quote! { ::bffi_dts::TsType::String },
-            TsKind::Uint8Array => quote! { ::bffi_dts::TsType::Uint8Array },
-            TsKind::NullableString => quote! { ::bffi_dts::TsType::NullableString },
-            TsKind::NullableUint8Array => quote! { ::bffi_dts::TsType::NullableUint8Array },
-            TsKind::Void => quote! { ::bffi_dts::TsType::Void },
+            TsKind::Number => quote! { #dts::TsType::Number },
+            TsKind::BigInt => quote! { #dts::TsType::BigInt },
+            TsKind::Boolean => quote! { #dts::TsType::Boolean },
+            TsKind::String => quote! { #dts::TsType::String },
+            TsKind::Uint8Array => quote! { #dts::TsType::Uint8Array },
+            TsKind::NullableString => quote! { #dts::TsType::NullableString },
+            TsKind::NullableUint8Array => quote! { #dts::TsType::NullableUint8Array },
+            TsKind::Void => quote! { #dts::TsType::Void },
         }
     }
 }
@@ -131,28 +135,43 @@ impl TsKind {
 #[cfg(test)]
 mod tests {
     use super::TsKind;
+    use crate::paths::PathCtx;
 
     #[test]
     fn ts_kind_tokens_quote_the_ir_variant() {
+        let ctx = PathCtx::default();
         assert_eq!(
-            TsKind::Number.tokens().to_string(),
+            TsKind::Number.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: Number"
         );
         assert_eq!(
-            TsKind::Uint8Array.tokens().to_string(),
+            TsKind::Uint8Array.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: Uint8Array"
         );
         assert_eq!(
-            TsKind::NullableString.tokens().to_string(),
+            TsKind::NullableString.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: NullableString"
         );
         assert_eq!(
-            TsKind::NullableUint8Array.tokens().to_string(),
+            TsKind::NullableUint8Array.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: NullableUint8Array"
         );
         assert_eq!(
-            TsKind::Void.tokens().to_string(),
+            TsKind::Void.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: Void"
+        );
+    }
+
+    #[test]
+    fn ts_kind_tokens_follow_the_path_context() {
+        let ctx = PathCtx::from_attr("bffi");
+        assert_eq!(
+            TsKind::Number.tokens(&ctx).to_string(),
+            ":: bffi :: dts :: TsType :: Number"
+        );
+        assert_eq!(
+            TsKind::BigInt.tokens(&ctx).to_string(),
+            ":: bffi :: dts :: TsType :: BigInt"
         );
     }
 }

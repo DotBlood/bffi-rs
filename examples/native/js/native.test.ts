@@ -55,6 +55,11 @@ describe.skipIf(skip)("native artifact (release cdylib)", () => {
     expect(native.checkedDiv(10, 2)).toBe(5);
   });
 
+  test("the facade-only mode shim (crate = bffi) computes through the facade", () => {
+    expect(native.facadeProbe(7)).toBe(21);
+    expect(native.facadeProbe(0)).toBe(0);
+  });
+
   test("checked_div reports Err as a domain JS Error (code 13)", () => {
     try {
       native.checkedDiv(1, 0);

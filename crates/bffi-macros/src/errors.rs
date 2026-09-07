@@ -11,7 +11,7 @@
 //! | `E001` | unsupported function shape (async/generic/unsafe/...)   |
 //! | `E002` | unsupported parameter type                              |
 //! | `E003` | unsupported return type                                 |
-//! | `E004` | unsupported attribute options                           |
+//! | `E004` | unsupported attribute options (only `crate = "..."`)    |
 
 use bffi_macro_support::diagnostics::{DESIGN_NOTE, MacroDiagnostic};
 use proc_macro2::Span;
@@ -89,12 +89,14 @@ pub(crate) fn return_type<T: ToTokens>(span: Span, ty_tokens: &T) -> syn::Error 
     .to_compile_error(span)
 }
 
-/// `E004` - the attribute carries options; none are supported yet.
-/// Anchored at the attribute tokens' span.
+/// `E004` - the attribute carries unsupported options. The only
+/// option is `crate = "<name>"` (facade-only mode); anything else -
+/// an unknown key, a non-literal or invalid `crate` value - lands
+/// here. Anchored at the attribute tokens' span.
 pub(crate) fn attr_options(span: Span) -> syn::Error {
     shape_guidance(MacroDiagnostic::new(
         "E004",
-        "this attribute takes no options",
+        "unknown option; only `crate = \"...\"` is supported",
     ))
     .to_compile_error(span)
 }

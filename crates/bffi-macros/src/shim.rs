@@ -29,6 +29,7 @@ use quote::{format_ident, quote};
 /// (`bffi_<name>`). The caller assembles the full expansion
 /// (original item, shims, descriptor).
 pub(crate) fn expand(model: &FnModel) -> TokenStream {
+    let core = &model.paths.core;
     let shim_ident = format_ident!("bffi_{}", model.ident);
     // The doc attribute keeps the generated symbol usable in crates
     // with the framework's `missing_docs` lint set.
@@ -50,7 +51,7 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
         #[unsafe(no_mangle)]
         #[doc = #shim_doc]
         #[allow(clippy::not_unsafe_ptr_arg_deref)]
-        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> ::bffi_core::ErrorCode {
+        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> #core::ErrorCode {
             #body
         }
     };
@@ -62,8 +63,8 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
         #[unsafe(no_mangle)]
         #[doc = #shim_doc]
         #[allow(clippy::not_unsafe_ptr_arg_deref)]
-        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> ::bffi_core::ErrorCode {
-            ::bffi_core::boundary::run_extern_body(move || { #body })
+        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> #core::ErrorCode {
+            #core::boundary::run_extern_body(move || { #body })
         }
     };
 
@@ -74,22 +75,24 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
 /// validation first, the borrowed-parameter conversion per `&str` /
 /// `&[u8]` parameter, then the call and the out-parameter write.
 fn body(model: &FnModel) -> TokenStream {
+    let core = &model.paths.core;
     let mut body = TokenStream::new();
 
     if has_out(&model.ret) {
         body.extend(quote! {
             if __ret.is_null() {
-                let error = ::bffi_core::BffiError::new(
-                    ::bffi_core::ErrorCode::NullPointer,
+                let error = #core::BffiError::new(
+                    #core::ErrorCode::NullPointer,
                     "output pointer is null",
                 );
-                ::bffi_core::set_last_error(error);
-                return ::bffi_core::ErrorCode::NullPointer;
+                #core::set_last_error(error);
+                return #core::ErrorCode::NullPointer;
             }
         });
     }
 
     body.extend(param_conversions(
+        &model.paths,
         model
             .params
             .iter()
@@ -115,7 +118,7 @@ fn body(model: &FnModel) -> TokenStream {
     });
     let call = quote! { #ident(#(#args,)*) };
 
-    body.extend(ret_body(&model.ret, call));
+    body.extend(ret_body(&model.paths, &model.ret, call));
     body
 }
 

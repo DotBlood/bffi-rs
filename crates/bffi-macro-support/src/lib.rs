@@ -20,17 +20,22 @@
 //!   the boundary kind model ([`kind`]), the `syn::Type`
 //!   classification and the TypeScript kind mapping ([`classify`]),
 //!   the shim transport token generators ([`codegen`]), the
-//!   diagnostic renderer ([`diagnostics`]) and the small parse
-//!   helpers ([`util`]).
+//!   configurable crate-root paths ([`paths`]), the diagnostic
+//!   renderer ([`diagnostics`]) and the small parse helpers
+//!   ([`util`]).
 //!
 //! Classifiers reject neutrally: they return a
 //! [`classify::Unsupported`] (span plus the offending type) and each
 //! consumer renders its own diagnostic text from it, keeping the
 //! published error messages byte-identical.
 //!
-//! The generated tokens name `::bffi_core`, `::bffi_types`,
-//! `::bffi_dts` and `::bffi_build` by absolute path: the expansion
-//! lands in the user crate, which depends on them.
+//! The generated tokens name the runtime crates through a
+//! [`paths::PathCtx`]: the default is the absolute direct-dependency
+//! paths (`::bffi_core`, `::bffi_types`, `::bffi_dts`,
+//! `::bffi_object`, `::bffi_build`); the `crate = "<name>"` option
+//! redirects them to `::<name>::{core, types, dts, object, build}`
+//! for facade-only mode. The expansion lands in the user crate,
+//! which must provide whichever roots are named.
 
 // The workspace restriction lints (expect/unwrap/panic) target production
 // code; tests assert invariants and intentionally trigger panics.
@@ -40,4 +45,5 @@ pub mod classify;
 pub mod codegen;
 pub mod diagnostics;
 pub mod kind;
+pub mod paths;
 pub mod util;

@@ -4,11 +4,14 @@
 //! consumers: the out-parameter plumbing, the return-transport tail,
 //! the borrowed-parameter conversions (`&str` cstrings, `&[u8]`
 //! ptr+len views), and the small Rust-type renderers. The generated
-//! code names `::bffi_core`, `::bffi_types` and `::bffi_build` by
-//! absolute path - the expansion lands in the user crate, which
-//! depends on them.
+//! code names the runtime crates through a
+//! [`PathCtx`](crate::paths::PathCtx): the default context emits the
+//! direct-dependency absolute paths (`::bffi_core`, `::bffi_types`,
+//! `::bffi_build`), the `crate = "..."` context emits the facade
+//! namespaces.
 
 use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
+use crate::paths::PathCtx;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
@@ -73,31 +76,32 @@ pub fn has_out(ret: &RetKind) -> bool {
 
 /// Generates the return-transport tail from the call expression: the
 /// final expression of the shim body, an `ErrorCode`.
-pub fn ret_body(ret: &RetKind, call: TokenStream) -> TokenStream {
+pub fn ret_body(ctx: &PathCtx, ret: &RetKind, call: TokenStream) -> TokenStream {
+    let core = &ctx.core;
     match ret {
         RetKind::Unit => quote! {
             #call;
-            ::bffi_core::ErrorCode::Ok
+            #core::ErrorCode::Ok
         },
         RetKind::Result(inner) => {
-            let ok_tail = value_tail(inner);
+            let ok_tail = value_tail(ctx, inner);
             quote! {
                 match #call {
                     ::std::result::Result::Ok(__value) => { #ok_tail }
                     ::std::result::Result::Err(__err) => {
                         let __msg = ::std::string::ToString::to_string(&__err);
-                        ::bffi_core::set_last_error(::bffi_core::BffiError::with_source(
-                            ::bffi_core::ErrorCode::DomainError,
+                        #core::set_last_error(#core::BffiError::with_source(
+                            #core::ErrorCode::DomainError,
                             __msg,
                             ::std::boxed::Box::new(__err),
                         ));
-                        ::bffi_core::ErrorCode::DomainError
+                        #core::ErrorCode::DomainError
                     }
                 }
             }
         }
         other => {
-            let tail = value_tail(other);
+            let tail = value_tail(ctx, other);
             quote! {
                 let __value = #call;
                 #tail
@@ -108,35 +112,37 @@ pub fn ret_body(ret: &RetKind, call: TokenStream) -> TokenStream {
 
 /// Consumes an already-bound `__value` and yields the transport tail
 /// for `ret`'s shape.
-pub fn value_tail(ret: &RetKind) -> TokenStream {
+pub fn value_tail(ctx: &PathCtx, ret: &RetKind) -> TokenStream {
+    let core = &ctx.core;
     match ret {
-        RetKind::Unit => quote! { ::bffi_core::ErrorCode::Ok },
+        RetKind::Unit => quote! { #core::ErrorCode::Ok },
         RetKind::Prim(_) | RetKind::BigInt(_) => quote! {
             // SAFETY: `__ret` is non-null (checked above) and valid for one
             // `T` write per the bun:ffi out-parameter contract.
             unsafe { ::std::ptr::write(__ret, __value); }
-            ::bffi_core::ErrorCode::Ok
+            #core::ErrorCode::Ok
         },
         RetKind::Buffer(ty) => {
-            let conv = buffer_conv(*ty);
+            let conv = buffer_conv(ctx, *ty);
+            let build = &ctx.build;
             quote! {
                 #conv
-                match ::bffi_build::runtime::store_bytes(__bytes) {
+                match #build::runtime::store_bytes(__bytes) {
                     ::std::result::Result::Ok(__handle) => {
                         // SAFETY: `__ret` is non-null (checked above) and valid
                         // for one `u64` write per the bun:ffi out-parameter contract.
                         unsafe { ::std::ptr::write(__ret, __handle.as_u64()); }
-                        ::bffi_core::ErrorCode::Ok
+                        #core::ErrorCode::Ok
                     }
                     ::std::result::Result::Err(__e) => {
-                        ::bffi_core::set_last_error(::bffi_core::BffiError::from(__e));
-                        ::bffi_core::ErrorCode::TableFull
+                        #core::set_last_error(#core::BffiError::from(__e));
+                        #core::ErrorCode::TableFull
                     }
                 }
             }
         }
         RetKind::Nullable(ty) => {
-            let some_tail = value_tail(&RetKind::Buffer(*ty));
+            let some_tail = value_tail(ctx, &RetKind::Buffer(*ty));
             quote! {
                 match __value {
                     ::std::option::Option::Some(__value) => { #some_tail }
@@ -144,24 +150,25 @@ pub fn value_tail(ret: &RetKind) -> TokenStream {
                         // SAFETY: `__ret` is non-null (checked above) and valid for
                         // one `u64` write; `0` is the documented null handle.
                         unsafe { ::std::ptr::write(__ret, 0_u64); }
-                        ::bffi_core::ErrorCode::Ok
+                        #core::ErrorCode::Ok
                     }
                 }
             }
         }
         // Unreachable: `ret_body` unwraps `Result` first.
-        RetKind::Result(_) => quote! { ::bffi_core::ErrorCode::Ok },
+        RetKind::Result(_) => quote! { #core::ErrorCode::Ok },
     }
 }
 
 /// Converts a bound `__value` into `__bytes: CopiedBuf`.
-pub fn buffer_conv(ty: BufferTy) -> TokenStream {
+pub fn buffer_conv(ctx: &PathCtx, ty: BufferTy) -> TokenStream {
+    let types = &ctx.types;
     match ty {
         BufferTy::String => quote! {
-            let __bytes = ::bffi_types::CopiedBuf::from_vec(__value.into_bytes());
+            let __bytes = #types::CopiedBuf::from_vec(__value.into_bytes());
         },
         BufferTy::ByteVec => quote! {
-            let __bytes = ::bffi_types::CopiedBuf::from_vec(__value);
+            let __bytes = #types::CopiedBuf::from_vec(__value);
         },
         BufferTy::CopiedBuf => quote! {
             let __bytes = __value;
@@ -172,10 +179,12 @@ pub fn buffer_conv(ty: BufferTy) -> TokenStream {
 /// The borrowed-parameter conversion preamble: one null-checked
 /// conversion block per `&str` (cstring -> UTF-8 view) or `&[u8]`
 /// (ptr+len -> byte view) parameter, in order.
-pub fn param_conversions<'a, I>(params: I) -> TokenStream
+pub fn param_conversions<'a, I>(ctx: &PathCtx, params: I) -> TokenStream
 where
     I: IntoIterator<Item = (&'a str, ShimKind)>,
 {
+    let core = &ctx.core;
+    let types = &ctx.types;
     let mut body = TokenStream::new();
     for (index, (name, kind)) in params.into_iter().enumerate() {
         let name = param_ident(name, index);
@@ -186,21 +195,21 @@ where
                 let view = format_ident!("{name}_view");
                 body.extend(quote! {
                     if #ptr.is_null() {
-                        let error = ::bffi_core::BffiError::new(
-                            ::bffi_core::ErrorCode::NullPointer,
+                        let error = #core::BffiError::new(
+                            #core::ErrorCode::NullPointer,
                             "string argument pointer is null",
                         );
-                        ::bffi_core::set_last_error(error);
-                        return ::bffi_core::ErrorCode::NullPointer;
+                        #core::set_last_error(error);
+                        return #core::ErrorCode::NullPointer;
                     }
                     // SAFETY: bun:ffi hands out NUL-terminated cstrings for `&str`
                     // parameters (DESIGN.md §6.3); the pointer is null-checked above.
                     let #bytes = unsafe { ::std::ffi::CStr::from_ptr(#ptr) }.to_bytes();
-                    let #view = match ::bffi_types::unsafe_zero_copy::str_view(#bytes) {
+                    let #view = match #types::unsafe_zero_copy::str_view(#bytes) {
                         ::std::result::Result::Ok(v) => v,
                         ::std::result::Result::Err(e) => {
-                            ::bffi_core::set_last_error(e);
-                            return ::bffi_core::ErrorCode::InvalidUtf8;
+                            #core::set_last_error(e);
+                            return #core::ErrorCode::InvalidUtf8;
                         }
                     };
                 });
@@ -211,12 +220,12 @@ where
                 let view = format_ident!("{name}_view");
                 body.extend(quote! {
                     if #len > 0_u64 && #ptr.is_null() {
-                        let error = ::bffi_core::BffiError::new(
-                            ::bffi_core::ErrorCode::NullPointer,
+                        let error = #core::BffiError::new(
+                            #core::ErrorCode::NullPointer,
                             "buffer argument pointer is null",
                         );
-                        ::bffi_core::set_last_error(error);
-                        return ::bffi_core::ErrorCode::NullPointer;
+                        #core::set_last_error(error);
+                        return #core::ErrorCode::NullPointer;
                     }
                     // SAFETY: bun:ffi keeps the TypedArray pointer valid
                     // for the duration of the call (CALLING-CONVENTION.md
@@ -226,9 +235,9 @@ where
                     // pointer is non-null (checked above) and valid for
                     // exactly `len` bytes.
                     let #view = if #len == 0_u64 {
-                        ::bffi_types::buf_view(&[])
+                        #types::buf_view(&[])
                     } else {
-                        ::bffi_types::buf_view(unsafe {
+                        #types::buf_view(unsafe {
                             ::std::slice::from_raw_parts(#ptr, #len as usize)
                         })
                     };
@@ -280,6 +289,7 @@ mod tests {
         ret_body, shim_param, value_tail,
     };
     use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
+    use crate::paths::PathCtx;
     use quote::quote;
 
     #[test]
@@ -338,24 +348,29 @@ mod tests {
     #[test]
     fn unit_ret_body_evaluates_and_returns_ok() {
         let call = quote! { touch(7) };
-        let tokens = ret_body(&RetKind::Unit, call).to_string();
+        let tokens = ret_body(&PathCtx::default(), &RetKind::Unit, call).to_string();
         assert!(tokens.contains("touch (7)"));
         assert!(tokens.contains("ErrorCode :: Ok"));
     }
 
     #[test]
     fn result_ret_body_maps_err_to_the_domain_error_channel() {
-        let tokens = ret_body(&RetKind::Result(Box::new(RetKind::Unit)), quote! { f() });
-        let text = tokens.to_string();
-        assert!(text.contains("Result :: Ok"));
-        assert!(text.contains("Result :: Err"));
-        assert!(text.contains("DomainError"));
-        assert!(text.contains("with_source"));
+        let tokens = ret_body(
+            &PathCtx::default(),
+            &RetKind::Result(Box::new(RetKind::Unit)),
+            quote! { f() },
+        )
+        .to_string();
+        assert!(tokens.contains("Result :: Ok"));
+        assert!(tokens.contains("Result :: Err"));
+        assert!(tokens.contains("DomainError"));
+        assert!(tokens.contains("with_source"));
     }
 
     #[test]
     fn nullable_none_tail_writes_the_zero_handle() {
-        let tokens = value_tail(&RetKind::Nullable(BufferTy::String)).to_string();
+        let tokens =
+            value_tail(&PathCtx::default(), &RetKind::Nullable(BufferTy::String)).to_string();
         assert!(tokens.contains("Option :: Some"));
         assert!(tokens.contains("Option :: None"));
         assert!(tokens.contains("0_u64"));
@@ -363,29 +378,51 @@ mod tests {
 
     #[test]
     fn buffer_conv_walks_the_payloads() {
+        let ctx = PathCtx::default();
         assert!(
-            buffer_conv(BufferTy::String)
+            buffer_conv(&ctx, BufferTy::String)
                 .to_string()
                 .contains("into_bytes")
         );
         assert!(
-            buffer_conv(BufferTy::ByteVec)
+            buffer_conv(&ctx, BufferTy::ByteVec)
                 .to_string()
                 .contains("from_vec")
         );
         assert_eq!(
-            buffer_conv(BufferTy::CopiedBuf).to_string(),
+            buffer_conv(&ctx, BufferTy::CopiedBuf).to_string(),
             quote! { let __bytes = __value ; }.to_string()
         );
     }
 
     #[test]
+    fn default_context_emits_the_direct_dependency_paths() {
+        let tokens =
+            value_tail(&PathCtx::default(), &RetKind::Buffer(BufferTy::ByteVec)).to_string();
+        assert!(tokens.contains(":: bffi_build :: runtime :: store_bytes"));
+        assert!(tokens.contains(":: bffi_types :: CopiedBuf :: from_vec"));
+        assert!(tokens.contains(":: bffi_core :: ErrorCode :: TableFull"));
+    }
+
+    #[test]
+    fn facade_context_emits_the_namespaced_paths() {
+        let ctx = PathCtx::from_attr("bffi");
+        let tokens = value_tail(&ctx, &RetKind::Buffer(BufferTy::ByteVec)).to_string();
+        assert!(tokens.contains(":: bffi :: build :: runtime :: store_bytes"));
+        assert!(tokens.contains(":: bffi :: types :: CopiedBuf :: from_vec"));
+        assert!(tokens.contains(":: bffi :: core :: ErrorCode :: TableFull"));
+    }
+
+    #[test]
     fn param_conversions_skip_non_borrowed_params_in_order() {
-        let tokens = param_conversions([
-            ("a", ShimKind::Prim(PrimTy::U32)),
-            ("b", ShimKind::Str),
-            ("c", ShimKind::BigInt(BigIntTy::U64)),
-        ])
+        let tokens = param_conversions(
+            &PathCtx::default(),
+            [
+                ("a", ShimKind::Prim(PrimTy::U32)),
+                ("b", ShimKind::Str),
+                ("c", ShimKind::BigInt(BigIntTy::U64)),
+            ],
+        )
         .to_string();
         assert!(tokens.contains("b_ptr"));
         assert!(tokens.contains("b_view"));
@@ -404,7 +441,8 @@ mod tests {
 
     #[test]
     fn buffer_view_conversion_null_checks_and_builds_the_view() {
-        let tokens = param_conversions([("data", ShimKind::BufferView)]).to_string();
+        let tokens =
+            param_conversions(&PathCtx::default(), [("data", ShimKind::BufferView)]).to_string();
         assert!(tokens.contains("data_len > 0_u64 && data_ptr . is_null ()"));
         assert!(tokens.contains("buffer argument pointer is null"));
         assert!(tokens.contains("NullPointer"));

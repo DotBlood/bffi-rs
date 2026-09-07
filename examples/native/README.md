@@ -19,6 +19,7 @@ tsc) with Bun 1.4.
 | `bffi_greet(name)` / `bffi_greet_len()`     | the cstring (`&str`) parameter path        |
 | `bffi_echo_buffer(ptr, len, __ret)`         | the borrowed `&[u8]` parameter path (real `#[bffi]` shim, `(ptr, len)` pair) |
 | `bffi_boom()`                               | the release panic path (`ErrorCode::Panic`) |
+| `bffi_facade_probe(x, __ret)`               | facade-only mode (`#[bffi(crate = "bffi")]`): the shim/descriptor resolve through the `bffi` namespaces, ABI unchanged |
 | `bffi_mirror_i64` / `bffi_mirror_u64` / `bffi_is_even` | bigint + bool paths of the P1 type matrix |
 | `example_callback_register` / `_invoke` / `_invoke_mismatched` / `_revoke` | JS -> Rust callback lifecycle (register/invoke/revoke, signature mismatch, terminal revocation) |
 | `example_js_callback_bind` / `_get` / `_revoke` | Rust -> JS callback ownership (pointer roundtrip) |

@@ -11,7 +11,7 @@
 //! | Code   | Meaning                                                  |
 //! |--------|----------------------------------------------------------|
 //! | `E005` | unsupported class shape (not a named struct / generic)   |
-//! | `E006` | bad or missing `tag = ...`                               |
+//! | `E006` | bad attribute arguments (tag, crate option)              |
 //! | `E007` | unsupported method/field shape (`&mut self`, async, ...) |
 //! | `E008` | impl binding problems (constructor count/shape)          |
 
@@ -39,13 +39,28 @@ pub(crate) fn class_shape(span: Span, what: &str) -> syn::Error {
 }
 
 /// `E006` - the `tag = ...` attribute argument is missing, not a
-/// literal, or outside `0x0100..=0x01FF`.
+/// literal, or outside `0x0100..=0x01FF`. The `crate = "..."` option
+/// problems on `#[bffi_class]` funnel through here too (the parse
+/// errors carry the specifics).
 pub(crate) fn tag(span: Span, what: impl Into<String>) -> syn::Error {
     MacroDiagnostic::new("E006", format!("invalid class tag: {}", what.into()))
         .with_help("use `#[bffi_class(tag = 0x0142)]` with a literal in 0x0100..=0x01FF (bffi-object range)")
         .with_note("one tag = one type per process (bffi-object/Registry)")
         .with_note(DESIGN_NOTE)
         .to_compile_error(span)
+}
+
+/// `E006` - the attribute carries unsupported options. The only
+/// option besides `tag` is `crate = "<name>"` (facade-only mode).
+/// Anchored at the attribute tokens' span.
+pub(crate) fn attr_options(span: Span) -> syn::Error {
+    MacroDiagnostic::new(
+        "E006",
+        "unknown option; only `crate = \"...\"` is supported",
+    )
+    .with_help("use `#[bffi_impl]` or `#[bffi_impl(crate = \"bffi\")]`")
+    .with_note(DESIGN_NOTE)
+    .to_compile_error(span)
 }
 
 /// `E007` - a method or field outside the accepted matrix. `what`

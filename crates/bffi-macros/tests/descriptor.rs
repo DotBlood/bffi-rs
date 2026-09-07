@@ -4,6 +4,9 @@
 //! through `bffi-dts` into the expected TypeScript declarations.
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
+// The probe namespace modules mirror the facade namespaces; the
+// generated descriptors carry the docs.
+#![allow(missing_docs)]
 
 use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType};
 
@@ -41,6 +44,33 @@ fn find_name(hit: bool) -> Option<String> {
 /// Sums the bytes.
 fn byte_sum(data: &[u8]) -> u32 {
     data.iter().map(|byte| u32::from(*byte)).sum()
+}
+
+// Facade-only mode without the facade: `crate = "bffi_macros_probe"`
+// makes the generated shim and descriptor resolve through
+// `::bffi_macros_probe::{core, types, dts, build}`; the descriptor
+// VALUES are unaffected by the crate option. The `extern crate self`
+// alias puts THIS crate into the extern prelude under the probe name,
+// so the absolute paths resolve to the re-export modules below.
+extern crate self as bffi_macros_probe;
+
+pub mod core {
+    pub use bffi_core::*;
+}
+pub mod types {
+    pub use bffi_types::*;
+}
+pub mod dts {
+    pub use bffi_dts::*;
+}
+pub mod build {
+    pub use bffi_build::*;
+}
+
+#[bffi_macros::bffi(crate = "bffi_macros_probe")]
+/// Doubles through the probe namespaces.
+fn doubled(x: u32) -> u32 {
+    x * 2
 }
 
 #[test]
@@ -134,6 +164,23 @@ fn descriptor_matches_the_expected_literal() {
 }
 
 #[test]
+fn crate_option_descriptor_values_are_unaffected() {
+    assert_eq!(
+        bffi_meta_doubled::FUNCTION,
+        FunctionDef {
+            js_name: "doubled",
+            export_name: "bffi_doubled",
+            docs: &["Doubles through the probe namespaces."],
+            params: &[ParamDef {
+                name: "x",
+                ty: TsType::Number
+            }],
+            ret: TsType::Number,
+        }
+    );
+}
+
+#[test]
 fn descriptors_render_through_bffi_dts() {
     static FNS: &[FunctionDef] = &[
         bffi_meta_add::FUNCTION,
@@ -142,6 +189,7 @@ fn descriptors_render_through_bffi_dts() {
         bffi_meta_payload::FUNCTION,
         bffi_meta_find_name::FUNCTION,
         bffi_meta_byte_sum::FUNCTION,
+        bffi_meta_doubled::FUNCTION,
     ];
     let module = ModuleDef {
         name: "math",
@@ -156,4 +204,5 @@ fn descriptors_render_through_bffi_dts() {
     assert!(rendered.contains("export function payload(): Uint8Array | null;"));
     assert!(rendered.contains("export function find_name(hit: boolean): string | null;"));
     assert!(rendered.contains("export function byte_sum(data: Uint8Array): number;"));
+    assert!(rendered.contains("export function doubled(x: number): number;"));
 }

@@ -7,7 +7,7 @@
 //! `bffi-object` and `bffi-dts`).
 //!
 //! - `#[bffi_class(tag = 0x01xx)]` on a named struct claims the tag
-//!   through [`::bffi_object::ObjectWrap`] (0x0100-0x01FF), emits the
+//!   through the `bffi-object` `ObjectWrap` (0x0100-0x01FF), emits the
 //!   `bffi_<name>_release` export (the destructor), read-only getters
 //!   for `pub` primitive fields, and the `bffi_meta_<name>::{TAG,
 //!   DOCS, FIELDS}` metadata;
@@ -19,6 +19,12 @@
 //!
 //! The two expansions cannot write into one module, so the metadata
 //! is split; see the README for the aggregation pattern.
+//!
+//! Both `#[bffi_class]` and `#[bffi_impl]` accept one optional
+//! `crate = "<name>"` option (facade-only mode): the generated paths
+//! then resolve through `::<name>::{core, types, dts, object, build}`
+//! instead of the direct dependencies. Use the same value on both
+//! macros of one class.
 //!
 //! ```ignore
 //! // documentation-only snippet: attribute macros cannot run in doctests
@@ -53,8 +59,11 @@ use quote::quote;
 ///
 /// Syntax: `#[bffi_class(tag = 0x01xx)]` with a literal tag in the
 /// bffi-object range (`0x0100..=0x01FF`); one tag = one type per
-/// process. Only `pub` primitive-typed fields are exported, as
-/// read-only getters (`Arc<T>` ownership has no safe setter).
+/// process. An optional `crate = "<name>"` switches the generated
+/// paths to the facade namespaces (facade-only mode); no other
+/// option is accepted. Only `pub` primitive-typed fields are
+/// exported, as read-only getters (`Arc<T>` ownership has no safe
+/// setter).
 ///
 /// Expands to: the struct unchanged, the `ObjectWrap` accessor, the
 /// `bffi_<name>_release` destructor export, the field getters, and the
@@ -81,12 +90,15 @@ pub fn bffi_class(attrs: TokenStream, item: TokenStream) -> TokenStream {
 /// Exactly one `#[bffi_constructor] pub fn new(...) -> Self` is
 /// required; every other `fn` must take `&self` (methods with `&mut
 /// self`/`self` cannot be served through the `Arc<T>` ownership
-/// model).
+/// model). An optional `crate = "<name>"` switches the generated
+/// paths to the facade namespaces (facade-only mode) - use the same
+/// value as on the matching `#[bffi_class]`.
 #[proc_macro_attribute]
-pub fn bffi_impl(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+pub fn bffi_impl(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    let attrs = proc_macro2::TokenStream::from(attrs);
     let item = proc_macro2::TokenStream::from(item);
     let item2 = item.clone();
-    match model::ImplModel::parse(item) {
+    match model::ImplModel::parse(&attrs, item) {
         Ok(model) => {
             let shims = shim::impl_shims(&model);
             let meta = meta::impl_meta(&model);

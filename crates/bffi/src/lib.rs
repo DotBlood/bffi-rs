@@ -17,16 +17,27 @@
 //! | dts | the full IR + `render` + `sanitize` |
 //! | macros | `#[bffi]`, `#[bffi_class]`, `#[bffi_impl]`, `#[bffi_constructor]`, `bffi_runtime_abi!` |
 //! | event loop | `enqueue`/`marshal`/`run`/`stop`/`pump` |
+//! | namespaces | [`core`], [`types`], [`dts`], [`object`], [`build`] - the 1:1 re-export modules the `crate = "bffi"` macros emit |
 //!
-//! ## Macros keep their absolute paths
+//! ## Macros: two modes
 //!
-//! The generated code of `#[bffi]` / `#[bffi_class]` /
-//! `bffi_runtime_abi!` names `::bffi_core`, `::bffi_types`,
-//! `::bffi_dts`, `::bffi_object` and `::bffi_build` - absolute paths
-//! resolve through the DIRECT dependencies of the user crate, which a
-//! re-export cannot provide. When you use the macros, keep those
-//! crates in your `Cargo.toml`; the facade is the runtime umbrella
-//! (see the example below).
+//! The generated code of `#[bffi]` / `#[bffi_class]` names runtime
+//! crates by absolute path, which resolve through the DIRECT
+//! dependencies of the user crate:
+//!
+//! - **Default mode** - the expansion names `::bffi_core`,
+//!   `::bffi_types`, `::bffi_dts`, `::bffi_object` and
+//!   `::bffi_build`; keep those crates in your `Cargo.toml` (the
+//!   flat re-exports below are still the runtime umbrella).
+//! - **Facade-only mode** - annotate with `#[bffi(crate = "bffi")]`
+//!   (and `#[bffi_class(tag = ..., crate = "bffi")]` /
+//!   `#[bffi_impl(crate = "bffi")]` for classes): the expansion names
+//!   `::bffi::core`, `::bffi::types`, `::bffi::dts`, `::bffi::object`
+//!   and `::bffi::build` - the namespaces re-exported below - so the
+//!   `bffi` facade alone suffices.
+//!
+//! Note that `bffi_runtime_abi!` keeps its `$crate`-relative paths in
+//! `bffi-build` and always needs that crate as a direct dependency.
 //!
 //! ## Example
 //!
@@ -104,4 +115,48 @@ pub mod unsafe_zero_copy {
     // (`str_view`/`buf_view`) are also available at the facade root
     // alongside the copying converters.
     pub use bffi_types::unsafe_zero_copy::{ZeroCopyBuf, ZeroCopyStr};
+}
+
+/// Namespaced re-export of [`bffi-core`]: `bffi::core::*` mirrors
+/// `bffi_core::*` 1:1. These are the paths the `crate = "bffi"`
+/// macros emit for the core roots (`::bffi::core::ErrorCode`, ...).
+///
+/// [`bffi-core`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core
+pub mod core {
+    pub use bffi_core::*;
+}
+
+/// Namespaced re-export of [`bffi-types`]: `bffi::types::*` mirrors
+/// `bffi_types::*` 1:1, including `unsafe_zero_copy`.
+///
+/// [`bffi-types`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-types
+pub mod types {
+    pub use bffi_types::*;
+}
+
+/// Namespaced re-export of [`bffi-dts`]: `bffi::dts::*` mirrors
+/// `bffi_dts::*` 1:1. The descriptor consts the macros emit resolve
+/// here in facade-only mode (`::bffi::dts::FunctionDef`, ...).
+///
+/// [`bffi-dts`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-dts
+pub mod dts {
+    pub use bffi_dts::*;
+}
+
+/// Namespaced re-export of [`bffi-object`]: `bffi::object::*` mirrors
+/// `bffi_object::*` 1:1. The class shims resolve here in facade-only
+/// mode (`::bffi::object::ObjectWrap`, ...).
+///
+/// [`bffi-object`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-object
+pub mod object {
+    pub use bffi_object::*;
+}
+
+/// Namespaced re-export of [`bffi-build`]: `bffi::build::*` mirrors
+/// `bffi_build::*` 1:1. The buffer-return shims resolve here in
+/// facade-only mode (`::bffi::build::runtime::store_bytes`, ...).
+///
+/// [`bffi-build`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build
+pub mod build {
+    pub use bffi_build::*;
 }

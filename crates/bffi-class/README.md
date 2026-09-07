@@ -41,6 +41,22 @@ impl Counter {
 }
 ```
 
+Both `#[bffi_class]` and `#[bffi_impl]` accept one optional
+`crate = "<name>"` option (facade-only mode): the generated paths then
+resolve through `::<name>::{core, types, dts, object, build}` - the
+re-export namespaces of the
+[`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+facade - instead of the direct dependencies. Use the same value on
+both macros of one class; anything else besides `tag` is rejected.
+
+```rust
+#[bffi_class(tag = 0x0142, crate = "bffi")]
+pub struct FacadeCounter { pub value: u32 }
+
+#[bffi_impl(crate = "bffi")]
+impl FacadeCounter { /* ... */ }
+```
+
 The generated C ABI surface:
 
 | Symbol | Role |
@@ -90,7 +106,7 @@ let module = bffi_dts::ModuleDef { name: "app", fns: &[], classes: CLASSES };
 | Code   | Meaning                                            |
 | ------ | -------------------------------------------------- |
 | `E005` | unsupported class shape (not a named struct/generic) |
-| `E006` | bad or missing `tag = ...`                         |
+| `E006` | bad attribute arguments (`tag`, `crate` option)    |
 | `E007` | unsupported method/field shape or type             |
 | `E008` | impl binding problems (constructor count/shape)    |
 
@@ -119,10 +135,15 @@ wrong-tag / forged generation), buffer and `Result` returns.
 
 ## Requirements on the user crate
 
-- Dependencies on `bffi-core`, `bffi-object`, `bffi-types`, `bffi-dts`
-  (and `bffi-build` for buffer/`Result` returns): the expansion names
-  `::bffi_core`, `::bffi_object`, `::bffi_types`, `::bffi_dts`,
-  `::bffi_build` at the call site.
+- Default mode: dependencies on `bffi-core`, `bffi-object`,
+  `bffi-types`, `bffi-dts` (and `bffi-build` for buffer/`Result`
+  returns): the expansion names `::bffi_core`, `::bffi_object`,
+  `::bffi_types`, `::bffi_dts`, `::bffi_build` at the call site.
+- Facade-only mode (`crate = "bffi"` on both `#[bffi_class]` and
+  `#[bffi_impl]`): the
+  [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  facade alone - the expansion names `::bffi::core`, `::bffi::object`,
+  `::bffi::types`, `::bffi::dts`, `::bffi::build`.
 - Rust **edition 2024** (`#[unsafe(no_mangle)]` shims).
 
 ## Requirements

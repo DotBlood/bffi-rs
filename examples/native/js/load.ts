@@ -67,6 +67,9 @@ const DECLARATIONS = {
   // #[bffi] borrowed `&[u8]` parameter: a (ptr, len) pair where the
   // pointer is null when the buffer is empty.
   bffi_echo_buffer: { args: ["ptr", "u64", "pointer"], returns: "u32" },
+  // #[bffi(crate = "bffi")] facade-only mode probe: the shim resolves
+  // through the bffi facade namespaces, the ABI is unchanged.
+  bffi_facade_probe: { args: ["u32", "pointer"], returns: "u32" },
   // #[bffi] verification exports (P1 type matrix)
   bffi_mirror_i64: { args: ["i64", "pointer"], returns: "u32" },
   bffi_mirror_u64: { args: ["u64", "pointer"], returns: "u32" },
@@ -259,6 +262,16 @@ export const native = {
       throw takeError() ?? new Error(`bffi_is_even failed: ${status}`);
     }
     return (out[0] ?? 0) !== 0;
+  },
+  /** Triples through the facade-only mode shim (`crate = "bffi"`):
+   * same ABI, the generated paths resolve via the facade. */
+  facadeProbe(x: number): number {
+    const out = new Uint32Array(1);
+    const status = lib().bffi_facade_probe(x, out);
+    if (status !== ErrorCode.Ok) {
+      throw takeError() ?? new Error(`bffi_facade_probe failed: ${status}`);
+    }
+    return out[0] ?? 0;
   },
   /** Deliberately passes a null out-pointer to `bffi_mirror_i64`:
    * exercises the generated shim's NullPointer guard on the bigint

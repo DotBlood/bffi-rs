@@ -12,25 +12,42 @@ as the single zero-copy door (DESIGN.md §6.3).
 **Status:** P2 complete - flat re-exports of core/types/error/object/
 callback/dts/event-loop/build, the `#[bffi]`, `#[bffi_class]`,
 `#[bffi_impl]`, `#[bffi_constructor]` macros and the
-`bffi_runtime_abi!` generator.
+`bffi_runtime_abi!` generator, plus the `core`/`types`/`dts`/
+`object`/`build` namespaces for facade-only mode.
 
 ---
 
 ## Usage
 
+Default mode (direct dependencies; the macro expansions name
+`::bffi_core` / `::bffi_types` / `::bffi_dts` / `::bffi_object` /
+`::bffi_build` absolute paths, which resolve only through DIRECT
+dependencies):
+
 ```toml
 [dependencies]
 bffi = { path = "../crates/bffi" }
 
-# The macros expand to ::bffi_core / ::bffi_types / ::bffi_dts /
-# ::bffi_object / ::bffi_build absolute paths, which resolve only
-# through DIRECT dependencies - keep them when you use the macros.
 bffi-core = { path = "../crates/bffi-core" }
 bffi-types = { path = "../crates/bffi-types" }
 bffi-dts = { path = "../crates/bffi-dts" }
 bffi-object = { path = "../crates/bffi-object" }   # classes
 bffi-build = { path = "../crates/bffi-build" }     # buffer/Result returns, runtime ABI
 ```
+
+Facade-only mode (one dependency): annotate with
+`#[bffi(crate = "bffi")]` (and `crate = "bffi"` on `#[bffi_class]` /
+`#[bffi_impl]`) - the expansions then name `::bffi::core`,
+`::bffi::types`, `::bffi::dts`, `::bffi::object`, `::bffi::build`,
+the namespaces re-exported by this crate:
+
+```toml
+[dependencies]
+bffi = { path = "../crates/bffi" }
+```
+
+Note: `bffi_runtime_abi!` always needs `bffi-build` as a direct
+dependency (its paths are `$crate`-relative to `bffi-build`).
 
 ```rust
 use bffi::{CopiedBuf, ErrorCode, Handle, ObjectWrap, TypeTag};

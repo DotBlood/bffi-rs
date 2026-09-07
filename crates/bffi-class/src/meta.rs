@@ -15,6 +15,7 @@ use quote::{format_ident, quote};
 
 /// Renders the `bffi_meta_<name>` module for `#[bffi_class]`.
 pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
+    let dts = &model.paths.dts;
     let module = format_ident!("bffi_meta_{}", model.js_name);
     let tag = model.tag;
     let tag_doc = format!("The bffi-object range tag claimed by `{}`.", model.js_name);
@@ -26,8 +27,8 @@ pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
     let docs = model.docs.iter().map(|doc| quote! { #doc });
     let fields = model.fields.iter().map(|field| {
         let name = &field.name;
-        let ts_ty = field_ts_kind(field.ty).tokens();
-        quote! { ::bffi_dts::FieldDef { js_name: #name, docs: &[], ty: #ts_ty } }
+        let ts_ty = field_ts_kind(field.ty).tokens(&model.paths);
+        quote! { #dts::FieldDef { js_name: #name, docs: &[], ty: #ts_ty } }
     });
 
     quote! {
@@ -40,18 +41,16 @@ pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
             pub const DOCS: &[&str] = &[#(#docs),*];
 
             #[doc = #fields_doc]
-            pub const FIELDS: &[::bffi_dts::FieldDef] = &[#(#fields),*];
+            pub const FIELDS: &[#dts::FieldDef] = &[#(#fields),*];
         }
     }
 }
 
 /// Renders the `bffi_meta_<name>_impl` module for `#[bffi_impl]`.
 pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
+    let dts = &model.paths.dts;
     let module = format_ident!("bffi_meta_{}_impl", model.js_name);
-    let class_doc = format!(
-        "The [`::bffi_dts::ClassDef`] descriptor for `{}`.",
-        model.js_name
-    );
+    let class_doc = format!("The [`ClassDef`] descriptor for `{}`.", model.js_name);
     let base = format_ident!("bffi_meta_{}", model.js_name);
     let js_name = &model.js_name;
     let ctor = &model.constructor;
@@ -59,21 +58,21 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
     let ctor_docs = ctor.docs.iter().map(|doc| quote! { #doc });
     let ctor_params = ctor.params.iter().map(|param| {
         let name = &param.name;
-        let ty = mapping::ts_type(&param.kind).tokens();
-        quote! { ::bffi_dts::ParamDef { name: #name, ty: #ty } }
+        let ty = mapping::ts_type(&param.kind).tokens(&model.paths);
+        quote! { #dts::ParamDef { name: #name, ty: #ty } }
     });
     let methods = model.methods.iter().map(|method| {
         let name = method.ident.to_string();
         let export = format!("bffi_{}_{}", model.js_name, method.ident);
         let params = method.params.iter().map(|param| {
             let name = &param.name;
-            let ty = mapping::ts_type(&param.kind).tokens();
-            quote! { ::bffi_dts::ParamDef { name: #name, ty: #ty } }
+            let ty = mapping::ts_type(&param.kind).tokens(&model.paths);
+            quote! { #dts::ParamDef { name: #name, ty: #ty } }
         });
-        let ret = mapping::ts_return(&method.ret).tokens();
+        let ret = mapping::ts_return(&method.ret).tokens(&model.paths);
         let docs = method.docs.iter().map(|doc| quote! { #doc });
         quote! {
-            ::bffi_dts::MethodDef {
+            #dts::MethodDef {
                 js_name: #name,
                 export_name: #export,
                 docs: &[#(#docs),*],
@@ -87,19 +86,19 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
         #[doc = #class_doc]
         pub mod #module {
             #[doc = "The constructor declaration (always rendered as `constructor`)."]
-            pub const CONSTRUCTOR: ::bffi_dts::MethodDef = ::bffi_dts::MethodDef {
+            pub const CONSTRUCTOR: #dts::MethodDef = #dts::MethodDef {
                 js_name: "constructor",
                 export_name: #ctor_export,
                 docs: &[#(#ctor_docs),*],
                 params: &[#(#ctor_params),*],
-                ret: ::bffi_dts::TsType::BigInt,
+                ret: #dts::TsType::BigInt,
             };
 
             #[doc = "The methods, in declaration order."]
-            pub const METHODS: &[::bffi_dts::MethodDef] = &[#(#methods),*];
+            pub const METHODS: &[#dts::MethodDef] = &[#(#methods),*];
 
             #[doc = #class_doc]
-            pub const CLASS: ::bffi_dts::ClassDef = ::bffi_dts::ClassDef {
+            pub const CLASS: #dts::ClassDef = #dts::ClassDef {
                 js_name: #js_name,
                 // `super` = the shared expansion scope holding the
                 // sibling `bffi_meta_<name>` module.
