@@ -112,6 +112,20 @@ pub enum TsKind {
     NullableUint8Array,
     /// `void`
     Void,
+    /// `Promise<void>` (`#[bffi_async]` returns of `()`).
+    PromiseVoid,
+    /// `Promise<number>` (`#[bffi_async]` returns of the number-ish
+    /// primitives).
+    PromiseNumber,
+    /// `Promise<bigint>` (`#[bffi_async]` returns of `i64`/`u64`).
+    PromiseBigInt,
+    /// `Promise<boolean>` (`#[bffi_async]` returns of `bool`).
+    PromiseBoolean,
+    /// `Promise<string>` (`#[bffi_async]` returns of `String`).
+    PromiseString,
+    /// `Promise<Uint8Array>` (`#[bffi_async]` returns of `Vec<u8>` /
+    /// `CopiedBuf`).
+    PromiseUint8Array,
 }
 
 impl TsKind {
@@ -128,6 +142,12 @@ impl TsKind {
             TsKind::NullableString => quote! { #dts::TsType::NullableString },
             TsKind::NullableUint8Array => quote! { #dts::TsType::NullableUint8Array },
             TsKind::Void => quote! { #dts::TsType::Void },
+            TsKind::PromiseVoid => quote! { #dts::TsType::PromiseVoid },
+            TsKind::PromiseNumber => quote! { #dts::TsType::PromiseNumber },
+            TsKind::PromiseBigInt => quote! { #dts::TsType::PromiseBigInt },
+            TsKind::PromiseBoolean => quote! { #dts::TsType::PromiseBoolean },
+            TsKind::PromiseString => quote! { #dts::TsType::PromiseString },
+            TsKind::PromiseUint8Array => quote! { #dts::TsType::PromiseUint8Array },
         }
     }
 }

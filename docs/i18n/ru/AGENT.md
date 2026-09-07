@@ -211,6 +211,7 @@ chore: pin rust-toolchain to 1.98.0
 | Совместимость | Только Bun                              |
 | Лицензия      | MIT                                     |
 | Фасад         | `bffi`: плоские ре-экспорты стека; `unsafe_zero_copy` - единственная точка zero-copy; раскрытие макросов - на прямых dep'ах юзера |
+| Async         | `#[bffi_async]`: spawn-шим возвращает хендл задачи; N-воркерный executor; кооперативная отмена + таймауты; резолв через event-loop enqueue; tokio opt-in; теги 0x0500-0x05FF |
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry` (тег 0x0100-0x01FF); release освобождает слот |
 | Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; wrong-thread - reject |
 | Build ABI | Runtime-экспорты (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в юзер-крейте; теги 0x0400-0x04FF; канонический контракт: bffi-build/CALLING-CONVENTION.md |

@@ -138,6 +138,7 @@ type Handle = u64;
 | 兼容性           | 仅支持 Bun                                          |
 | 分发             | 源码存放于仓库;预编译二进制文件稍后提供 npm 版      |
 | 门面             | `bffi`:扁平化再导出整个栈;`unsafe_zero_copy` 是唯一的零拷贝入口;宏展开依赖用户的直接依赖 |
+| 异步             | `#[bffi_async]`:spawn-шим返回任务句柄;N-воркерный执行器(tokio 为 opt-in 特性:模式切换 + `spawn_on_tokio`;cancel 中止 токио任务);取消(协作式 drop)与超时;通过 event-loop 在 JS 线程上交付解析;描述符 `Promise<T>` |
 | 许可证           | MIT                                                 |
 
 ---

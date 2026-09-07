@@ -101,6 +101,39 @@ pub(crate) fn attr_options(span: Span) -> syn::Error {
     .to_compile_error(span)
 }
 
+/// `E002` - a parameter type an ASYNC function cannot accept:
+/// borrowed parameters cannot cross the spawn boundary. Anchored at
+/// the offending type.
+pub(crate) fn async_param_type<T: ToTokens>(span: Span, ty_tokens: &T, name: &str) -> syn::Error {
+    MacroDiagnostic::new(
+        "E002",
+        format!(
+            "unsupported type `{}` for async parameter `{}`",
+            ty_tokens.to_token_stream(),
+            name,
+        ),
+    )
+    .with_help("supported async parameters: i8|i16|i32|u8|u16|u32|f32|f64|bool|String|Vec<u8> (owned - `&str`/`&[u8]` cannot cross spawn)")
+    .with_note(DESIGN_NOTE)
+    .to_compile_error(span)
+}
+
+/// `E003` - `Option` async returns are outside the v1 scope.
+/// Anchored at the offending type.
+pub(crate) fn async_nullable_return<T: ToTokens>(span: Span, ty_tokens: &T) -> syn::Error {
+    MacroDiagnostic::new(
+        "E003",
+        format!(
+            "unsupported type `{}` for the async return type",
+            ty_tokens.to_token_stream(),
+        ),
+    )
+    .with_help("supported async returns: ()|primitives|i64|u64|String|Vec<u8>|CopiedBuf|Result<T, E: Error + Send + Sync>")
+    .with_note("Option async returns arrive later")
+    .with_note(DESIGN_NOTE)
+    .to_compile_error(span)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{MacroDiagnostic, param_type, return_type};

@@ -23,8 +23,13 @@
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, AtomicU32, Ordering};
+use std::time::Duration;
 
 use bffi::{CopiedBuf, ErrorCode};
+use bffi_async::{
+    AsyncValue, bffi_async_abi, sleep as async_sleep, spawn as async_spawn,
+    timeout as async_timeout,
+};
 use bffi_build::bffi_runtime_abi;
 use bffi_callback::{
     CallbackSig, Value, ValueType, bind_js_callback, invoke, js_callback, register, revoke,
@@ -33,11 +38,15 @@ use bffi_callback::{
 use bffi_class::{bffi_class, bffi_constructor, bffi_impl};
 use bffi_core::{BffiError, Handle, bffi_extern, set_last_error};
 use bffi_event_loop::{Job, executed_total, marshal, pending, pump, run, stop};
-use bffi_macros::bffi;
+use bffi_macros::{bffi, bffi_async};
 
 // The eight JS-facing runtime exports (bffi_error_*, bffi_buffer pair,
 // bffi_types_free) generated into this cdylib.
 bffi_runtime_abi!();
+
+// The two JS-facing async exports (bffi_async_attach/bffi_async_cancel)
+// generated into this cdylib.
+bffi_async_abi!();
 
 static LAST_GREET_LEN: AtomicU32 = AtomicU32::new(0);
 
@@ -482,6 +491,21 @@ bffi_extern! {
 }
 
 bffi_extern! {
+    /// Debug helper (P3): the number of live async tasks.
+    #[unsafe(no_mangle)]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub extern "C" fn example_async_pending(__ret: *mut u64) -> ErrorCode {
+        if !out_ok(__ret) {
+            return ErrorCode::NullPointer;
+        }
+        // SAFETY: `__ret` is non-null (checked above) and valid for
+        // one `u64` write per the bun:ffi out-parameter contract.
+        unsafe { ::std::ptr::write(__ret, bffi_async::pending_tasks()) };
+        ErrorCode::Ok
+    }
+}
+
+bffi_extern! {
     /// Verification export (criterion 5.3, marshal delivery): writes
     /// the value stored by the last executed marshal job into `__ret`
     /// (`0` before the first executed job).
@@ -496,4 +520,155 @@ bffi_extern! {
         unsafe { ::std::ptr::write(__ret, LAST_INVOKED.load(Ordering::Relaxed)) };
         ErrorCode::Ok
     }
+}
+
+/// The shared spawn epilogue of the async verification exports:
+/// writes the task handle to `__ret` or stores the spawn error.
+fn spawn_to_ret(
+    __ret: *mut u64,
+    future: impl std::future::Future<Output = Result<AsyncValue, BffiError>> + Send + 'static,
+) -> ErrorCode {
+    if !out_ok(__ret) {
+        return ErrorCode::NullPointer;
+    }
+    match async_spawn(future) {
+        Ok(handle) => {
+            // SAFETY: `__ret` is non-null (checked above) and valid for
+            // one `u64` write per the bun:ffi out-parameter contract.
+            unsafe { ::std::ptr::write(__ret, handle.as_u64()) };
+            ErrorCode::Ok
+        }
+        Err(error) => store_error(error.into()),
+    }
+}
+
+fn ok_value(value: AsyncValue) -> Result<AsyncValue, BffiError> {
+    Ok(value)
+}
+
+bffi_extern! {
+    /// Verification export (P3): spawns a task doubling `x` after a
+    /// short sleep; `__ret` receives the task handle.
+    #[unsafe(no_mangle)]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub extern "C" fn example_async_double(x: u32, __ret: *mut u64) -> ErrorCode {
+        if !out_ok(__ret) {
+            return ErrorCode::NullPointer;
+        }
+        spawn_to_ret(
+            __ret,
+            async move {
+                async_sleep(Duration::from_millis(15)).await;
+                ok_value(AsyncValue::I64((i64::from(x)) * 2))
+            },
+        )
+    }
+}
+
+bffi_extern! {
+    /// Verification export (P3): spawns a task returning a string
+    /// (delivered through the transient-buffer pair). The string
+    /// parameter follows the cstring convention (CALLING-CONVENTION.md
+    /// section 3).
+    #[unsafe(no_mangle)]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub extern "C" fn example_async_shout(
+        name_ptr: *const std::os::raw::c_char,
+        __ret: *mut u64,
+    ) -> ErrorCode {
+        if !out_ok(__ret) {
+            return ErrorCode::NullPointer;
+        }
+        if name_ptr.is_null() {
+            return store_error(BffiError::new(
+                ErrorCode::NullPointer,
+                "string argument pointer is null",
+            ));
+        }
+        // SAFETY: bun:ffi hands out NUL-terminated cstrings for string
+        // parameters (DESIGN.md 6.3); the pointer is null-checked
+        // above.
+        let bytes = unsafe { ::std::ffi::CStr::from_ptr(name_ptr) }.to_bytes();
+        let view = match bffi_types::unsafe_zero_copy::str_view(bytes) {
+            Ok(v) => v,
+            Err(error) => return store_error(error),
+        };
+        let owned = view.as_str().to_owned();
+        spawn_to_ret(
+            __ret,
+            async move { ok_value(AsyncValue::Str(format!("HELLO {owned}!"))) },
+        )
+    }
+}
+
+bffi_extern! {
+    /// Verification export (P3): spawns a failing task; the promise
+    /// rejects with the domain message.
+    #[unsafe(no_mangle)]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub extern "C" fn example_async_fail(__ret: *mut u64) -> ErrorCode {
+        if !out_ok(__ret) {
+            return ErrorCode::NullPointer;
+        }
+        spawn_to_ret(
+            __ret,
+            async move {
+                Err(BffiError::new(
+                    ErrorCode::DomainError,
+                    "domain failure",
+                ))
+            },
+        )
+    }
+}
+
+bffi_extern! {
+    /// Verification export (P3): spawns a panicking task; the release
+    /// boundary turns the panic into a rejection.
+    #[unsafe(no_mangle)]
+    #[allow(clippy::not_unsafe_ptr_arg_deref, clippy::panic)]
+    pub extern "C" fn example_async_panic(__ret: *mut u64) -> ErrorCode {
+        if !out_ok(__ret) {
+            return ErrorCode::NullPointer;
+        }
+        spawn_to_ret(
+            __ret,
+            async move {
+                panic!("async boom");
+                #[allow(unreachable_code)]
+                ok_value(AsyncValue::Unit)
+            },
+        )
+    }
+}
+
+bffi_extern! {
+    /// Verification export (P3): spawns a task that never completes
+    /// on its own under a 50 ms timeout; the promise rejects with
+    /// "task timed out" and the inner future is dropped.
+    #[unsafe(no_mangle)]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub extern "C" fn example_async_timeout(__ret: *mut u64) -> ErrorCode {
+        if !out_ok(__ret) {
+            return ErrorCode::NullPointer;
+        }
+        spawn_to_ret(
+            __ret,
+            async_timeout(
+                Duration::from_millis(50),
+                async move {
+                    async_sleep(Duration::from_secs(60)).await;
+                    ok_value(AsyncValue::Unit)
+                },
+            ),
+        )
+    }
+}
+
+/// The `#[bffi_async]` macro: the spawn shim and `Promise<u32>`
+/// descriptor are generated; `js/async.test.ts` awaits the value.
+#[bffi_async]
+pub async fn example_compute(x: u32) -> u32 {
+    async_sleep(Duration::from_millis(15)).await;
+    x * 2
 }

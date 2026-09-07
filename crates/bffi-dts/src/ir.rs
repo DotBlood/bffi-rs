@@ -27,6 +27,12 @@
 //! variants on purpose: the IR must stay `Copy` so the macros can
 //! emit descriptors as constants (`Box::new` is not allowed in const
 //! context).
+//!
+//! The same flatness rule produced the `Promise*` variants
+//! (`PromiseVoid`/`Number`/`BigInt`/`Boolean`/`String`/`Uint8Array`),
+//! emitted by `#[bffi_async]`: an async export returns a task handle
+//! at the ABI level and a `Promise<T>` at the JS level - the
+//! descriptor describes the JS-level contract.
 
 /// A TypeScript type referenced by a declaration.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -47,6 +53,23 @@ pub enum TsType {
     /// The TypeScript `Uint8Array | null` type (`Option<Vec<u8>>` /
     /// `Option<CopiedBuf>` returns).
     NullableUint8Array,
+    /// The TypeScript `Promise<void>` type (`#[bffi_async]` exports).
+    PromiseVoid,
+    /// The TypeScript `Promise<number>` type (`#[bffi_async]` returns
+    /// of the number-ish primitives).
+    PromiseNumber,
+    /// The TypeScript `Promise<bigint>` type (`#[bffi_async]` returns
+    /// of `i64`/`u64`).
+    PromiseBigInt,
+    /// The TypeScript `Promise<boolean>` type (`#[bffi_async]` returns
+    /// of `bool`).
+    PromiseBoolean,
+    /// The TypeScript `Promise<string>` type (`#[bffi_async]` returns
+    /// of `String`).
+    PromiseString,
+    /// The TypeScript `Promise<Uint8Array>` type (`#[bffi_async]`
+    /// returns of `Vec<u8>` / `CopiedBuf`).
+    PromiseUint8Array,
     /// The TypeScript `void` type.
     Void,
 }
@@ -64,6 +87,12 @@ impl TsType {
             Self::Uint8Array => "Uint8Array",
             Self::NullableString => "string | null",
             Self::NullableUint8Array => "Uint8Array | null",
+            Self::PromiseVoid => "Promise<void>",
+            Self::PromiseNumber => "Promise<number>",
+            Self::PromiseBigInt => "Promise<bigint>",
+            Self::PromiseBoolean => "Promise<boolean>",
+            Self::PromiseString => "Promise<string>",
+            Self::PromiseUint8Array => "Promise<Uint8Array>",
             Self::Void => "void",
         }
     }
