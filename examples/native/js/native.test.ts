@@ -30,6 +30,8 @@ describe.skipIf(skip)("native artifact (release cdylib)", () => {
     const { status, error } = native.boom();
     expect(status).toBe(ErrorCode.Panic);
     expect(error?.message).toBe("boom");
+    // A caught panic stores no source: no cause reaches JS.
+    expect(error?.cause).toBeUndefined();
   });
 
   test("the last error is drained after a take", () => {
@@ -60,6 +62,10 @@ describe.skipIf(skip)("native artifact (release cdylib)", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toBe("division by 0");
+      // The source is the MathError whose Display equals the message:
+      // the honest contract is presence AND equality.
+      expect((error as Error).cause).toBe("division by 0");
+      expect((error as Error).cause).toBe((error as Error).message);
     }
   });
 

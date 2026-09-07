@@ -53,7 +53,7 @@ Both variants are generated under `#[cfg(debug_assertions)]` /
 | `()`                           | `-> ErrorCode`                                      | no out-parameter |
 | primitive / `i64` / `u64`      | `-> ErrorCode` + trailing out-param `__ret: *mut T` | null `__ret` -> `ErrorCode::NullPointer` (no UB) |
 | `String`, `Vec<u8>`, `CopiedBuf`, `Option` of these | `-> u64` handle into the buffer table | JS reads via `bffi_buffer` / `bffi_buffer_length`, releases via `bffi_types_free`; `0` = failure (`Option::None` or table error) |
-| `Result<T, E>`                 | like `T`; on `Err` returns `ErrorCode::DomainError` (13) | the error message is `E`'s `Display`, stored in the last error with `E` as the source |
+| `Result<T, E>`                 | like `T`; on `Err` returns `ErrorCode::DomainError` (13) | the error message is `E`'s `Display`, stored in the last error with `E` as the source; JS reads the source as `Error.cause` (§5) |
 
 The out-parameter always comes **after** the regular parameters and is
 named `__ret` (`__`-prefix: reserved for generated code).
@@ -66,14 +66,18 @@ named `__ret` (`__`-prefix: reserved for generated code).
 | `bffi_error_name`        | `(h: u64) -> u32`       | `1` = Error, `2` = TypeError, `3` = RangeError, `0` = invalid |
 | `bffi_error_message_ptr` | `(h: u64) -> *const u8` | pointer to UTF-8 bytes, valid until `bffi_error_free` |
 | `bffi_error_message_len` | `(h: u64) -> u64`       | byte length |
+| `bffi_error_cause_ptr`   | `(h: u64) -> *const u8` | pointer to the UTF-8 cause bytes (the source's `Display` string), valid until `bffi_error_free`; null = no cause |
+| `bffi_error_cause_len`   | `(h: u64) -> u64`       | byte length (`0` = no cause or invalid handle) |
 | `bffi_error_free`        | `(h: u64) -> u32`       | `ErrorCode` value: `0` = Ok, `4` = InvalidHandle |
 | `bffi_buffer`            | `(h: u64) -> *const u8` | pointer to the bytes, valid until `bffi_types_free` |
 | `bffi_buffer_length`     | `(h: u64) -> u64`       | byte length |
 | `bffi_types_free`        | `(h: u64) -> u32`       | `ErrorCode` value: `0` = Ok, `4` = InvalidHandle |
 
-Pointer lifetime: read synchronously, then free. Stale handles are
-detected on the Rust side (generations); raw pointers are not
-revalidated.
+Pointer lifetime: read synchronously, then free. The
+`bffi_error_message_ptr` / `bffi_error_cause_ptr` / `bffi_buffer`
+pointers are valid until their owning handle is released. Stale
+handles are detected on the Rust side (generations); raw pointers are
+not revalidated.
 
 ## 6. Status code table
 
