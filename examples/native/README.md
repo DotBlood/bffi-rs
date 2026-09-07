@@ -64,9 +64,11 @@ relies on the release boundary policy - debug aborts by design).
 - `js/callbacks.test.ts` - the phased callback/lifecycle/marshal e2e
   (one test: the JS-thread binding is process-global and sticky);
   `js/worker.ts` is its worker half.
-- `js/api.d.ts` - the committed golden rendered from the `bffi_meta`
-  descriptors; `js/api-usage.ts` type-checks it under tsc.
-- `tests/dts.rs` - pins the render to the golden (determinism, LF).
+- `js/api.d.ts` - the committed golden, generated from the `bffi_meta`
+  descriptors via `bffi_build::dts::write_to_file` (the build-time
+  half of criterion 6.2); `js/api-usage.ts` type-checks it under tsc.
+- `tests/dts.rs` - pins the render to the golden (determinism, LF) and
+  exercises the `write_to_file` round-trip.
 
 ## Requirements
 

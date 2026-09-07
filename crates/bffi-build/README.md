@@ -27,6 +27,7 @@ transport, buffer pairs) lives in one canonical document:
 | Module       | Provides                                                                                     |
 | ------------ | -------------------------------------------------------------------------------------------- |
 | [`abi`]      | [`bffi_runtime_abi!`] - the export generator, plus the `*_as_u32` / `*_as_code` helpers       |
+| [`dts`]      | `write_to_file` - render a `ModuleDef` and write the `.d.ts` bytes to disk (criterion 6.2, build-time half) |
 | [`error`]    | [`BuildError`] and the lossless `From<BuildError> for BffiError` bridge                        |
 | [`runtime`]  | `store_bytes` / `buffer_ptr` / `buffer_len` / `free_buffer` + `take_error` / `error_*` / `free_error` |
 
@@ -97,12 +98,39 @@ User-crate requirements: `cdylib` crate type, dependencies on
 `bffi-core` and `bffi-build`, one `bffi_build::bffi_runtime_abi!()`
 invocation per crate.
 
+## d.ts generation
+
+The renderer is pure and lives in [`bffi-dts`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-dts)
+([`bffi_dts::render`]: deterministic, LF, one trailing newline). This
+crate adds the build-time half of kanboard criterion 6.2: one call
+that turns an aggregated module into a declaration file on disk.
+Aggregation stays explicit by decision (no inventory, no linkme) -
+you list your `bffi_meta` descriptor consts yourself:
+
+```rust
+use bffi_dts::{FunctionDef, ModuleDef};
+
+static FNS: &[FunctionDef] = &[
+    my_crate::bffi_meta_add::FUNCTION,
+    my_crate::bffi_meta_greet::FUNCTION,
+];
+
+let module = ModuleDef { name: "api", fns: FNS, classes: &[] };
+bffi_build::dts::write_to_file(&module, std::path::Path::new("js/api.d.ts"))?;
+```
+
+Call it from a `#[test]` that refreshes the committed golden or from a
+small bin. The reference use is
+[examples/native/tests/dts.rs](https://github.com/DotBlood/bffi-rs/blob/main/examples/native/tests/dts.rs);
+the C ABI surface the declarations describe is specified in
+[CALLING-CONVENTION.md](CALLING-CONVENTION.md).
+
 ## What does _not_ belong here
 
 | Concern                                          | Home crate   |
 | ------------------------------------------------ | ------------ |
 | per-function `extern "C"` shims for `#[bffi]` fns | `bffi-macros` |
-| TypeScript descriptors / `.d.ts` rendering        | `bffi-dts`    |
+| TypeScript IR / rendering (pure, no filesystem)   | `bffi-dts`    |
 | zero-copy view policy (`str_view`, `buf_view`)    | `bffi-types`  |
 | code -> JS constructor mapping                    | `bffi-error`  |
 | class declaration macros                          | `bffi-class`  |

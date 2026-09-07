@@ -1,8 +1,9 @@
 //! `.d.ts` verification (kanboard criteria 6.1/6.2): the TypeScript
 //! surface of this example is rendered from the same `bffi_meta`
-//! descriptors the shims are generated from, pinned to the committed
-//! golden `js/api.d.ts` and consumed type-level by `js/api-usage.ts`
-//! under real tsc (`bun run typecheck`).
+//! descriptors the shims are generated from, written to disk via
+//! `bffi_build::dts::write_to_file`, pinned to the committed golden
+//! `js/api.d.ts` and consumed type-level by `js/api-usage.ts` under
+//! real tsc (`bun run typecheck`).
 //!
 //! Aggregation is explicit (the standing decision: no inventory, no
 //! linkme): every `#[bffi]` function of this example is listed below
@@ -45,6 +46,18 @@ fn render_is_deterministic_lf_only_and_matches_the_golden() {
         !first.contains('\r'),
         "the renderer must emit LF endings only"
     );
+
+    // The build-time half of criterion 6.2: the same bytes reach the
+    // disk through the one-call helper (parent dirs included).
+    let dir = std::env::temp_dir().join(format!("bffi-example-native-dts-{}", std::process::id()));
+    let written = dir.join("js/api.d.ts");
+    bffi_build::dts::write_to_file(&MODULE, &written).expect("write_to_file succeeds");
+    let from_disk = std::fs::read_to_string(&written).expect("the written file exists");
+    assert_eq!(
+        first, from_disk,
+        "write_to_file must persist the rendered bytes verbatim"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
 
     let golden_path = concat!(env!("CARGO_MANIFEST_DIR"), "/js/api.d.ts");
     let committed = std::fs::read_to_string(golden_path).expect("golden js/api.d.ts exists");
