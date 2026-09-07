@@ -113,6 +113,11 @@ pub fn is_u8(ty: &syn::Type) -> bool {
     matches!(path_ident(ty), Some((name, false)) if name == "u8")
 }
 
+/// Whether `ty` is a slice of exactly `u8` (`[u8]`).
+fn is_u8_slice(ty: &syn::Type) -> bool {
+    matches!(ty, syn::Type::Slice(slice) if is_u8(&slice.elem))
+}
+
 /// The generic argument list of a single-segment path type (empty for
 /// argument-free paths).
 pub fn generic_args(ty: &syn::Type) -> Vec<&syn::Type> {
@@ -136,7 +141,8 @@ pub fn generic_args(ty: &syn::Type) -> Vec<&syn::Type> {
 
 /// Classifies a parameter type: plain primitives and `i64`/`u64` as
 /// their kinds, `&str` (borrowed, not `mut`; lifetimes ignored) as
-/// [`ShimKind::Str`], everything else rejected.
+/// [`ShimKind::Str`], `&[u8]` (borrowed, not `mut`; lifetimes
+/// ignored) as [`ShimKind::BufferView`], everything else rejected.
 pub fn classify_param(ty: &syn::Type) -> Result<ShimKind, Unsupported<'_>> {
     if let Some(kind) = path_kind(ty) {
         return Ok(match kind {
@@ -146,9 +152,13 @@ pub fn classify_param(ty: &syn::Type) -> Result<ShimKind, Unsupported<'_>> {
     }
     if let syn::Type::Reference(reference) = ty
         && reference.mutability.is_none()
-        && is_str_type(&reference.elem)
     {
-        return Ok(ShimKind::Str);
+        if is_str_type(&reference.elem) {
+            return Ok(ShimKind::Str);
+        }
+        if is_u8_slice(&reference.elem) {
+            return Ok(ShimKind::BufferView);
+        }
     }
     Err(Unsupported {
         span: ty.span(),
@@ -248,6 +258,9 @@ pub fn ts_type(kind: &ShimKind) -> TsKind {
         ShimKind::Prim(prim) => ts_prim(*prim),
         ShimKind::BigInt(_) => TsKind::BigInt,
         ShimKind::Str => TsKind::String,
+        // The descriptor sees ONE `Uint8Array` parameter: the
+        // `(ptr, len)` C pair is ABI-level only.
+        ShimKind::BufferView => TsKind::Uint8Array,
     }
 }
 
@@ -309,6 +322,7 @@ mod tests {
             ("i64", TsKind::BigInt),
             ("u64", TsKind::BigInt),
             ("&str", TsKind::String),
+            ("&[u8]", TsKind::Uint8Array),
         ];
         for (src, expected) in cases {
             let kind = classify_param(&ty(src)).expect("accepted");
@@ -321,6 +335,15 @@ mod tests {
         for src in ["&str", "&'a str"] {
             let kind = classify_param(&ty(src)).expect("accepted");
             assert_eq!(ts_type(&kind), TsKind::String, "param type `{src}`");
+        }
+    }
+
+    #[test]
+    fn buffer_view_params_accept_lifetimes_and_classify_distinctly() {
+        for src in ["&[u8]", "&'a [u8]"] {
+            let kind = classify_param(&ty(src)).expect("accepted");
+            assert_eq!(kind, ShimKind::BufferView, "param type `{src}`");
+            assert_eq!(ts_type(&kind), TsKind::Uint8Array, "param type `{src}`");
         }
     }
 
@@ -435,7 +458,17 @@ mod tests {
     #[test]
     fn rejected_param_types_fail_classification() {
         let cases = [
-            "&mut str", "&u32", "str", "i128", "usize", "char", "&[u8]", "String", "Vec<u8>",
+            "&mut str",
+            "&mut [u8]",
+            "&[i32]",
+            "&u32",
+            "str",
+            "i128",
+            "usize",
+            "char",
+            "String",
+            "Vec<u8>",
+            "*const u8",
         ];
         for src in cases {
             let parsed = ty(src);

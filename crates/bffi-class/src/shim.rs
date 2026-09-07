@@ -19,7 +19,7 @@
 use crate::mapping::ShimKind;
 use crate::model::{ClassModel, ConstructorModel, FieldTy, ImplModel, MethodModel};
 use bffi_macro_support::codegen::{
-    bigint_ty, out_param, param_ident, prim_ty, ret_body, shim_param, str_conversions,
+    bigint_ty, out_param, param_conversions, param_ident, prim_ty, ret_body, shim_param,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -194,10 +194,15 @@ fn constructor_shim(model: &ImplModel) -> TokenStream {
                 let view = format_ident!("{name}_view");
                 quote! { &#view }
             }
+            // `ZeroCopyBuf` derefs to `[u8]`.
+            ShimKind::BufferView => {
+                let view = format_ident!("{name}_view");
+                quote! { &#view }
+            }
             ShimKind::Prim(_) | ShimKind::BigInt(_) => quote! { #name },
         }
     });
-    let conversion = str_conversions(
+    let conversion = param_conversions(
         ctor.params
             .iter()
             .map(|param| (param.name.as_str(), param.kind)),
@@ -261,10 +266,15 @@ fn method_shim(model: &ImplModel, method: &MethodModel) -> TokenStream {
                 let view = format_ident!("{name}_view");
                 quote! { &#view }
             }
+            // `ZeroCopyBuf` derefs to `[u8]`.
+            ShimKind::BufferView => {
+                let view = format_ident!("{name}_view");
+                quote! { &#view }
+            }
             ShimKind::Prim(_) | ShimKind::BigInt(_) => quote! { #name },
         }
     });
-    let conversion = str_conversions(
+    let conversion = param_conversions(
         method
             .params
             .iter()

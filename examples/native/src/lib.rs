@@ -5,11 +5,11 @@
 //!
 //! - [`add`] - primitives and the `__ret` out-parameter;
 //! - [`greet`] / [`greet_len`] - the cstring (`&str`) parameter path;
+//! - [`echo_buffer`] - the borrowed `&[u8]` parameter path (a
+//!   `(ptr, len)` pair per CALLING-CONVENTION.md §3) combined with a
+//!   `CopiedBuf` return;
 //! - [`boom`] - the release panic path (debug builds abort by design,
 //!   so the e2e suite only ever loads the release artifact);
-//! - [`example_echo_buffer`] - a hand-written buffer return, the
-//!   reference sketch for `ptr, len` parameters (CALLING-CONVENTION.md
-//!   §8);
 //! - the verification exports (`mirror_*`, `is_even`,
 //!   `example_callback_*`, `example_js_callback_*`,
 //!   `example_set_js_thread`, `example_loop_*`,
@@ -63,6 +63,16 @@ pub fn greet_len() -> u32 {
 #[bffi]
 pub fn shout(name: &str) -> String {
     format!("HELLO {name}!")
+}
+
+/// Copies the borrowed bytes into a fresh buffer and returns its
+/// handle: the borrowed `&[u8]` parameter travels as a `(ptr, len)`
+/// pair (CALLING-CONVENTION.md §3) and stays valid only for the
+/// duration of the call, so the documented copy-on-return policy
+/// applies.
+#[bffi]
+pub fn echo_buffer(data: &[u8]) -> CopiedBuf {
+    CopiedBuf::from_slice(data)
 }
 
 /// The `E` side of the err channel.
@@ -135,64 +145,6 @@ impl Counter {
 #[allow(clippy::panic)]
 pub fn boom() -> u32 {
     panic!("boom")
-}
-
-/// Copies `ptr[0..len]` into the runtime buffer table and writes the
-/// resulting handle into `__ret`.
-///
-/// Hand-written sketch of the future `ptr, len` parameter convention
-/// (CALLING-CONVENTION.md §8): the caller passes a live
-/// `TypedArray`/`ArrayBuffer` pointer valid for the duration of the
-/// call.
-///
-/// # Safety
-///
-/// `ptr` must point to `len` readable bytes for the duration of the
-/// call; `__ret` must be null or a valid `*mut u64`. These are the
-/// caller's obligations under the bun:ffi pointer contract.
-#[unsafe(no_mangle)]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn example_echo_buffer(ptr: *const u8, len: u64, __ret: *mut u64) -> ErrorCode {
-    #[cfg(debug_assertions)]
-    {
-        echo_buffer_body(ptr, len, __ret)
-    }
-    #[cfg(not(debug_assertions))]
-    {
-        bffi_core::boundary::run_extern_body(|| echo_buffer_body(ptr, len, __ret))
-    }
-}
-
-fn echo_buffer_body(ptr: *const u8, len: u64, __ret: *mut u64) -> ErrorCode {
-    if __ret.is_null() {
-        let error =
-            bffi_core::BffiError::new(bffi_core::ErrorCode::NullPointer, "output pointer is null");
-        bffi_core::set_last_error(error);
-        return bffi_core::ErrorCode::NullPointer;
-    }
-    if len > 0 && ptr.is_null() {
-        let error =
-            bffi_core::BffiError::new(bffi_core::ErrorCode::NullPointer, "buffer pointer is null");
-        bffi_core::set_last_error(error);
-        return bffi_core::ErrorCode::NullPointer;
-    }
-    // SAFETY: the caller contract (this function's doc comment)
-    // guarantees `ptr` points to `len` readable bytes for the duration
-    // of the call; `len == 0` short-circuits the pointer use above.
-    let bytes = unsafe { std::slice::from_raw_parts(ptr, len as usize) };
-    let view = bffi_types::buf_view(bytes);
-    match bffi_build::runtime::store_bytes(CopiedBuf::from_slice(view.as_slice())) {
-        Ok(handle) => {
-            // SAFETY: `__ret` is non-null (checked above) and valid for
-            // one `u64` write per the bun:ffi out-parameter contract.
-            unsafe { ::std::ptr::write(__ret, handle.as_u64()) };
-            ErrorCode::Ok
-        }
-        Err(error) => {
-            bffi_core::set_last_error(error.into());
-            ErrorCode::TableFull
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------

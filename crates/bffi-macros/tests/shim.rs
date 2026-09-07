@@ -89,6 +89,16 @@ fn wild(_: u32) -> u32 {
     7
 }
 
+#[bffi_macros::bffi]
+fn slice_len(data: &[u8]) -> u32 {
+    data.len() as u32
+}
+
+#[bffi_macros::bffi]
+fn echo_bytes(data: &[u8]) -> CopiedBuf {
+    CopiedBuf::from_slice(data)
+}
+
 /// Converts `bytes` into a NUL-terminated cstring pointer for the
 /// generated `&str` shim parameters. `into_raw` leaks on purpose:
 /// test allocations are never reclaimed.
@@ -233,4 +243,75 @@ fn wild_pattern_parameter_compiles_and_calls_cleanly() {
     let mut out = 0_u32;
     assert_eq!(bffi_wild(123, &mut out), ErrorCode::Ok);
     assert_eq!(out, 7);
+}
+
+#[test]
+fn buffer_view_param_borrows_the_caller_bytes() {
+    // A non-contiguous buffer so a copy bug would show as a wrong
+    // length: the view must see exactly `len` bytes at `ptr`.
+    let mut storage = [0xAA_u8, 1, 2, 3, 0xBB];
+
+    let mut out = 0_u32;
+    {
+        let data = &storage[1..4];
+        assert_eq!(
+            bffi_slice_len(data.as_ptr(), data.len() as u64, &mut out),
+            ErrorCode::Ok
+        );
+        assert_eq!(out, 3);
+        assert!(
+            take_last_error().is_none(),
+            "success must not store a last error"
+        );
+    }
+
+    // The borrowed bytes stay readable (and mutable) after the call:
+    // the view never took ownership.
+    storage[1] = 42;
+    let data = &storage[1..4];
+    assert_eq!(
+        bffi_slice_len(data.as_ptr(), data.len() as u64, &mut out),
+        ErrorCode::Ok
+    );
+    assert_eq!(out, 3);
+}
+
+#[test]
+fn buffer_view_param_roundtrips_bytes_through_a_copiedbuf_handle() {
+    let payload = [10_u8, 250, 0, 7];
+    let mut handle = 0_u64;
+    assert_eq!(
+        bffi_echo_bytes(payload.as_ptr(), payload.len() as u64, &mut handle),
+        ErrorCode::Ok
+    );
+    assert_ne!(handle, 0);
+    // `CopiedBuf::from_slice` copies: the returned bytes outlive the
+    // (already dead) borrow.
+    assert_eq!(
+        read_buffer(bffi_core::Handle::from_raw(handle)),
+        [10, 250, 0, 7]
+    );
+}
+
+#[test]
+fn buffer_view_param_accepts_null_pointer_when_len_is_zero() {
+    let mut out = 0_u32;
+    assert_eq!(bffi_slice_len(std::ptr::null(), 0, &mut out), ErrorCode::Ok);
+    assert_eq!(out, 0);
+    assert!(
+        take_last_error().is_none(),
+        "the empty-view success must not store a last error"
+    );
+}
+
+#[test]
+fn buffer_view_param_rejects_null_pointer_with_nonzero_len() {
+    let mut out = 0_u32;
+    assert_eq!(
+        bffi_slice_len(std::ptr::null(), 5, &mut out),
+        ErrorCode::NullPointer
+    );
+    let error = take_last_error().expect("a null data pointer must store a last error");
+    assert_eq!(error.code, ErrorCode::NullPointer);
+    assert_eq!(error.message, "buffer argument pointer is null");
 }

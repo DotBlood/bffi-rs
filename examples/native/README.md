@@ -17,13 +17,13 @@ tsc) with Bun 1.4.
 | ------------------------------------------- | ------------------------------------------ |
 | `bffi_add(a, b, __ret)`                     | primitives + out-parameter                 |
 | `bffi_greet(name)` / `bffi_greet_len()`     | the cstring (`&str`) parameter path        |
+| `bffi_echo_buffer(ptr, len, __ret)`         | the borrowed `&[u8]` parameter path (real `#[bffi]` shim, `(ptr, len)` pair) |
 | `bffi_boom()`                               | the release panic path (`ErrorCode::Panic`) |
 | `bffi_mirror_i64` / `bffi_mirror_u64` / `bffi_is_even` | bigint + bool paths of the P1 type matrix |
 | `example_callback_register` / `_invoke` / `_invoke_mismatched` / `_revoke` | JS -> Rust callback lifecycle (register/invoke/revoke, signature mismatch, terminal revocation) |
 | `example_js_callback_bind` / `_get` / `_revoke` | Rust -> JS callback ownership (pointer roundtrip) |
 | `example_set_js_thread`                     | the process-wide JS-thread binding         |
 | `example_loop_run` / `_stop` / `_pending` / `_executed` / `_pump` / `_marshal_invoke`, `example_last_invoked` | event-loop probes + wrong-thread marshal delivery |
-| `example_echo_buffer(ptr, len, __ret)`      | hand-written `ptr, len` parameter sketch   |
 | `bffi_error_*`, `bffi_buffer`, `bffi_types_free` | `bffi_runtime_abi!()` runtime exports  |
 
 ## Verified surface
@@ -52,10 +52,10 @@ relies on the release boundary policy - debug aborts by design).
 ## Layout
 
 - `src/lib.rs` - the cdylib: `bffi_runtime_abi!()` + `#[bffi]`
-  functions + hand-written verification exports (`bffi_extern!`-based
+  functions (including `echo_buffer`, the borrowed `&[u8]` parameter
+  path) + hand-written verification exports (`bffi_extern!`-based
   wrappers over `bffi-callback`/`bffi-event-loop`, each documented
-  with the criterion it exercises) + one hand-written export (the
-  reference sketch for the future `ptr, len` parameter convention).
+  with the criterion it exercises).
 - `js/load.ts` - `dlopen` declarations + `takeError()` /
   `readBuffer()` helpers over the C ABI
   ([CALLING-CONVENTION.md](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md)).

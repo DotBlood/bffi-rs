@@ -25,7 +25,7 @@ pub(crate) use bffi_macro_support::diagnostics::{DESIGN_NOTE, MacroDiagnostic};
 /// The field/method parameter set accepted by `bffi-class` v1.
 const FIELD_TYPES: &str = "supported fields: i8|i16|i32|u8|u16|u32|f32|f64|bool (getters only)";
 /// The method parameter set (the `#[bffi]` parameter matrix).
-const PARAM_TYPES: &str = "supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str";
+const PARAM_TYPES: &str = "supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]";
 /// The method return set (the `#[bffi]` return matrix, P2 included).
 const RETURN_TYPES: &str = "supported returns: parameters|String|Vec<u8>|CopiedBuf|Option<buffer>|Result<T, E: Error + Send + Sync>";
 

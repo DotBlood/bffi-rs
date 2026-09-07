@@ -52,6 +52,10 @@ pub enum ShimKind {
     BigInt(BigIntTy),
     /// A borrowed `&str` copied across the boundary.
     Str,
+    /// A borrowed `&[u8]` view: the shim receives a `(ptr, len)` pair
+    /// valid for the duration of the call (bun:ffi TypedArray
+    /// pointer), never taking ownership.
+    BufferView,
 }
 
 /// An owned byte-carrying return type: stored in the `bffi-build`
