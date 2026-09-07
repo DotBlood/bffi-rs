@@ -26,6 +26,8 @@ tsc) with Bun 1.4.
 | `example_set_js_thread`                     | the process-wide JS-thread binding         |
 | `example_loop_run` / `_stop` / `_pending` / `_executed` / `_pump` / `_marshal_invoke`, `example_last_invoked` | event-loop probes + wrong-thread marshal delivery |
 | `bffi_error_*`, `bffi_buffer`, `bffi_types_free` | `bffi_runtime_abi!()` runtime exports  |
+| `bffi_async_attach`, `bffi_async_cancel` | `bffi_async_abi!()`: Promise attachment and cancellation |
+| `example_compute` (`#[bffi_async]`) | async fn -> task handle -> `Promise<u32>` through the executor |
 
 ## Verified surface
 
@@ -58,10 +60,16 @@ relies on the release boundary policy - debug aborts by design).
   wrappers over `bffi-callback`/`bffi-event-loop`, each documented
   with the criterion it exercises).
 - `js/load.ts` - `dlopen` declarations + `takeError()` /
-  `readBuffer()` helpers over the C ABI
+  `readBuffer()` / `wrapTask()` helpers over the C ABI
   ([CALLING-CONVENTION.md](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md)).
+  `wrapTask` attaches bun:ffi `JSCallback` resolvers to a bffi-async
+  task handle and decodes the `[tag][payload]` value codec; promises
+  settle while the JS side pumps the loop (`native.loopPump()`).
 - `js/native.test.ts` - the original e2e suite (bun test).
 - `js/numbers.test.ts` - the P1 type matrix e2e (bigint/bool).
+- `js/async.test.ts` - the bffi-async e2e: `await` on Rust futures
+  (values, failures, panics), timeouts, JS-side cancellation, and the
+  `#[bffi_async]`-generated `example_compute`.
 - `js/callbacks.test.ts` - the phased callback/lifecycle/marshal e2e
   (one test: the JS-thread binding is process-global and sticky);
   `js/worker.ts` is its worker half.
