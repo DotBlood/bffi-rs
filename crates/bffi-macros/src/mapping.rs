@@ -69,6 +69,14 @@ mod tests {
             ":: bffi_dts :: TsType :: Uint8Array"
         );
         assert_eq!(
+            TsKind::NullableString.tokens().to_string(),
+            ":: bffi_dts :: TsType :: NullableString"
+        );
+        assert_eq!(
+            TsKind::NullableUint8Array.tokens().to_string(),
+            ":: bffi_dts :: TsType :: NullableUint8Array"
+        );
+        assert_eq!(
             TsKind::Void.tokens().to_string(),
             ":: bffi_dts :: TsType :: Void"
         );
@@ -135,19 +143,19 @@ mod tests {
 
     #[test]
     fn option_buffer_returns_classify_nullable() {
-        for src in ["Option<String>", "Option<Vec<u8>>", "Option<CopiedBuf>"] {
+        let cases = [
+            ("Option<String>", TsKind::NullableString),
+            ("Option<Vec<u8>>", TsKind::NullableUint8Array),
+            ("Option<CopiedBuf>", TsKind::NullableUint8Array),
+        ];
+        for (src, ts) in cases {
             let ret = classify_return(&ty(src)).expect("accepted");
             assert!(
                 matches!(ret, RetKind::Nullable(_)),
                 "`{src}` must classify as Nullable"
             );
+            assert_eq!(ts_return(&ret), ts, "ts kind for `{src}`");
         }
-        // Nullable renders as its payload kind; nullability is a doc
-        // line (see meta).
-        assert_eq!(
-            ts_return(&classify_return(&ty("Option<String>")).expect("accepted")),
-            TsKind::String
-        );
     }
 
     #[test]
@@ -167,6 +175,12 @@ mod tests {
         assert_eq!(
             ts_return(&classify_return(&ty("Result<u32, MyError>")).expect("accepted")),
             TsKind::Number
+        );
+        assert_eq!(
+            ts_return(
+                &classify_return(&ty("Result<Option<CopiedBuf>, MyError>")).expect("accepted")
+            ),
+            TsKind::NullableUint8Array
         );
     }
 

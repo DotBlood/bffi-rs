@@ -17,10 +17,16 @@
 //! | `bool`                                 | `Boolean`   |
 //! | `&str`, `String`                       | `String`    |
 //! | `Vec<u8>`, `CopiedBuf`                 | `Uint8Array`|
+//! | `Option<String>`                       | `NullableString` |
+//! | `Option<Vec<u8>>`, `Option<CopiedBuf>` | `NullableUint8Array` |
 //! | `()`                                   | `Void`      |
 //!
-//! `Option<buffer>` renders as its payload kind; the nullability is
-//! carried by the descriptor's auto-generated doc line.
+//! The `Nullable*` variants render with `| null` (e.g.
+//! `"string | null"`), so the nullability of an `Option` return is
+//! part of the type contract itself. They are flat (payload-free)
+//! variants on purpose: the IR must stay `Copy` so the macros can
+//! emit descriptors as constants (`Box::new` is not allowed in const
+//! context).
 
 /// A TypeScript type referenced by a declaration.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -36,6 +42,11 @@ pub enum TsType {
     String,
     /// The TypeScript `Uint8Array` type.
     Uint8Array,
+    /// The TypeScript `string | null` type (`Option<String>` returns).
+    NullableString,
+    /// The TypeScript `Uint8Array | null` type (`Option<Vec<u8>>` /
+    /// `Option<CopiedBuf>` returns).
+    NullableUint8Array,
     /// The TypeScript `void` type.
     Void,
 }
@@ -51,6 +62,8 @@ impl TsType {
             Self::Boolean => "boolean",
             Self::String => "string",
             Self::Uint8Array => "Uint8Array",
+            Self::NullableString => "string | null",
+            Self::NullableUint8Array => "Uint8Array | null",
             Self::Void => "void",
         }
     }
@@ -153,6 +166,8 @@ mod tests {
         assert_eq!(TsType::Boolean.as_str(), "boolean");
         assert_eq!(TsType::String.as_str(), "string");
         assert_eq!(TsType::Uint8Array.as_str(), "Uint8Array");
+        assert_eq!(TsType::NullableString.as_str(), "string | null");
+        assert_eq!(TsType::NullableUint8Array.as_str(), "Uint8Array | null");
         assert_eq!(TsType::Void.as_str(), "void");
     }
 
@@ -272,19 +287,47 @@ mod tests {
         assert_copy::<FunctionDef>();
         assert_copy::<ModuleDef>();
 
-        assert_eq!(FNS.len(), 1);
-        assert_eq!(MODULE.fns.len(), 1);
+        assert_eq!(FNS.len(), 2);
+        assert_eq!(MODULE.fns.len(), 2);
         assert_eq!(MODULE.name, "native");
         assert_eq!(MODULE.fns[0].ret, TsType::BigInt);
+        assert_eq!(MODULE.fns[1].ret, TsType::NullableUint8Array);
     }
 
-    static FNS: &[FunctionDef] = &[FunctionDef {
-        js_name: "tick",
-        export_name: "bffi_tick",
-        docs: &[],
-        params: &[],
-        ret: TsType::BigInt,
-    }];
+    #[test]
+    fn nullable_string_renders_with_null() {
+        static NULLABLE_FNS: &[FunctionDef] = &[FunctionDef {
+            js_name: "maybe_name",
+            export_name: "bffi_maybe_name",
+            docs: &[],
+            params: &[],
+            ret: TsType::NullableString,
+        }];
+        let module = ModuleDef {
+            name: "native",
+            fns: NULLABLE_FNS,
+            classes: &[],
+        };
+        let rendered = crate::render::render(&module);
+        assert!(rendered.contains("export function maybe_name(): string | null;"));
+    }
+
+    static FNS: &[FunctionDef] = &[
+        FunctionDef {
+            js_name: "tick",
+            export_name: "bffi_tick",
+            docs: &[],
+            params: &[],
+            ret: TsType::BigInt,
+        },
+        FunctionDef {
+            js_name: "peek",
+            export_name: "bffi_peek",
+            docs: &[],
+            params: &[],
+            ret: TsType::NullableUint8Array,
+        },
+    ];
 
     static MODULE: ModuleDef = ModuleDef {
         name: "native",

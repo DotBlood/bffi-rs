@@ -251,9 +251,9 @@ pub fn ts_type(kind: &ShimKind) -> TsKind {
     }
 }
 
-/// TypeScript kind of an accepted return type. `Nullable` renders as
-/// its payload kind - the nullability is carried by the descriptor's
-/// auto-generated doc line.
+/// TypeScript kind of an accepted return type. `Nullable` payloads
+/// map to the dedicated `NullableString` / `NullableUint8Array`
+/// kinds, whose `as_str` carries the `| null` contract.
 pub fn ts_return(ret: &RetKind) -> TsKind {
     match ret {
         RetKind::Unit => TsKind::Void,
@@ -261,7 +261,8 @@ pub fn ts_return(ret: &RetKind) -> TsKind {
         RetKind::BigInt(_) => TsKind::BigInt,
         RetKind::Buffer(BufferTy::String) => TsKind::String,
         RetKind::Buffer(_) => TsKind::Uint8Array,
-        RetKind::Nullable(inner) => ts_return(&RetKind::Buffer(*inner)),
+        RetKind::Nullable(BufferTy::String) => TsKind::NullableString,
+        RetKind::Nullable(_) => TsKind::NullableUint8Array,
         RetKind::Result(inner) => ts_return(inner),
     }
 }
@@ -359,19 +360,19 @@ mod tests {
 
     #[test]
     fn option_buffer_returns_classify_nullable() {
-        for src in ["Option<String>", "Option<Vec<u8>>", "Option<CopiedBuf>"] {
+        let cases = [
+            ("Option<String>", TsKind::NullableString),
+            ("Option<Vec<u8>>", TsKind::NullableUint8Array),
+            ("Option<CopiedBuf>", TsKind::NullableUint8Array),
+        ];
+        for (src, ts) in cases {
             let ret = classify_return(&ty(src)).expect("accepted");
             assert!(
                 matches!(ret, RetKind::Nullable(_)),
                 "`{src}` must classify as Nullable"
             );
+            assert_eq!(ts_return(&ret), ts, "ts kind for `{src}`");
         }
-        // Nullable renders as its payload kind; nullability is a doc
-        // line (see the consumers' meta generators).
-        assert_eq!(
-            ts_return(&classify_return(&ty("Option<String>")).expect("accepted")),
-            TsKind::String
-        );
     }
 
     #[test]
@@ -391,6 +392,12 @@ mod tests {
         assert_eq!(
             ts_return(&classify_return(&ty("Result<u32, MyError>")).expect("accepted")),
             TsKind::Number
+        );
+        assert_eq!(
+            ts_return(
+                &classify_return(&ty("Result<Option<CopiedBuf>, MyError>")).expect("accepted")
+            ),
+            TsKind::NullableUint8Array
         );
     }
 

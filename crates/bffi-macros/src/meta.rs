@@ -9,7 +9,6 @@
 
 use crate::mapping;
 use crate::model::FnModel;
-use bffi_macro_support::kind::RetKind;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -24,9 +23,7 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
     );
     let const_doc = format!("The [`::bffi_dts::FunctionDef`] descriptor for `{js_name}`.");
 
-    let mut docs: Vec<String> = model.docs.clone();
-    docs.extend(auto_notes(&model.ret));
-    let docs = docs.iter().map(|doc| quote! { #doc });
+    let docs = model.docs.iter().map(|doc| quote! { #doc });
 
     let params = model.params.iter().map(|param| {
         let name = &param.name;
@@ -47,38 +44,5 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
                 ret: #ret,
             };
         }
-    }
-}
-
-/// Deterministic auto-generated doc lines for return kinds the TS type
-/// alone cannot express.
-fn auto_notes(ret: &RetKind) -> Vec<String> {
-    match ret {
-        RetKind::Nullable(_) => {
-            vec!["Returns the byte payload as an opaque handle; `0` means `None`.".to_owned()]
-        }
-        RetKind::Result(inner) => auto_notes(inner),
-        _ => Vec::new(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::auto_notes;
-    use bffi_macro_support::kind::{BufferTy, PrimTy, RetKind};
-    #[test]
-    fn nullable_returns_carry_the_handle_doc_line() {
-        let notes = auto_notes(&RetKind::Nullable(BufferTy::ByteVec));
-        assert_eq!(notes.len(), 1);
-        assert!(notes[0].contains("`0` means `None`"));
-    }
-
-    #[test]
-    fn result_forward_and_plain_returns_add_nothing() {
-        assert!(auto_notes(&RetKind::Prim(PrimTy::U32)).is_empty());
-        let notes = auto_notes(&RetKind::Result(Box::new(RetKind::Nullable(
-            BufferTy::CopiedBuf,
-        ))));
-        assert_eq!(notes.len(), 1);
     }
 }

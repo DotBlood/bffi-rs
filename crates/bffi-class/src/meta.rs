@@ -71,11 +71,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
             quote! { ::bffi_dts::ParamDef { name: #name, ty: #ty } }
         });
         let ret = mapping::ts_return(&method.ret).tokens();
-        let mut docs = method.docs.clone();
-        if matches!(method.ret, mapping::RetKind::Nullable(_)) {
-            docs.push("Returns the value as an opaque handle; `0` means `None`.".to_owned());
-        }
-        let docs = docs.iter().map(|doc| quote! { #doc });
+        let docs = method.docs.iter().map(|doc| quote! { #doc });
         quote! {
             ::bffi_dts::MethodDef {
                 js_name: #name,

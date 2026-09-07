@@ -106,7 +106,8 @@ returns the matching `ErrorCode`; success returns `ErrorCode::Ok` and stores not
 | `()`                             | -     | yes    | `void`    |
 | `String`                         | -     | yes    | `string`  |
 | `Vec<u8>`, `CopiedBuf`           | -     | yes    | `Uint8Array` |
-| `Option<String>` / `Option<Vec<u8>>` / `Option<CopiedBuf>` | - | yes | payload kind (`0` = `None`) |
+| `Option<String>`                 | -     | yes    | `string \| null` |
+| `Option<Vec<u8>>`, `Option<CopiedBuf>` | - | yes   | `Uint8Array \| null` |
 | `Result<T, E>`                   | -     | yes    | `T`'s kind; `Err` -> code 13 |
 
 Everything else is rejected at compile time - `E002` for parameters, `E003` for returns.

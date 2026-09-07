@@ -31,6 +31,12 @@ fn payload() -> Option<Vec<u8>> {
     None
 }
 
+#[bffi_macros::bffi]
+/// Finds a name.
+fn find_name(hit: bool) -> Option<String> {
+    if hit { Some("ada".to_owned()) } else { None }
+}
+
 #[test]
 fn descriptor_matches_the_expected_literal() {
     assert_eq!(
@@ -65,8 +71,7 @@ fn descriptor_matches_the_expected_literal() {
             ret: TsType::Number,
         }
     );
-    // Buffer payloads: String -> `string`, Vec<u8> -> `Uint8Array`;
-    // nullability is carried by the deterministic doc line.
+    // Buffer payloads: String -> `string`, Vec<u8> -> `Uint8Array`.
     assert_eq!(
         bffi_meta_build_greeting::FUNCTION,
         FunctionDef {
@@ -80,18 +85,30 @@ fn descriptor_matches_the_expected_literal() {
             ret: TsType::String,
         }
     );
+    // `Option` returns render honest `| null` types; `docs` contain
+    // only the author lines (no auto-generated notes).
     assert_eq!(
         bffi_meta_payload::FUNCTION.ret,
-        TsType::Uint8Array,
-        "Vec<u8> renders as Uint8Array"
+        TsType::NullableUint8Array,
+        "Option<Vec<u8>> renders as `Uint8Array | null`"
     );
     assert_eq!(
         bffi_meta_payload::FUNCTION.docs,
-        &[
-            "Reads a payload.",
-            "Returns the byte payload as an opaque handle; `0` means `None`."
-        ],
-        "Nullable returns carry the deterministic doc line"
+        &["Reads a payload."],
+        "docs contain only the author line"
+    );
+    assert_eq!(
+        bffi_meta_find_name::FUNCTION,
+        FunctionDef {
+            js_name: "find_name",
+            export_name: "bffi_find_name",
+            docs: &["Finds a name."],
+            params: &[ParamDef {
+                name: "hit",
+                ty: TsType::Boolean
+            }],
+            ret: TsType::NullableString,
+        }
     );
 }
 
@@ -102,6 +119,7 @@ fn descriptors_render_through_bffi_dts() {
         bffi_meta_greet::FUNCTION,
         bffi_meta_build_greeting::FUNCTION,
         bffi_meta_payload::FUNCTION,
+        bffi_meta_find_name::FUNCTION,
     ];
     let module = ModuleDef {
         name: "math",
@@ -113,5 +131,6 @@ fn descriptors_render_through_bffi_dts() {
     assert!(rendered.contains("export function add(a: number, b: number): number;"));
     assert!(rendered.contains("export function greet(who: string): number;"));
     assert!(rendered.contains("export function build_greeting(who: string): string;"));
-    assert!(rendered.contains("export function payload(): Uint8Array;"));
+    assert!(rendered.contains("export function payload(): Uint8Array | null;"));
+    assert!(rendered.contains("export function find_name(hit: boolean): string | null;"));
 }
