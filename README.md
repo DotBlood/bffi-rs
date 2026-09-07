@@ -34,10 +34,16 @@ See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.m
 
 ```sh
 bun install          # installs dependencies + git hooks (lefthook)
-bun run build        # TODO: cargo build wiring
+bun run build        # builds the example native module (release cdylib)
+bun run test:native  # builds it and runs the bun:ffi e2e suite
 bun run check        # oxlint + tsc + cargo check
 bun run ci           # full CI parity: lint, typecheck, fmt, clippy, tests
 ```
+
+For a native module, depend on [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+(the facade: one dependency for the whole stack) and - when using the
+attribute macros - on the individual `bffi-core`/`bffi-types`/
+`bffi-dts` crates their expansions name.
 
 ## Conventions
 

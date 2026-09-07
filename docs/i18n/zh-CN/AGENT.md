@@ -88,6 +88,7 @@ bffi-rs/
 │   ├── bffi-class/
 │   ├── bffi-dts/                # TypeScript .d.ts generation
 │   ├── bffi-macros/
+│   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
 │   ├── bffi-event-loop/
 │   ├── bffi-build/
 │   └── bffi-rs/                 # public facade
@@ -191,6 +192,7 @@ chore: pin rust-toolchain to 1.98.0
 | 主题        | 决策                                      |
 | ----------- | ----------------------------------------- |
 | 宏          | `#[bffi]`：shim（debug 直接 / release catch_unwind）+ bffi_meta_* 描述符 |
+| `#[bffi]` 返回值 | 原型/bigint 经 out-param;`String`/`Vec<u8>`/`CopiedBuf`(及 `Option`)作为缓冲区句柄;`Result<T, E>` -> DomainError(13) |
 | 最低 Bun    | 1.4.0                                     |
 | Rust/Cargo  | 1.98.0                                    |
 | 句柄        | Generational Index + type-tag             |
@@ -200,12 +202,15 @@ chore: pin rust-toolchain to 1.98.0
 | UTF-8 校验  | SIMD(x86 SSSE3,aarch64 NEON)              |
 | 缓冲区      | 默认复制                                  |
 | 零拷贝      | 仅通过 `bffi::unsafe_zero_copy`           |
-| 事件循环    | 以 `run()` 启动,`pump()` 目前为 mock 实现 |
-| TS 类型 | IR（ModuleDef/FunctionDef）+ 确定性 render；export_name = bffi_ 前缀 |
+| 事件循环    | `run()` 阻塞式排空;`pump()` 非阻塞排空;`marshal` - 跨线程路径(代码 12) |
+| TS 类型 | IR（ModuleDef/FunctionDef/ClassDef）+ 确定性 render；export_name = bffi_ 前缀 |
+| 类宏 | 基于 ObjectWrap（标签 0x0100-0x01FF）的 `#[bffi_class]`/`#[bffi_impl]`:pub 原始字段的 getter、`&self` 方法、自动生成 release;元数据 bffi_meta_<name> + bffi_meta_<name>_impl::CLASS;E005-E008 |
+| 宏支持 | `bffi-macro-support`:为 proc-macro crate(bffi-macros、bffi-class)提供共享的模型/映射/代码生成;工具 crate - 无运行时代码、无 ABI |
 | Panic(生产) | 转换为 JS Error                           |
 | Panic(开发) | 可以中止                                  |
 | 兼容性      | 仅支持 Bun                                |
 | 许可证      | MIT                                       |
+| 门面         | `bffi`:扁平化再导出整个栈;`unsafe_zero_copy` 是唯一的零拷贝入口;宏展开依赖用户的直接依赖 |
 | 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`(标签 0x0100-0x01FF);release 释放槽位 |
 | 回调 | `register`/`revoke` + `bind_js_callback`；标签 0x0200-0x0201；跨线程 - 拒绝 |
 | 构建 ABI | 运行时导出（`bffi_error_*`、`bffi_buffer` 对、`bffi_types_free`）通过在用户 crate 中展开的 `bffi_runtime_abi!()` 生成；标签 0x0400-0x04FF；规范契约：bffi-build/CALLING-CONVENTION.md |

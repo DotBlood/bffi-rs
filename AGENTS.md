@@ -88,6 +88,7 @@ bffi-rs/
 │   ├── bffi-class/
 │   ├── bffi-dts/                # TypeScript .d.ts generation
 │   ├── bffi-macros/
+│   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
 │   ├── bffi-event-loop/
 │   ├── bffi-build/
 │   └── bffi-rs/                 # public facade
@@ -191,6 +192,7 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Topic         | Decision                                     |
 | ------------- | -------------------------------------------- |
 | Macro         | `#[bffi]`: shim (debug bare / release catch_unwind) + bffi_meta_* descriptor |
+| `#[bffi]` returns | primitives/bigints via out-param; `String`/`Vec<u8>`/`CopiedBuf` (and `Option` of those) as buffer handles; `Result<T, E>` -> DomainError(13) |
 | Min Bun       | 1.4.0                                        |
 | Rust/Cargo    | 1.98.0                                       |
 | Handles       | Generational Index + type-tag                |
@@ -200,12 +202,15 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | UTF-8 checks  | SIMD (x86 SSSE3, aarch64 NEON); scalar ref   |
 | Buffers       | Copy by default                              |
 | Zero-copy     | Only via `bffi::unsafe_zero_copy`            |
-| Event loop    | Start with `run()`, `pump()` is mock for now |
-| TS types      | IR (ModuleDef/FunctionDef) + deterministic render; export_name = bffi_-prefix |
+| Event loop    | `run()` drains blocking; `pump()` drains non-blocking; `marshal` = wrong-thread path (code 12) |
+| TS types      | IR (ModuleDef/FunctionDef/ClassDef) + deterministic render; export_name = bffi_-prefix |
+| Class macros | `#[bffi_class]`/`#[bffi_impl]` over ObjectWrap (tags 0x0100-0x01FF): field getters, `&self` methods, generated release; metadata split bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; E005-E008 |
+| Macro support | `bffi-macro-support`: shared model/mapping/codegen for the proc-macro crates (bffi-macros, bffi-class); tooling crate - no runtime code, no ABI |
 | Panic (prod)  | Convert to JS Error                          |
 | Panic (dev)   | May abort                                    |
 | Compatibility | Bun only                                     |
 | License       | MIT                                          |
+| Facade        | `bffi`: flat re-exports of the stack; `unsafe_zero_copy` is the only zero-copy door; macro expansions stay on the user's direct deps |
 | Object ownership | `ObjectWrap<T>` over global `Registry` (tag 0x0100-0x01FF); release frees the slot |
 | Callbacks | `register`/`revoke` + `bind_js_callback`; tags 0x0200-0x0201; wrong-thread reject |
 | Build ABI | Runtime exports (`bffi_error_*`, `bffi_buffer` pair, `bffi_types_free`) via `bffi_runtime_abi!()` in the user crate; tags 0x0400-0x04FF; canonical contract: bffi-build/CALLING-CONVENTION.md |

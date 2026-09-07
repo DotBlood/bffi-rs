@@ -7,9 +7,10 @@
 > it. Sources of truth above this document: `docs/DESIGN.md` §6 and
 > `AGENTS.md`.
 
-**Status:** P2. Covers function shims (P1) and the runtime exports
-(P2). Buffers as _parameters_, class method shims, and struct-by-value
-/ cstring _returns_ are future work (see "Non-goals").
+**Status:** P2. Covers function shims (P1), the runtime exports
+(P2), class method shims, and borrowed `&[u8]` buffer parameters.
+Structs-by-value and cstring _returns_ are future work (see
+"Non-goals").
 
 ---
 
@@ -44,7 +45,8 @@ Both variants are generated under `#[cfg(debug_assertions)]` /
 | `i64` `u64`                | `i64` / `u64`                              | JS sees `bigint` |
 | `Handle` (objects, buffers, callbacks) | `u64`                          | JS sees `bigint`; `0` = null |
 | `&str`                     | `*const c_char`                            | NUL-terminated UTF-8 ("cstring"); validated by `bffi_types::str_view`, invalid UTF-8 -> `ErrorCode::InvalidUtf8` + last error |
-| `String`, buffers, `Option`, `Vec`, structs | **not supported as parameters** | see Non-goals |
+| `&[u8]`                    | `ptr: *const u8` + `len: u64` pair (in parameter order) | borrowed view: bun:ffi keeps the `TypedArray` pointer valid for the duration of the call; null allowed iff `len == 0`; non-empty null -> `ErrorCode::NullPointer` + last error; the descriptor carries ONE `Uint8Array` parameter |
+| `String`, `Vec` (owned), `Option`, structs | **not supported as parameters** | see Non-goals |
 
 ## 4. Returns
 
@@ -53,7 +55,7 @@ Both variants are generated under `#[cfg(debug_assertions)]` /
 | `()`                           | `-> ErrorCode`                                      | no out-parameter |
 | primitive / `i64` / `u64`      | `-> ErrorCode` + trailing out-param `__ret: *mut T` | null `__ret` -> `ErrorCode::NullPointer` (no UB) |
 | `String`, `Vec<u8>`, `CopiedBuf`, `Option` of these | `-> u64` handle into the buffer table | JS reads via `bffi_buffer` / `bffi_buffer_length`, releases via `bffi_types_free`; `0` = failure (`Option::None` or table error) |
-| `Result<T, E>`                 | like `T`; on `Err` returns `ErrorCode::DomainError` (13) | the error message is `E`'s `Display`, stored in the last error with `E` as the source |
+| `Result<T, E>`                 | like `T`; on `Err` returns `ErrorCode::DomainError` (13) | the error message is `E`'s `Display`, stored in the last error with `E` as the source; JS reads the source as `Error.cause` (§5) |
 
 The out-parameter always comes **after** the regular parameters and is
 named `__ret` (`__`-prefix: reserved for generated code).
@@ -66,14 +68,18 @@ named `__ret` (`__`-prefix: reserved for generated code).
 | `bffi_error_name`        | `(h: u64) -> u32`       | `1` = Error, `2` = TypeError, `3` = RangeError, `0` = invalid |
 | `bffi_error_message_ptr` | `(h: u64) -> *const u8` | pointer to UTF-8 bytes, valid until `bffi_error_free` |
 | `bffi_error_message_len` | `(h: u64) -> u64`       | byte length |
+| `bffi_error_cause_ptr`   | `(h: u64) -> *const u8` | pointer to the UTF-8 cause bytes (the source's `Display` string), valid until `bffi_error_free`; null = no cause |
+| `bffi_error_cause_len`   | `(h: u64) -> u64`       | byte length (`0` = no cause or invalid handle) |
 | `bffi_error_free`        | `(h: u64) -> u32`       | `ErrorCode` value: `0` = Ok, `4` = InvalidHandle |
 | `bffi_buffer`            | `(h: u64) -> *const u8` | pointer to the bytes, valid until `bffi_types_free` |
 | `bffi_buffer_length`     | `(h: u64) -> u64`       | byte length |
 | `bffi_types_free`        | `(h: u64) -> u32`       | `ErrorCode` value: `0` = Ok, `4` = InvalidHandle |
 
-Pointer lifetime: read synchronously, then free. Stale handles are
-detected on the Rust side (generations); raw pointers are not
-revalidated.
+Pointer lifetime: read synchronously, then free. The
+`bffi_error_message_ptr` / `bffi_error_cause_ptr` / `bffi_buffer`
+pointers are valid until their owning handle is released. Stale
+handles are detected on the Rust side (generations); raw pointers are
+not revalidated.
 
 ## 6. Status code table
 
@@ -108,8 +114,7 @@ Today: `0x0100-0x01FF` bffi-object, `0x0200-0x02FF` bffi-callback,
   pointer into Rust memory the JS side would free differently);
   strings travel as buffer handles instead.
 - Structures by value (parameters or returns).
-- Buffers as direct parameters (a `ptr, len` parameter pair is a
-  future candidate; the hand-written `example_echo_buffer` export in
-  `examples/native` is the reference sketch).
+- Owned buffers as parameters (`String`, `Vec<u8>`, `CopiedBuf`):
+  only the borrowed `&[u8]` view (§3) crosses as a parameter.
 
 [`ErrorCode`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core

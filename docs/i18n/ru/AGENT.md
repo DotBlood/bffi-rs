@@ -88,6 +88,7 @@ bffi-rs/
 │   ├── bffi-class/
 │   ├── bffi-dts/                # TypeScript .d.ts generation
 │   ├── bffi-macros/
+│   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
 │   ├── bffi-event-loop/
 │   ├── bffi-build/
 │   └── bffi-rs/                 # public facade
@@ -191,6 +192,7 @@ chore: pin rust-toolchain to 1.98.0
 | Тема          | Решение                                 |
 | ------------- | --------------------------------------- |
 | Макрос        | `#[bffi]`: шим (debug bare / release catch_unwind) + дескриптор bffi_meta_* |
+| Возвраты `#[bffi]` | примитивы/bigint через out-param; `String`/`Vec<u8>`/`CopiedBuf` (и `Option` от них) как хендлы буферов; `Result<T, E>` -> DomainError(13) |
 | Мин. Bun      | 1.4.0                                   |
 | Rust/Cargo    | 1.98.0                                  |
 | Хендлы        | Generational Index + type-tag           |
@@ -200,12 +202,15 @@ chore: pin rust-toolchain to 1.98.0
 | UTF-8 проверка| SIMD (x86 SSSE3, aarch64 NEON)          |
 | Буферы        | Копирование по умолчанию                |
 | Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
-| Event loop    | Старт с `run()`, `pump()` пока заглушка |
-| TS-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
+| Event loop    | `run()` дренирует блокирующе; `pump()` дренирует без блокировки; `marshal` - путь wrong-thread (код 12) |
+| TS-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
+| Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх ObjectWrap (теги 0x0100-0x01FF): геттеры полей, `&self`-методы, генерируемый release; метаданные bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; E005-E008 |
+| Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (bffi-macros, bffi-class); tooling-крейт - без runtime-кода и ABI |
 | Паника (prod) | Преобразуется в JS Error                |
 | Паника (dev)  | Может прерываться (abort)               |
 | Совместимость | Только Bun                              |
 | Лицензия      | MIT                                     |
+| Фасад         | `bffi`: плоские ре-экспорты стека; `unsafe_zero_copy` - единственная точка zero-copy; раскрытие макросов - на прямых dep'ах юзера |
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry` (тег 0x0100-0x01FF); release освобождает слот |
 | Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; wrong-thread - reject |
 | Build ABI | Runtime-экспорты (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в юзер-крейте; теги 0x0400-0x04FF; канонический контракт: bffi-build/CALLING-CONVENTION.md |

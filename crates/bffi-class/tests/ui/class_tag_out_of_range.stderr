@@ -1,0 +1,8 @@
+error: bffi[E006]: invalid class tag: tag 0x0200 is outside the bffi-object range 0x0100..=0x01FF
+         = help: use `#[bffi_class(tag = 0x0142)]` with a literal in 0x0100..=0x01FF (bffi-object range)
+         = note: one tag = one type per process (bffi-object/Registry)
+         = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+ --> tests/ui/class_tag_out_of_range.rs:4:20
+  |
+4 | #[bffi_class(tag = 0x0200)]
+  |                    ^^^^^^

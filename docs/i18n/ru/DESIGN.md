@@ -116,6 +116,7 @@ type Handle = u64;
 | Тема                   | Решение                                                   |
 |------------------------|-----------------------------------------------------------|
 | Макрос                 | `#[bffi]` - шим (debug без обёртки / release catch_unwind) + const-дескриптор `bffi_meta_*` |
+| Возвраты `#[bffi]` | примитивы/bigint через out-param; `String`/`Vec<u8>`/`CopiedBuf` (и `Option` от них) как хендлы транзитных буферов; `Result<T, E>` -> `ErrorCode::DomainError` с `E` в source |
 | Минимальная версия Bun | 1.4.0                                                     |
 | Rust / Cargo           | 1.98.0                                                    |
 | Хендлы                 | Generational Index + type-tag                             |
@@ -128,12 +129,15 @@ type Handle = u64;
 | UTF-8 валидация        | SIMD (x86 SSSE3, aarch64 NEON); скалярный DFA - эталонная семантика |
 | Буферы                 | Копирование по умолчанию                                  |
 | Zero-copy              | Только через `bffi::unsafe_zero_copy`                     |
-| Event loop             | Старт с `run()`; `pump()` пока заглушка                   |
-| TypeScript-типы | IR (ModuleDef/FunctionDef) + детерминированный render; export_name = bffi_-префикс |
+| Event loop             | Очередь `enqueue`/`marshal`; `run()` блокирует и дренирует на потоке-исполнителе (задачи через `run_extern_body`); `pump()` дренирует без блокировки (без ожидания); `stop()` липкий; marshal без раннера -> WrongThread(12); Bun-tick - на стороне лоадера |
+| TypeScript-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
+| Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх `ObjectWrap` (теги 0x0100-0x01FF): геттеры `pub`-примитивных полей, `&self`-методы, генерируемый release; метаданные split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; диагностика E005-E008 |
+| Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (`bffi-macros`, `bffi-class`); tooling-крейт - без runtime-кода и ABI |
 | Паника (prod)          | Преобразуется в JS Error                                  |
 | Паника (dev)           | Может прерываться (abort)                                 |
 | Совместимость          | Только Bun                                                |
 | Дистрибуция            | Исходники в репозитории; prebuilt-бинарники позже для npm |
+| Фасад                  | `bffi`: плоские ре-экспорты стека; `unsafe_zero_copy` - единственная точка zero-copy; раскрытие макросов - на прямых dep'ах юзера |
 | Лицензия               | MIT                                                       |
 
 ---
@@ -150,6 +154,7 @@ type Handle = u64;
 | `bffi-dts`        | Генерация TypeScript `.d.ts`                                  | P1        |
 | `bffi-macros`     | Процедурные макросы (`#[bffi]`, атрибуты)                     | P1        |
 | `bffi-class`      | Макросы объявления классов                                    | P2        |
+| `bffi-macro-support` | Общая внутренняя логика макросов (виды, классификация, кодогенерация) | P3 |
 | `bffi-event-loop` | Абстракция `run()` / `pump()`                                 | P2        |
 | `bffi-build`      | Помощники сборки, генерация C ABI, интеграция с Bun           | P2        |
 | `bffi-rs`         | Публичный фасад, реэкспортирующий стек                        | P2        |

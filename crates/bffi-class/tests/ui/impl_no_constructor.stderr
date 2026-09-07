@@ -1,0 +1,8 @@
+error: bffi[E008]: invalid impl binding: no `#[bffi_constructor]` fn found (JS needs a constructor to create instances)
+         = help: exactly one `#[bffi_constructor] pub fn new(...) -> Self` per `#[bffi_impl]`
+         = note: an `#[bffi_impl]` without a matching `#[bffi_class]` surfaces as a missing `__bffi_<name>_wrap` function
+         = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+  --> tests/ui/impl_no_constructor.rs:10:6
+   |
+10 | impl NoCtor {
+   |      ^^^^^^

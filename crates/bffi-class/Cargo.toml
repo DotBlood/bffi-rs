@@ -1,0 +1,30 @@
+[package]
+name = "bffi-class"
+description = "Class declaration macros for bffi-rs: #[bffi_class]/#[bffi_impl] over ObjectWrap, with const bffi-dts ClassDef descriptors."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+
+[lib]
+proc-macro = true
+
+[lints]
+workspace = true
+
+[dependencies]
+syn.workspace = true
+quote.workspace = true
+proc-macro2.workspace = true
+bffi-macro-support = { path = "../bffi-macro-support" }
+
+[dev-dependencies]
+bffi-core = { path = "../bffi-core" }
+bffi-types = { path = "../bffi-types" }
+bffi-dts = { path = "../bffi-dts" }
+bffi-object = { path = "../bffi-object" }
+bffi-build = { path = "../bffi-build" }
+trybuild.workspace = true
