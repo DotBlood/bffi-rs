@@ -89,15 +89,52 @@ fn error_exports_expose_name_message_and_free() {
         )
     };
     assert_eq!(message, b"byte 0xFF at position 2");
+    // This error carries no source: the cause pair reads as null/0.
+    assert!(bffi_error_cause_ptr(handle).is_null(), "no source -> null");
+    assert_eq!(bffi_error_cause_len(handle), 0);
 
     assert_eq!(bffi_error_free(handle), ErrorCode::Ok.as_u32());
     assert_eq!(bffi_error_free(handle), ErrorCode::InvalidHandle.as_u32());
     assert_eq!(bffi_error_name(handle), 0, "stale handle -> invalid");
     assert!(bffi_error_message_ptr(handle).is_null());
     assert_eq!(bffi_error_message_len(handle), 0);
+    assert!(bffi_error_cause_ptr(handle).is_null());
+    assert_eq!(bffi_error_cause_len(handle), 0);
 
     // The slot was drained: a second take sees nothing.
     assert_eq!(bffi_error_take_last(), 0);
+}
+
+#[test]
+fn error_exports_expose_the_source_as_cause_until_free() {
+    bffi_core::set_last_error(BffiError::with_source(
+        ErrorCode::DomainError,
+        "checked_div failed",
+        std::io::Error::new(std::io::ErrorKind::InvalidData, "division by 0"),
+    ));
+    let handle = bffi_error_take_last();
+    assert_ne!(handle, 0, "a stored error must produce a handle");
+
+    assert_eq!(bffi_error_name(handle), 1, "DomainError -> Error");
+    assert_eq!(bffi_error_message_len(handle), 18);
+    assert_eq!(bffi_error_cause_len(handle), 13);
+    // SAFETY: the export handed out the pointer to exactly
+    // `bffi_error_cause_len(handle)` owned UTF-8 bytes; the handle is
+    // live until bffi_error_free.
+    let cause = unsafe {
+        std::slice::from_raw_parts(
+            bffi_error_cause_ptr(handle),
+            bffi_error_cause_len(handle) as usize,
+        )
+    };
+    assert_eq!(cause, b"division by 0");
+
+    assert_eq!(bffi_error_free(handle), ErrorCode::Ok.as_u32());
+    assert!(
+        bffi_error_cause_ptr(handle).is_null(),
+        "stale handle -> null"
+    );
+    assert_eq!(bffi_error_cause_len(handle), 0);
 }
 
 #[test]
@@ -117,6 +154,8 @@ fn error_exports_map_every_js_name_and_reject_invalid_handles() {
     assert_eq!(bffi_error_name(0), 0);
     assert!(bffi_error_message_ptr(0).is_null());
     assert_eq!(bffi_error_message_len(0), 0);
+    assert!(bffi_error_cause_ptr(0).is_null());
+    assert_eq!(bffi_error_cause_len(0), 0);
     assert_eq!(bffi_error_free(0), ErrorCode::InvalidHandle.as_u32());
 }
 

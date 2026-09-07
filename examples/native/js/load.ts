@@ -97,6 +97,8 @@ const DECLARATIONS = {
   bffi_error_name: { args: ["u64"], returns: "u32" },
   bffi_error_message_ptr: { args: ["u64"], returns: "ptr" },
   bffi_error_message_len: { args: ["u64"], returns: "u64" },
+  bffi_error_cause_ptr: { args: ["u64"], returns: "ptr" },
+  bffi_error_cause_len: { args: ["u64"], returns: "u64" },
   bffi_error_free: { args: ["u64"], returns: "u32" },
   bffi_buffer: { args: ["u64"], returns: "ptr" },
   bffi_buffer_length: { args: ["u64"], returns: "u64" },
@@ -120,8 +122,9 @@ function lib() {
 const decoder = new TextDecoder();
 
 /**
- * Drains the thread-local last error into a JS `Error`.
- * Returns `null` when no error is stored.
+ * Drains the thread-local last error into a JS `Error`. A stored
+ * source travels as the standard `Error.cause`. Returns `null` when
+ * no error is stored.
  */
 export function takeError(): Error | null {
   const symbols = lib();
@@ -138,9 +141,17 @@ export function takeError(): Error | null {
     // covers exactly `len` UTF-8 bytes (CALLING-CONVENTION.md §5).
     message = decoder.decode(toArrayBuffer(messagePtr, 0, len));
   }
+  const causeLen = Number(symbols.bffi_error_cause_len(handle));
+  const causePtr = symbols.bffi_error_cause_ptr(handle);
+  let cause: string | undefined;
+  if (causePtr !== null && causeLen > 0) {
+    // SAFETY (JS side): same lifetime contract as the message pair
+    // above (CALLING-CONVENTION.md §5); null/0 means no cause.
+    cause = decoder.decode(toArrayBuffer(causePtr, 0, causeLen));
+  }
   symbols.bffi_error_free(handle);
   const Ctor = JS_ERROR_NAMES[name] ?? Error;
-  return new Ctor(message);
+  return cause === undefined ? new Ctor(message) : new Ctor(message, { cause });
 }
 
 /** Reads and releases a transient buffer behind a handle. */
