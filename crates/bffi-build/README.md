@@ -27,6 +27,7 @@ transport, buffer pairs) lives in one canonical document:
 | Module       | Provides                                                                                     |
 | ------------ | -------------------------------------------------------------------------------------------- |
 | [`abi`]      | [`bffi_runtime_abi!`] - the export generator, plus the `*_as_u32` / `*_as_code` helpers       |
+| [`dts`]      | `write_to_file` - render a `ModuleDef` and write the `.d.ts` bytes to disk (criterion 6.2, build-time half) |
 | [`error`]    | [`BuildError`] and the lossless `From<BuildError> for BffiError` bridge                        |
 | [`runtime`]  | `store_bytes` / `buffer_ptr` / `buffer_len` / `free_buffer` + `take_error` / `error_*` / `free_error` |
 
@@ -41,7 +42,7 @@ model as `#[bffi]` shims (P1): the generator lives in the framework
 crate, the generated code in the user crate. This crate stays 100%
 safe: no `extern "C"` functions, no `unsafe`.
 
-## The eight exports
+## The ten exports
 
 | Symbol                   | Signature                | Sentinel on panic       |
 | ------------------------ | ------------------------ | ----------------------- |
@@ -49,6 +50,8 @@ safe: no `extern "C"` functions, no `unsafe`.
 | `bffi_error_name`        | `(h: u64) -> u32`        | `0` (reads as invalid)  |
 | `bffi_error_message_ptr` | `(h: u64) -> *const u8`  | null                    |
 | `bffi_error_message_len` | `(h: u64) -> u64`        | `0`                     |
+| `bffi_error_cause_ptr`   | `(h: u64) -> *const u8`  | null                    |
+| `bffi_error_cause_len`   | `(h: u64) -> u64`        | `0`                     |
 | `bffi_error_free`        | `(h: u64) -> u32`        | `ErrorCode::Panic` value |
 | `bffi_buffer`            | `(h: u64) -> *const u8`  | null                    |
 | `bffi_buffer_length`     | `(h: u64) -> u64`        | `0`                     |
@@ -58,6 +61,9 @@ safe: no `extern "C"` functions, no `unsafe`.
   numeric value: `0` = Ok, `4` = InvalidHandle.
 - `bffi_error_name` codes: `1` = Error, `2` = TypeError,
   `3` = RangeError (the JS-facing twin of `bffi-error`'s mapping).
+- The cause pair reads the source's `Display` string (materialized at
+  `bffi_error_take_last` time); null/`0` means the error has no
+  source. JavaScript surfaces it as the standard `Error.cause`.
 - Every export follows the `bffi_extern!` build policy (DESIGN §6.5):
   debug builds run bare (panic aborts), release builds wrap the body in
   `run_extern_body_or` - the panic is stored as the last error and the
@@ -65,11 +71,12 @@ safe: no `extern "C"` functions, no `unsafe`.
 
 ## Pointer lifetime
 
-Pointers handed out by `bffi_buffer` / `bffi_error_message_ptr` are
-valid **until the owning handle is released** (or the process ends).
-JavaScript must read the bytes synchronously and then call the matching
-free export; the generational scheme makes stale handles detectable on
-the Rust side, but raw pointers are not revalidated.
+Pointers handed out by `bffi_buffer` / `bffi_error_message_ptr` /
+`bffi_error_cause_ptr` are valid **until the owning handle is
+released** (or the process ends). JavaScript must read the bytes
+synchronously and then call the matching free export; the generational
+scheme makes stale handles detectable on the Rust side, but raw
+pointers are not revalidated.
 
 ## Quick start
 
@@ -91,12 +98,39 @@ User-crate requirements: `cdylib` crate type, dependencies on
 `bffi-core` and `bffi-build`, one `bffi_build::bffi_runtime_abi!()`
 invocation per crate.
 
+## d.ts generation
+
+The renderer is pure and lives in [`bffi-dts`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-dts)
+([`bffi_dts::render`]: deterministic, LF, one trailing newline). This
+crate adds the build-time half of kanboard criterion 6.2: one call
+that turns an aggregated module into a declaration file on disk.
+Aggregation stays explicit by decision (no inventory, no linkme) -
+you list your `bffi_meta` descriptor consts yourself:
+
+```rust
+use bffi_dts::{FunctionDef, ModuleDef};
+
+static FNS: &[FunctionDef] = &[
+    my_crate::bffi_meta_add::FUNCTION,
+    my_crate::bffi_meta_greet::FUNCTION,
+];
+
+let module = ModuleDef { name: "api", fns: FNS, classes: &[] };
+bffi_build::dts::write_to_file(&module, std::path::Path::new("js/api.d.ts"))?;
+```
+
+Call it from a `#[test]` that refreshes the committed golden or from a
+small bin. The reference use is
+[examples/native/tests/dts.rs](https://github.com/DotBlood/bffi-rs/blob/main/examples/native/tests/dts.rs);
+the C ABI surface the declarations describe is specified in
+[CALLING-CONVENTION.md](CALLING-CONVENTION.md).
+
 ## What does _not_ belong here
 
 | Concern                                          | Home crate   |
 | ------------------------------------------------ | ------------ |
 | per-function `extern "C"` shims for `#[bffi]` fns | `bffi-macros` |
-| TypeScript descriptors / `.d.ts` rendering        | `bffi-dts`    |
+| TypeScript IR / rendering (pure, no filesystem)   | `bffi-dts`    |
 | zero-copy view policy (`str_view`, `buf_view`)    | `bffi-types`  |
 | code -> JS constructor mapping                    | `bffi-error`  |
 | class declaration macros                          | `bffi-class`  |
@@ -109,7 +143,7 @@ cargo test --release -p bffi-build # the release cfg variant of the generated ex
 ```
 
 The integration suite (`tests/abi.rs`) expands `bffi_runtime_abi!()`
-into the test binary and calls all eight exports directly - the P1 shim
+into the test binary and calls all ten exports directly - the P1 shim
 testing model (no Bun in the loop; the real `bun:ffi` round-trip lives
 in `examples/native`).
 

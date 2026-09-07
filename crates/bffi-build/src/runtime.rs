@@ -18,17 +18,21 @@
 //! `bffi_error_take_last`; this drains the thread-local last error,
 //! converts it into a [`JsErrorShape`] and stores it. Name and message
 //! are then read through the `bffi_error_*` exports and released with
-//! `bffi_error_free`.
+//! `bffi_error_free`. The source's `Display` string (when there is a
+//! source) is materialized into the entry and surfaces as the JS
+//! `Error.cause` through `bffi_error_cause_ptr` / `bffi_error_cause_len`.
 //!
 //! # Pointer lifetime
 //!
-//! Pointers handed out by `buffer_ptr` / `error_message_ptr` are valid
-//! until the owning handle is released (or the process ends). JavaScript
-//! must read the bytes synchronously and then call the matching
-//! free export; holding the pointer across releases is undefined
-//! behavior on the JS side (the generational scheme makes the stale
-//! handle detectable, but the raw pointer is NOT revalidated).
+//! Pointers handed out by `buffer_ptr` / `error_message_ptr` /
+//! `error_cause_ptr` are valid until the owning handle is released
+//! (or the process ends). JavaScript must read the bytes synchronously
+//! and then call the matching free export; holding the pointer across
+//! releases is undefined behavior on the JS side (the generational
+//! scheme makes the stale handle detectable, but the raw pointer is
+//! NOT revalidated).
 
+use std::error::Error as _;
 use std::sync::{Arc, OnceLock};
 
 use bffi_core::{Handle, Registry, TypeTag};
@@ -43,10 +47,13 @@ const ERROR_TAG: TypeTag = TypeTag(0x0400);
 /// The type tag of the transient-buffer table.
 const BUFFER_TAG: TypeTag = TypeTag(0x0401);
 
-/// A drained last error, stored so the JS side can read name and
-/// message through the generated exports.
+/// A drained last error, stored so the JS side can read name,
+/// message, and cause through the generated exports.
 struct ErrorEntry {
     shape: JsErrorShape,
+    /// The source's `Display` string, materialized at `take_error`
+    /// time (the boxed source itself is never stored).
+    cause: Option<String>,
 }
 
 /// Declares both runtime tables in the global registry, exactly once
@@ -152,8 +159,12 @@ pub fn take_error() -> Handle {
     let Some(error) = bffi_core::take_last_error() else {
         return Handle::NULL;
     };
+    // The cause must be materialized before the shape consumes
+    // `error`: only the source's `Display` string is kept, never the
+    // box itself.
+    let cause = error.source().map(std::string::ToString::to_string);
     let shape = error.to_js_shape();
-    match Registry::global().insert(ERROR_TAG, Arc::new(ErrorEntry { shape })) {
+    match Registry::global().insert(ERROR_TAG, Arc::new(ErrorEntry { shape, cause })) {
         Ok(handle) => handle,
         Err(_) => Handle::NULL,
     }
@@ -188,6 +199,35 @@ pub fn error_message_ptr(handle: Handle) -> *const u8 {
 pub fn error_message_len(handle: Handle) -> u64 {
     match Registry::global().get_typed::<ErrorEntry>(handle) {
         Some(entry) => entry.shape.message.len() as u64,
+        None => 0,
+    }
+}
+
+/// Returns the pointer to the UTF-8 cause bytes (the source's
+/// `Display` string) of the drained error behind `handle`, or a null
+/// pointer when the error has no source or the handle is invalid.
+///
+/// The pointer stays valid until the handle is released with
+/// `bffi_error_free`. See the module docs for the JS-side lifetime
+/// contract.
+#[must_use]
+pub fn error_cause_ptr(handle: Handle) -> *const u8 {
+    match Registry::global().get_typed::<ErrorEntry>(handle) {
+        Some(entry) => entry
+            .cause
+            .as_ref()
+            .map_or(std::ptr::null(), |cause| cause.as_ptr()),
+        None => std::ptr::null(),
+    }
+}
+
+/// Returns the length in bytes of the drained error cause behind
+/// `handle`, or `0` when the error has no source or the handle is
+/// invalid.
+#[must_use]
+pub fn error_cause_len(handle: Handle) -> u64 {
+    match Registry::global().get_typed::<ErrorEntry>(handle) {
+        Some(entry) => entry.cause.as_ref().map_or(0, |cause| cause.len() as u64),
         None => 0,
     }
 }
@@ -236,6 +276,8 @@ mod tests {
         assert!(!free_buffer(Handle::NULL));
         assert!(error_message_ptr(Handle::NULL).is_null());
         assert_eq!(error_message_len(Handle::NULL), 0);
+        assert!(error_cause_ptr(Handle::NULL).is_null());
+        assert_eq!(error_cause_len(Handle::NULL), 0);
         assert!(!free_error(Handle::NULL));
         assert_eq!(error_name(Handle::NULL), None);
 
@@ -245,6 +287,7 @@ mod tests {
         let foreign = Handle::new(TypeTag(0x8FFF), buffer.generation(), buffer.index());
         assert!(buffer_ptr(foreign).is_null());
         assert!(error_message_ptr(foreign).is_null());
+        assert!(error_cause_ptr(foreign).is_null());
         assert!(free_buffer(buffer));
     }
 
@@ -282,6 +325,60 @@ mod tests {
         let handle = take_error_after_store();
         assert!(free_error(handle));
         assert_eq!(error_name(handle), None, "stale handle -> no name");
+    }
+
+    /// The test-double source whose `Display` mirrors the example
+    /// crate's `MathError` ("division by 0" for a zero divisor).
+    #[derive(Debug)]
+    struct MathError {
+        divisor: u32,
+    }
+
+    impl std::fmt::Display for MathError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "division by {}", self.divisor)
+        }
+    }
+
+    impl std::error::Error for MathError {}
+
+    #[test]
+    fn take_error_materializes_the_source_display_as_cause() {
+        bffi_core::set_last_error(BffiError::with_source(
+            ErrorCode::DomainError,
+            "checked_div failed",
+            MathError { divisor: 0 },
+        ));
+        let handle = take_error();
+        assert!(!handle.is_null());
+        assert_eq!(error_cause_len(handle), 13);
+        // SAFETY: `error_cause_ptr` handed out the pointer to exactly
+        // `error_cause_len(handle)` owned UTF-8 bytes and the handle
+        // is still live until `free_error`.
+        let cause = unsafe {
+            std::slice::from_raw_parts(error_cause_ptr(handle), error_cause_len(handle) as usize)
+        };
+        assert_eq!(cause, b"division by 0");
+        assert!(free_error(handle));
+        assert!(
+            error_cause_ptr(handle).is_null(),
+            "freed handle -> null cause ptr"
+        );
+        assert_eq!(error_cause_len(handle), 0);
+    }
+
+    #[test]
+    fn take_error_reports_no_cause_without_a_source() {
+        // A caught panic (release shim path) stores no source.
+        bffi_core::set_last_error(BffiError::new(ErrorCode::Panic, "boom"));
+        let handle = take_error();
+        assert!(!handle.is_null());
+        assert!(
+            error_cause_ptr(handle).is_null(),
+            "no source -> null cause ptr"
+        );
+        assert_eq!(error_cause_len(handle), 0);
+        assert!(free_error(handle));
     }
 
     fn take_error_after_store() -> Handle {

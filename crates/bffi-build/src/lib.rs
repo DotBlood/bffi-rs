@@ -7,6 +7,11 @@
 //! `#[bffi]` (P1) already generates per-function shims in the user
 //! crate. This crate provides everything those shims cannot:
 //!
+//! - [`dts`] - the build-time half of the `.d.ts` story (kanboard
+//!   criterion 6.2): [`dts::write_to_file`] renders a
+//!   [`bffi_dts::ModuleDef`] with the deterministic
+//!   [`bffi_dts::render`] and writes the bytes to disk in one call
+//!   (descriptor aggregation stays the caller's explicit job);
 //! - [`runtime`] - safe Rust storage for **transient buffers**
 //!   (`String`/`Vec<u8>`/`CopiedBuf` returned to JS) and for **drained
 //!   last errors**, both addressed by opaque handles in the
@@ -23,7 +28,7 @@
 //! | Concern | Home |
 //! |---|---|
 //! | per-function `extern "C"` shims for `#[bffi]` fns | `bffi-macros` |
-//! | TypeScript descriptors / `.d.ts` rendering | `bffi-dts` |
+//! | TypeScript descriptors / `.d.ts` rendering | `bffi-dts` (the [`dts`] module here only materializes the rendered bytes to disk) |
 //! | zero-copy view policy (`str_view`, `buf_view`) | `bffi-types` |
 //! | code -> JS constructor mapping | `bffi-error` |
 //! | the cargo/bun build wiring (task of the repo `package.json`) | repo scripts |
@@ -67,6 +72,7 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
 pub mod abi;
+pub mod dts;
 pub mod error;
 pub mod runtime;
 

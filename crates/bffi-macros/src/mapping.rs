@@ -1,158 +1,37 @@
-//! Type classification and TypeScript name mapping.
+//! Type classification and TypeScript kind mapping.
 //!
-//! [`classify_param`] and [`classify_return`] turn a `syn::Type` into
-//! the boundary kinds from [`crate::model`], rejecting anything outside
-//! the P1 set; the `ts_*` helpers render the TypeScript name (`number`,
-//! `bigint`, `boolean`, `string`, `void`) that the descriptor generator
-//! quotes into the expansion.
+//! The pure classification lives in `bffi_macro_support::classify`;
+//! this module keeps the local signatures the model stage uses and
+//! maps neutral rejections onto this crate's `E002`/`E003`
+//! diagnostics (exact texts locked by the `tests/ui` goldens).
 
-use crate::errors::MacroDiagnostic;
-use crate::model::{BigIntTy, FnReturn, PrimTy, ShimKind};
-use syn::spanned::Spanned;
+use crate::errors::{param_type, return_type};
+use bffi_macro_support::classify as support;
+use bffi_macro_support::kind::{RetKind, ShimKind};
 
-/// Kind of a plain path type: a small primitive or a 64-bit integer.
-enum PathKind {
-    /// A small primitive (`i32`, `f64`, `bool`, ...).
-    Prim(PrimTy),
-    /// A 64-bit integer (`i64`/`u64`).
-    BigInt(BigIntTy),
-}
-
-/// Resolves a small-primitive name.
-fn prim_from_str(name: &str) -> Option<PrimTy> {
-    match name {
-        "i8" => Some(PrimTy::I8),
-        "i16" => Some(PrimTy::I16),
-        "i32" => Some(PrimTy::I32),
-        "u8" => Some(PrimTy::U8),
-        "u16" => Some(PrimTy::U16),
-        "u32" => Some(PrimTy::U32),
-        "f32" => Some(PrimTy::F32),
-        "f64" => Some(PrimTy::F64),
-        "bool" => Some(PrimTy::Bool),
-        _ => None,
-    }
-}
-
-/// Resolves a 64-bit integer name.
-fn bigint_from_str(name: &str) -> Option<BigIntTy> {
-    match name {
-        "i64" => Some(BigIntTy::I64),
-        "u64" => Some(BigIntTy::U64),
-        _ => None,
-    }
-}
-
-/// Classifies `ty` when it is a plain, unqualified path over a single
-/// generic-free segment (`u32`), i.e. the shape accepted in P1.
-/// Qualified paths (`std::u32`), paths with arguments (`Vec<u8>`) and
-/// non-path types are `None`.
-fn path_kind(ty: &syn::Type) -> Option<PathKind> {
-    let syn::Type::Path(path) = ty else {
-        return None;
-    };
-    if path.qself.is_some() || path.path.leading_colon.is_some() || path.path.segments.len() != 1 {
-        return None;
-    }
-    let segment = &path.path.segments[0];
-    if !segment.arguments.is_none() {
-        return None;
-    }
-    let name = segment.ident.to_string();
-    if let Some(prim) = prim_from_str(&name) {
-        return Some(PathKind::Prim(prim));
-    }
-    bigint_from_str(&name).map(PathKind::BigInt)
-}
-
-/// Whether `ty` is the bare `str` path type (`str` parses as a
-/// single-segment path, not a dedicated variant).
-fn is_str_type(ty: &syn::Type) -> bool {
-    let syn::Type::Path(path) = ty else {
-        return false;
-    };
-    path.qself.is_none()
-        && path.path.leading_colon.is_none()
-        && path.path.segments.len() == 1
-        && path.path.segments[0].ident == "str"
-        && path.path.segments[0].arguments.is_none()
-}
+pub(crate) use bffi_macro_support::classify::{ts_return, ts_type};
 
 /// Classifies a parameter type: plain primitives and `i64`/`u64` as
 /// their kinds, `&str` (borrowed, not `mut`; lifetimes ignored) as
 /// [`ShimKind::Str`], everything else rejected.
 pub(crate) fn classify_param(ty: &syn::Type, name: &str) -> syn::Result<ShimKind> {
-    if let Some(kind) = path_kind(ty) {
-        return Ok(match kind {
-            PathKind::Prim(prim) => ShimKind::Prim(prim),
-            PathKind::BigInt(bigint) => ShimKind::BigInt(bigint),
-        });
-    }
-    if let syn::Type::Reference(reference) = ty
-        && reference.mutability.is_none()
-        && is_str_type(&reference.elem)
-    {
-        return Ok(ShimKind::Str);
-    }
-    Err(MacroDiagnostic::param_type(ty.span(), ty, name))
+    support::classify_param(ty).map_err(|u| param_type(u.span, u.ty, name))
 }
 
-/// Classifies a return type: the plain primitives plus `i64`/`u64` and
-/// the empty tuple. `&str` and everything else is rejected.
-pub(crate) fn classify_return(ty: &syn::Type) -> syn::Result<FnReturn> {
-    if let syn::Type::Tuple(tuple) = ty
-        && tuple.elems.is_empty()
-    {
-        return Ok(FnReturn::Unit);
-    }
-    match path_kind(ty) {
-        Some(PathKind::Prim(prim)) => Ok(FnReturn::Prim(prim)),
-        Some(PathKind::BigInt(bigint)) => Ok(FnReturn::BigInt(bigint)),
-        None => Err(MacroDiagnostic::return_type(ty.span(), ty)),
-    }
-}
-
-/// TypeScript name of a small primitive: every numeric type is
-/// `number`, `bool` is `boolean`.
-pub(crate) fn ts_prim(prim: PrimTy) -> &'static str {
-    match prim {
-        PrimTy::I8
-        | PrimTy::I16
-        | PrimTy::I32
-        | PrimTy::U8
-        | PrimTy::U16
-        | PrimTy::U32
-        | PrimTy::F32
-        | PrimTy::F64 => "number",
-        PrimTy::Bool => "boolean",
-    }
-}
-
-/// TypeScript name of an accepted parameter kind.
-pub(crate) fn ts_type(kind: &ShimKind) -> &'static str {
-    match kind {
-        ShimKind::Prim(prim) => ts_prim(*prim),
-        ShimKind::BigInt(_) => "bigint",
-        ShimKind::Str => "string",
-    }
-}
-
-/// TypeScript name of an accepted return type.
-pub(crate) fn ts_return(ret: &FnReturn) -> &'static str {
-    match ret {
-        FnReturn::Unit => "void",
-        FnReturn::Prim(prim) => ts_prim(*prim),
-        FnReturn::BigInt(_) => "bigint",
-    }
+/// Classifies a return type: the plain primitives plus `i64`/`u64`,
+/// the empty tuple, the owned byte payloads (`String` / `Vec<u8>` /
+/// `CopiedBuf`), `Option` of a payload, and `Result<T, E>` over any of
+/// those. Everything else is rejected.
+pub(crate) fn classify_return(ty: &syn::Type) -> syn::Result<RetKind> {
+    support::classify_return(ty).map_err(|u| return_type(u.span, u.ty))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        BigIntTy, FnReturn, PrimTy, ShimKind, classify_param, classify_return, ts_prim, ts_return,
-        ts_type,
-    };
+    use super::{RetKind, ShimKind, classify_param, classify_return, ts_return, ts_type};
     use crate::model::FnModel;
+    use bffi_macro_support::classify::ts_prim;
+    use bffi_macro_support::kind::{BigIntTy, BufferTy, PrimTy, TsKind};
     use quote::quote;
 
     /// Parses a type source, panicking in tests only (allowed by the
@@ -162,17 +41,17 @@ mod tests {
     }
 
     #[test]
-    fn accepted_primitives_map_to_ts_names() {
+    fn accepted_primitives_map_to_ts_kinds() {
         let cases = [
-            (PrimTy::I8, "number"),
-            (PrimTy::I16, "number"),
-            (PrimTy::I32, "number"),
-            (PrimTy::U8, "number"),
-            (PrimTy::U16, "number"),
-            (PrimTy::U32, "number"),
-            (PrimTy::F32, "number"),
-            (PrimTy::F64, "number"),
-            (PrimTy::Bool, "boolean"),
+            (PrimTy::I8, TsKind::Number),
+            (PrimTy::I16, TsKind::Number),
+            (PrimTy::I32, TsKind::Number),
+            (PrimTy::U8, TsKind::Number),
+            (PrimTy::U16, TsKind::Number),
+            (PrimTy::U32, TsKind::Number),
+            (PrimTy::F32, TsKind::Number),
+            (PrimTy::F64, TsKind::Number),
+            (PrimTy::Bool, TsKind::Boolean),
         ];
         for (prim, expected) in cases {
             assert_eq!(ts_prim(prim), expected);
@@ -180,19 +59,40 @@ mod tests {
     }
 
     #[test]
-    fn accepted_param_types_map_to_ts_names() {
+    fn ts_kind_tokens_quote_the_ir_variant() {
+        let ctx = bffi_macro_support::paths::PathCtx::default();
+        assert_eq!(
+            TsKind::Number.tokens(&ctx).to_string(),
+            ":: bffi_dts :: TsType :: Number"
+        );
+        assert_eq!(
+            TsKind::Uint8Array.tokens(&ctx).to_string(),
+            ":: bffi_dts :: TsType :: Uint8Array"
+        );
+        assert_eq!(
+            TsKind::NullableString.tokens(&ctx).to_string(),
+            ":: bffi_dts :: TsType :: NullableString"
+        );
+        assert_eq!(
+            TsKind::NullableUint8Array.tokens(&ctx).to_string(),
+            ":: bffi_dts :: TsType :: NullableUint8Array"
+        );
+        assert_eq!(
+            TsKind::Void.tokens(&ctx).to_string(),
+            ":: bffi_dts :: TsType :: Void"
+        );
+    }
+
+    #[test]
+    fn accepted_param_types_map_to_ts_kinds() {
         let cases = [
-            ("i8", "number"),
-            ("i16", "number"),
-            ("i32", "number"),
-            ("u8", "number"),
-            ("u16", "number"),
-            ("u32", "number"),
-            ("f32", "number"),
-            ("f64", "number"),
-            ("bool", "boolean"),
-            ("i64", "bigint"),
-            ("u64", "bigint"),
+            ("i8", TsKind::Number),
+            ("i32", TsKind::Number),
+            ("f64", TsKind::Number),
+            ("bool", TsKind::Boolean),
+            ("i64", TsKind::BigInt),
+            ("u64", TsKind::BigInt),
+            ("&str", TsKind::String),
         ];
         for (src, expected) in cases {
             let kind = classify_param(&ty(src), "x").expect("accepted");
@@ -204,7 +104,16 @@ mod tests {
     fn str_params_accept_lifetimes() {
         for src in ["&str", "&'a str"] {
             let kind = classify_param(&ty(src), "x").expect("accepted");
-            assert_eq!(ts_type(&kind), "string", "param type `{src}`");
+            assert_eq!(ts_type(&kind), TsKind::String, "param type `{src}`");
+        }
+    }
+
+    #[test]
+    fn buffer_view_params_map_to_uint8array() {
+        for src in ["&[u8]", "&'a [u8]"] {
+            let kind = classify_param(&ty(src), "x").expect("accepted");
+            assert_eq!(kind, ShimKind::BufferView, "param type `{src}`");
+            assert_eq!(ts_type(&kind), TsKind::Uint8Array, "param type `{src}`");
         }
     }
 
@@ -221,9 +130,92 @@ mod tests {
     }
 
     #[test]
+    fn buffer_returns_classify_with_their_ts_kinds() {
+        let cases = [
+            ("String", RetKind::Buffer(BufferTy::String), TsKind::String),
+            (
+                "Vec<u8>",
+                RetKind::Buffer(BufferTy::ByteVec),
+                TsKind::Uint8Array,
+            ),
+            (
+                "CopiedBuf",
+                RetKind::Buffer(BufferTy::CopiedBuf),
+                TsKind::Uint8Array,
+            ),
+        ];
+        for (src, expected, ts) in cases {
+            let ret = classify_return(&ty(src)).expect("accepted");
+            assert_eq!(ret, expected, "return type `{src}`");
+            assert_eq!(ts_return(&ret), ts, "ts kind for `{src}`");
+        }
+    }
+
+    #[test]
+    fn option_buffer_returns_classify_nullable() {
+        let cases = [
+            ("Option<String>", TsKind::NullableString),
+            ("Option<Vec<u8>>", TsKind::NullableUint8Array),
+            ("Option<CopiedBuf>", TsKind::NullableUint8Array),
+        ];
+        for (src, ts) in cases {
+            let ret = classify_return(&ty(src)).expect("accepted");
+            assert!(
+                matches!(ret, RetKind::Nullable(_)),
+                "`{src}` must classify as Nullable"
+            );
+            assert_eq!(ts_return(&ret), ts, "ts kind for `{src}`");
+        }
+    }
+
+    #[test]
+    fn result_returns_wrap_any_supported_inner() {
+        for src in [
+            "Result<u32, MyError>",
+            "Result<(), MyError>",
+            "Result<String, MyError>",
+            "Result<Option<CopiedBuf>, MyError>",
+        ] {
+            let ret = classify_return(&ty(src)).expect("accepted");
+            assert!(
+                matches!(ret, RetKind::Result(_)),
+                "`{src}` must classify as Result"
+            );
+        }
+        assert_eq!(
+            ts_return(&classify_return(&ty("Result<u32, MyError>")).expect("accepted")),
+            TsKind::Number
+        );
+        assert_eq!(
+            ts_return(
+                &classify_return(&ty("Result<Option<CopiedBuf>, MyError>")).expect("accepted")
+            ),
+            TsKind::NullableUint8Array
+        );
+    }
+
+    #[test]
+    fn option_over_primitives_is_rejected() {
+        for src in ["Option<i32>", "Option<u64>", "Option<bool>"] {
+            let err = classify_return(&ty(src)).expect_err("rejected");
+            assert!(
+                err.to_string().contains("bffi[E003]"),
+                "`{src}` must carry E003"
+            );
+        }
+    }
+
+    #[test]
+    fn vec_non_u8_and_single_arg_result_are_rejected() {
+        assert!(classify_return(&ty("Vec<u32>")).is_err());
+        assert!(classify_return(&ty("Vec<i8>")).is_err());
+        assert!(classify_return(&ty("Result<u32>")).is_err());
+    }
+
+    #[test]
     fn unit_return_maps_to_void() {
         let ret = classify_return(&ty("()")).expect("accepted");
-        assert_eq!(ts_return(&ret), "void");
+        assert_eq!(ts_return(&ret), TsKind::Void);
     }
 
     #[test]
@@ -232,28 +224,33 @@ mod tests {
         let text = err.to_string();
         assert!(text.starts_with("bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`"));
         assert!(text.contains(
-            "  = help: supported in P1: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()"
+            "  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]|()"
         ));
         assert!(text.contains("DESIGN.md"));
     }
 
     #[test]
     fn unsupported_return_type_is_rejected() {
-        assert!(classify_return(&ty("String")).is_err());
+        assert!(classify_return(&ty("char")).is_err());
         assert!(classify_return(&ty("&str")).is_err());
+        assert!(
+            classify_return(&ty("std::string::String")).is_err(),
+            "qualified paths stay rejected"
+        );
     }
 
     #[test]
     fn rejected_param_types_fail_classification() {
         let cases = [
             ("&mut str", "mutability would break the copy guarantee"),
-            ("&u32", "only `&str` may be borrowed"),
+            ("&mut [u8]", "mutability would break the copy guarantee"),
+            ("&[i32]", "only byte slices may be borrowed"),
+            ("&u32", "only `&str` and `&[u8]` may be borrowed"),
             ("str", "bare `str` is unsized"),
-            ("i128", "integer width outside the P1 matrix"),
-            ("usize", "integer width outside the P1 matrix"),
-            ("char", "not in the P1 matrix"),
-            ("&[u8]", "buffers arrive with bffi-build (P2)"),
-            ("String", "owned strings arrive with bffi-build (P2)"),
+            ("i128", "integer width outside the matrix"),
+            ("usize", "integer width outside the matrix"),
+            ("char", "not in the matrix"),
+            ("String", "owned strings are return-only"),
         ];
         for (src, why) in cases {
             let result = classify_param(&ty(src), "x");
@@ -281,7 +278,7 @@ mod tests {
         assert_eq!(model.params[0].kind, ShimKind::Prim(PrimTy::U32));
         assert_eq!(model.params[1].name, "b");
         assert_eq!(model.params[1].kind, ShimKind::Prim(PrimTy::U32));
-        assert_eq!(model.ret, FnReturn::Prim(PrimTy::U32));
+        assert_eq!(model.ret, RetKind::Prim(PrimTy::U32));
     }
 
     #[test]
@@ -292,7 +289,75 @@ mod tests {
         let err = result.err().expect("rejected");
         assert!(
             err.to_string()
-                .starts_with("bffi[E004]: this attribute takes no options")
+                .starts_with("bffi[E004]: unknown option; only `crate = \"...\"` is supported")
+        );
+    }
+
+    #[test]
+    fn no_attribute_selects_the_default_paths() {
+        let item = quote! { fn f(x: u32) -> u32 { x } };
+        let model = FnModel::parse(&proc_macro2::TokenStream::new(), item).expect("accepted");
+        assert_eq!(
+            model.paths.core.to_string(),
+            ":: bffi_core",
+            "no attribute keeps the direct-dependency roots"
+        );
+    }
+
+    #[test]
+    fn crate_option_redirects_the_generated_paths() {
+        let item = quote! { fn f(x: u32) -> u32 { x } };
+        let model = FnModel::parse(&quote! { crate = "bffi" }, item).expect("accepted");
+        assert_eq!(model.paths.core.to_string(), ":: bffi :: core");
+        assert_eq!(model.paths.types.to_string(), ":: bffi :: types");
+        assert_eq!(model.paths.dts.to_string(), ":: bffi :: dts");
+        assert_eq!(model.paths.build.to_string(), ":: bffi :: build");
+    }
+
+    #[test]
+    fn non_literal_crate_value_is_rejected_with_e004() {
+        let item = quote! { fn f(x: u32) {} };
+        let result = FnModel::parse(&quote! { crate = bffi }, item);
+        let err = result.err().expect("rejected");
+        assert!(err.to_string().starts_with("bffi[E004]:"));
+    }
+
+    #[test]
+    fn invalid_crate_name_is_rejected_with_e004() {
+        for name in ["", "1bad", "core", "std", "has space"] {
+            let item = quote! { fn f(x: u32) {} };
+            let src = format!(r#"crate = "{name}""#);
+            let attr: proc_macro2::TokenStream = syn::parse_str(&src).expect("attribute source");
+            let result = FnModel::parse(&attr, item);
+            assert!(result.is_err(), "crate = {name:?} must be rejected");
+            let err = result.err().expect("rejected");
+            assert!(
+                err.to_string().starts_with("bffi[E004]:"),
+                "crate = {name:?} must carry E004"
+            );
+        }
+    }
+
+    #[test]
+    fn duplicate_and_unknown_options_are_rejected_with_e004() {
+        let item = quote! { fn f(x: u32) {} };
+        let result = FnModel::parse(&quote! { crate = "a", crate = "b" }, item);
+        assert!(
+            result
+                .err()
+                .expect("rejected")
+                .to_string()
+                .starts_with("bffi[E004]:")
+        );
+
+        let item = quote! { fn f(x: u32) {} };
+        let result = FnModel::parse(&quote! { crate = "a", rename = "x" }, item);
+        assert!(
+            result
+                .err()
+                .expect("rejected")
+                .to_string()
+                .starts_with("bffi[E004]:")
         );
     }
 }

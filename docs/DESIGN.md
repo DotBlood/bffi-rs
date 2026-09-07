@@ -116,6 +116,7 @@ Outside only the opaque handle is visible.
 | Topic            | Decision                                            |
 |------------------|-----------------------------------------------------|
 | Macro            | `#[bffi]` - shim (debug bare / release catch_unwind) + const `bffi_meta_*` descriptor |
+| `#[bffi]` returns | primitives/bigints via out-param; `String`/`Vec<u8>`/`CopiedBuf` (and `Option` of those) as transient-buffer handles; `Result<T, E>` -> `ErrorCode::DomainError` with `E` as source |
 | Minimum Bun      | 1.4.0                                               |
 | Rust / Cargo     | 1.98.0                                              |
 | Handles          | Generational Index + type-tag                       |
@@ -128,12 +129,15 @@ Outside only the opaque handle is visible.
 | UTF-8 validation | SIMD (x86 SSSE3, aarch64 NEON); scalar DFA is the reference semantics |
 | Buffers          | Copy by default                                     |
 | Zero-copy        | Only via `bffi::unsafe_zero_copy`                   |
-| Event loop       | Start with `run()`; `pump()` is a mock for now      |
-| TypeScript types | IR (ModuleDef/FunctionDef) + deterministic render; export_name = bffi_-prefix |
+| Event loop       | `enqueue`/`marshal` queue; `run()` blocks and drains on the runner thread (jobs via `run_extern_body`); `pump()` drains without blocking (no waiting); `stop()` is sticky; marshal without a runner -> WrongThread(12); the Bun tick is loader-side |
+| TypeScript types | IR (ModuleDef/FunctionDef/ClassDef) + deterministic render; export_name = bffi_-prefix |
+| Class macros | `#[bffi_class]`/`#[bffi_impl]` over `ObjectWrap` (tags 0x0100-0x01FF): getters for `pub` primitive fields, `&self` methods, generated release; metadata split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; diagnostics E005-E008 |
+| Macro support | `bffi-macro-support`: shared model/mapping/codegen for the proc-macro crates (`bffi-macros`, `bffi-class`); tooling crate - no runtime code, no ABI |
 | Panic (prod)     | Convert to JS Error                                 |
 | Panic (dev)      | May abort                                           |
 | Compatibility    | Bun only                                            |
 | Distribution     | Source in repo; prebuilt binaries later for npm     |
+| Facade           | `bffi`: flat re-exports of the stack; `unsafe_zero_copy` is the only zero-copy door; macro expansions stay on the user's direct deps |
 | License          | MIT                                                 |
 
 ---
@@ -150,6 +154,7 @@ Outside only the opaque handle is visible.
 | `bffi-dts`         | TypeScript `.d.ts` generation                        | P1       |
 | `bffi-macros`      | Procedural macros (`#[bffi]`, attributes)            | P1       |
 | `bffi-class`       | Class declaration macros                             | P2       |
+| `bffi-macro-support` | Shared macro internals (kinds, classification, codegen) | P3   |
 | `bffi-event-loop`  | `run()` / `pump()` abstraction                       | P2       |
 | `bffi-build`       | Build helpers, C ABI generation, Bun integration     | P2       |
 | `bffi-rs`          | Public facade that re-exports the stack              | P2       |

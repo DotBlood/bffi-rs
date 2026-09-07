@@ -3,3 +3,9 @@
 
 /** Adds two numbers. */
 export function add(a: number, b: number): number;
+
+/** Finds a name. */
+export function find_name(): string | null;
+
+/** Reads a payload. */
+export function read_payload(): Uint8Array | null;

@@ -19,9 +19,11 @@ workspace = true
 syn.workspace = true
 quote.workspace = true
 proc-macro2.workspace = true
+bffi-macro-support = { path = "../bffi-macro-support" }
 
 [dev-dependencies]
 bffi-core = { path = "../bffi-core" }
 bffi-types = { path = "../bffi-types" }
 bffi-dts = { path = "../bffi-dts" }
+bffi-build = { path = "../bffi-build" }
 trybuild.workspace = true

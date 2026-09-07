@@ -2,8 +2,8 @@
 use bffi_macros::bffi;
 
 #[bffi]
-fn f() -> String {
-    String::new()
+fn f() -> Option<i32> {
+    None
 }
 
 fn main() {}

@@ -12,9 +12,11 @@ The macro runs in the USER crate: the expansion lands wherever `#[bffi]` is used
 `::bffi_core`, `::bffi_types`, and `::bffi_dts` in that crate's namespace. There is no Bun e2e
 testing in P1 - the generated shims are tested directly from Rust.
 
-**Status:** P1 complete - `#[bffi]` on a plain `fn` emits the function unchanged, an
-`extern "C"` shim under the boundary policy, and a const `bffi-dts` descriptor. Loader and
-linking glue arrive with `bffi-build` (P2).
+**Status:** P2 complete - `#[bffi]` on a plain `fn` emits the function unchanged, an
+`extern "C"` shim under the boundary policy, and a const `bffi-dts` descriptor; returns
+cover primitives, bigints, buffer payloads (`String`/`Vec<u8>`/`CopiedBuf`, `Option` of
+those) and `Result<T, E>` through the err channel. Class declarations arrive with
+`bffi-class`.
 
 ---
 
@@ -69,7 +71,9 @@ is executed:
 
 **Out-param contract.** The return value is written through `__ret: *mut T`, appended
 after the parameters; `()` returns have no out-parameter. A null `__ret` returns
-`ErrorCode::NullPointer`.
+`ErrorCode::NullPointer`. Buffer payloads travel as `u64` handles
+(`Option`'s `None` writes the `0` handle); `Result`'s error path returns
+`ErrorCode::DomainError` (13).
 
 **`&str` conversion (DESIGN §6.3).** A `&str` parameter arrives as a `*const c_char`
 pointing at a NUL-terminated cstring (`bun:ffi` convention). The shim null-checks the
@@ -77,10 +81,45 @@ pointer, converts with `CStr::from_ptr`, and validates UTF-8 through
 `bffi_types::unsafe_zero_copy::str_view` - invalid UTF-8 returns
 `ErrorCode::InvalidUtf8`.
 
+**`&[u8]` parameters (borrowed buffers).** A `&[u8]` parameter arrives as a
+`ptr: *const u8` + `len: u64` pair (in parameter order). bun:ffi keeps the
+`TypedArray` pointer valid for the duration of the call; a null pointer is allowed
+only when `len == 0` (empty view), otherwise the shim returns
+`ErrorCode::NullPointer` with the last error set. The view is zero-copy and
+borrowed: it never outlives the call, so owned returns copy
+(`CopiedBuf::from_slice`). The descriptor carries ONE `Uint8Array`
+`ParamDef` - the `(ptr, len)` pair is ABI-level only.
+
+**Buffer returns (P2).** `String` / `Vec<u8>` / `CopiedBuf` / `Option` of these are
+copied into the [`bffi-build`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build)
+transient-buffer table; the shim returns a handle the JS side reads through the
+`bffi_buffer` / `bffi_buffer_length` pair and releases with `bffi_types_free`
+(the full ABI contract lives in that crate's CALLING-CONVENTION.md).
+
+**Result err channel (P2).** `Result<T, E>` transports `Ok` like a plain `T`; `Err(e)`
+stores `BffiError` with code `DomainError`, message `e.to_string()` and `e` as the
+source. `E` must implement `std::error::Error + Send + Sync` - the trait bound
+surfaces in the expansion if violated.
+
 **Errors.** Every failure stores a `BffiError` via `::bffi_core::set_last_error` and
 returns the matching `ErrorCode`; success returns `ErrorCode::Ok` and stores nothing.
 
-## Type matrix v1
+## Attribute options: `crate = "..."`
+
+`#[bffi]` takes one optional option:
+
+- `#[bffi]` - default mode: the expansion names the direct dependencies
+  (`::bffi_core`, `::bffi_types`, `::bffi_dts`, `::bffi_build`).
+- `#[bffi(crate = "bffi")]` - **facade-only mode**: the expansion names
+  `::bffi::core`, `::bffi::types`, `::bffi::dts`, `::bffi::build`, the
+  re-export namespaces of the [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  facade. A user crate whose only dependency is `bffi` can then use the
+  macro.
+
+Anything else (unknown keys, non-literal or invalid `crate` values,
+duplicates) is rejected with `E004`.
+
+## Type matrix v2
 
 | Rust type                        | Param | Return | TsType    |
 | -------------------------------- | ----- | ------ | --------- |
@@ -88,13 +127,20 @@ returns the matching `ErrorCode`; success returns `ErrorCode::Ok` and stores not
 | `i64` `u64`                      | yes   | yes    | `bigint`  |
 | `bool`                           | yes   | yes    | `boolean` |
 | `&str` (borrowed; lifetimes ok)  | yes   | -      | `string`  |
+| `&[u8]` (borrowed; lifetimes ok) | yes   | -      | `Uint8Array` |
 | `()`                             | -     | yes    | `void`    |
+| `String`                         | -     | yes    | `string`  |
+| `Vec<u8>`, `CopiedBuf`           | -     | yes    | `Uint8Array` |
+| `Option<String>`                 | -     | yes    | `string \| null` |
+| `Option<Vec<u8>>`, `Option<CopiedBuf>` | - | yes   | `Uint8Array \| null` |
+| `Result<T, E>`                   | -     | yes    | `T`'s kind; `Err` -> code 13 |
 
 Everything else is rejected at compile time - `E002` for parameters, `E003` for returns.
-Buffers, `Option`, structs and `Result` arrive with `bffi-build` (P2).
+Owned buffers (`String`/`Vec<u8>`) as parameters, structs and non-buffer `Option`/`Vec`
+are future work.
 
 Shape violations are rejected too (`E001`): `async`, generic, `unsafe`, method receivers
-(`self`), variadic, `extern`, and `const` functions are outside the P1 rules.
+(`self`), variadic, `extern`, and `const` functions are outside the rules.
 
 ## Diagnostics
 
@@ -106,14 +152,14 @@ Rejections carry stable codes - do not renumber, the golden `.stderr` files in
 | `E001` | unsupported function shape (async/generic/unsafe/self/variadic/extern/const) |
 | `E002` | unsupported parameter type                                       |
 | `E003` | unsupported return type                                          |
-| `E004` | the attribute takes no options                                   |
+| `E004` | unknown option; only `crate = "..."` is supported                |
 
 Format - `bffi[<code>]: <message>` first line, then `  = help: ` and `  = note: ` lines:
 
 ```text
 error: bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`
-  = help: supported in P1: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()
-  = note: buffers, Option, structs and Result arrive with bffi-build (P2)
+  = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]|()
+  = note: borrowed `&[u8]` is the only buffer parameter; owned buffers are return-only (CALLING-CONVENTION.md)
   = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
 ```
 
@@ -124,8 +170,15 @@ job - the macro never depends on it.
 
 ## Requirements on the user crate
 
-- Dependencies on `bffi-core`, `bffi-types`, and `bffi-dts`: the expansion names
-  `::bffi_core`, `::bffi_types`, and `::bffi_dts` at the call site.
+- Default mode: dependencies on `bffi-core`, `bffi-types`, and `bffi-dts`:
+  the expansion names `::bffi_core`, `::bffi_types`, and `::bffi_dts` at
+  the call site. Buffer and `Result` returns additionally name
+  `::bffi_build` - add it when those returns are used (or
+  unconditionally).
+- Facade-only mode (`#[bffi(crate = "bffi")]`): the
+  [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  facade alone - the expansion names `::bffi::core`, `::bffi::types`,
+  `::bffi::dts`, and `::bffi::build`, which the facade re-exports.
 - Unique function names: each shim is `#[unsafe(no_mangle)]`, so two `#[bffi]`
   functions with the same name collide at link time as duplicate symbols.
 - Rust **edition 2024**: the generated shims use `#[unsafe(no_mangle)]`, which

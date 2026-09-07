@@ -11,17 +11,25 @@
 //! builds run the body through `bffi_core::boundary::run_extern_body`,
 //! which converts the panic into `ErrorCode::Panic` plus a stored
 //! thread-local last error.
+//!
+//! The transport-level token generators (out-parameters, return tails,
+//! cstring conversions) live in `bffi_macro_support::codegen`; this
+//! module assembles them into the `#[bffi]`-specific shim pair.
 
-use crate::model::{BigIntTy, FnModel, FnReturn, PrimTy, ShimKind};
+use crate::model::FnModel;
+use bffi_macro_support::codegen::{
+    has_out, out_param, param_conversions, param_ident, ret_body, shim_param,
+};
+use bffi_macro_support::kind::ShimKind;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::Ident;
 
 /// Renders the shim expansion of a validated model: the pair of cfg
 /// variants for the symbol the JS side links against
 /// (`bffi_<name>`). The caller assembles the full expansion
 /// (original item, shims, descriptor).
 pub(crate) fn expand(model: &FnModel) -> TokenStream {
+    let core = &model.paths.core;
     let shim_ident = format_ident!("bffi_{}", model.ident);
     // The doc attribute keeps the generated symbol usable in crates
     // with the framework's `missing_docs` lint set.
@@ -30,9 +38,9 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
         .params
         .iter()
         .enumerate()
-        .map(|(index, param)| shim_param(param, index))
+        .map(|(index, param)| shim_param(&param.name, param.kind, index))
         .collect();
-    let out = out_param(model.ret);
+    let out = out_param(&model.ret);
     let body = body(model);
 
     // Variant A (dev): the body runs directly - a panic escapes and
@@ -43,7 +51,7 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
         #[unsafe(no_mangle)]
         #[doc = #shim_doc]
         #[allow(clippy::not_unsafe_ptr_arg_deref)]
-        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> ::bffi_core::ErrorCode {
+        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> #core::ErrorCode {
             #body
         }
     };
@@ -55,100 +63,41 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
         #[unsafe(no_mangle)]
         #[doc = #shim_doc]
         #[allow(clippy::not_unsafe_ptr_arg_deref)]
-        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> ::bffi_core::ErrorCode {
-            ::bffi_core::boundary::run_extern_body(move || { #body })
+        pub extern "C" fn #shim_ident(#(#params,)* #(#out)*) -> #core::ErrorCode {
+            #core::boundary::run_extern_body(move || { #body })
         }
     };
 
     quote! { #debug_shim #release_shim }
 }
 
-/// Declares one shim parameter.
-///
-/// Primitives and bigints keep their Rust type; a `&str` parameter
-/// arrives as a NUL-terminated cstring pointer per the `bun:ffi`
-/// convention (DESIGN §6.3).
-fn shim_param(param: &crate::model::FnParam, index: usize) -> TokenStream {
-    let name = param_ident(&param.name, index);
-    match param.kind {
-        ShimKind::Str => {
-            let ptr = format_ident!("{name}_ptr");
-            quote! { #ptr: *const ::std::os::raw::c_char }
-        }
-        ShimKind::Prim(prim) => {
-            let ty = prim_ty(prim);
-            quote! { #name: #ty }
-        }
-        ShimKind::BigInt(big) => {
-            let ty = bigint_ty(big);
-            quote! { #name: #ty }
-        }
-    }
-}
-
-/// Declares the out-parameter that carries the return value across the
-/// C ABI (`()` returns have none).
-fn out_param(ret: FnReturn) -> Vec<TokenStream> {
-    match ret {
-        FnReturn::Unit => Vec::new(),
-        FnReturn::Prim(prim) => {
-            let ty = prim_ty(prim);
-            vec![quote! { __ret: *mut #ty }]
-        }
-        FnReturn::BigInt(big) => {
-            let ty = bigint_ty(big);
-            vec![quote! { __ret: *mut #ty }]
-        }
-    }
-}
-
 /// Renders the shim body shared by both cfg variants: pointer
-/// validation first, cstring conversion per `&str` parameter, then the
-/// call and the out-parameter write.
+/// validation first, the borrowed-parameter conversion per `&str` /
+/// `&[u8]` parameter, then the call and the out-parameter write.
 fn body(model: &FnModel) -> TokenStream {
+    let core = &model.paths.core;
     let mut body = TokenStream::new();
 
-    if !matches!(model.ret, FnReturn::Unit) {
+    if has_out(&model.ret) {
         body.extend(quote! {
             if __ret.is_null() {
-                let error = ::bffi_core::BffiError::new(
-                    ::bffi_core::ErrorCode::NullPointer,
+                let error = #core::BffiError::new(
+                    #core::ErrorCode::NullPointer,
                     "output pointer is null",
                 );
-                ::bffi_core::set_last_error(error);
-                return ::bffi_core::ErrorCode::NullPointer;
+                #core::set_last_error(error);
+                return #core::ErrorCode::NullPointer;
             }
         });
     }
 
-    for (index, param) in model.params.iter().enumerate() {
-        if let ShimKind::Str = param.kind {
-            let name = param_ident(&param.name, index);
-            let ptr = format_ident!("{name}_ptr");
-            let bytes = format_ident!("{name}_bytes");
-            let view = format_ident!("{name}_view");
-            body.extend(quote! {
-                if #ptr.is_null() {
-                    let error = ::bffi_core::BffiError::new(
-                        ::bffi_core::ErrorCode::NullPointer,
-                        "string argument pointer is null",
-                    );
-                    ::bffi_core::set_last_error(error);
-                    return ::bffi_core::ErrorCode::NullPointer;
-                }
-                // SAFETY: bun:ffi hands out NUL-terminated cstrings for `&str`
-                // parameters (DESIGN.md §6.3); the pointer is null-checked above.
-                let #bytes = unsafe { ::std::ffi::CStr::from_ptr(#ptr) }.to_bytes();
-                let #view = match ::bffi_types::unsafe_zero_copy::str_view(#bytes) {
-                    ::std::result::Result::Ok(v) => v,
-                    ::std::result::Result::Err(e) => {
-                        ::bffi_core::set_last_error(e);
-                        return ::bffi_core::ErrorCode::InvalidUtf8;
-                    }
-                };
-            });
-        }
-    }
+    body.extend(param_conversions(
+        &model.paths,
+        model
+            .params
+            .iter()
+            .map(|param| (param.name.as_str(), param.kind)),
+    ));
 
     let ident = &model.ident;
     let args = model.params.iter().enumerate().map(|(index, param)| {
@@ -159,64 +108,25 @@ fn body(model: &FnModel) -> TokenStream {
                 let view = format_ident!("{name}_view");
                 quote! { &#view }
             }
+            // `ZeroCopyBuf` derefs to `[u8]`.
+            ShimKind::BufferView => {
+                let view = format_ident!("{name}_view");
+                quote! { &#view }
+            }
             ShimKind::Prim(_) | ShimKind::BigInt(_) => quote! { #name },
         }
     });
+    let call = quote! { #ident(#(#args,)*) };
 
-    match model.ret {
-        FnReturn::Unit => body.extend(quote! {
-            #ident(#(#args,)*);
-            ::bffi_core::ErrorCode::Ok
-        }),
-        FnReturn::Prim(_) | FnReturn::BigInt(_) => body.extend(quote! {
-            let __value = #ident(#(#args,)*);
-            // SAFETY: `__ret` is non-null (checked above) and valid for one
-            // `T` write per the bun:ffi out-parameter contract.
-            unsafe { ::std::ptr::write(__ret, __value); }
-            ::bffi_core::ErrorCode::Ok
-        }),
-    }
-
+    body.extend(ret_body(&model.paths, &model.ret, call));
     body
-}
-
-/// Sanitizes a model parameter name into a usable shim identifier.
-///
-/// `FnParam::name` mirrors the source pattern and is not guaranteed to
-/// be a plain identifier (`_` stays as written; raw keyword idents
-/// carry their `r#` prefix), so unusable names deterministically fall
-/// back to the positional `__arg<index>`.
-fn param_ident(name: &str, index: usize) -> Ident {
-    syn::parse_str::<Ident>(name).unwrap_or_else(|_| format_ident!("__arg{index}"))
-}
-
-/// The Rust primitive type of a small boundary primitive.
-fn prim_ty(prim: PrimTy) -> TokenStream {
-    match prim {
-        PrimTy::I8 => quote! { i8 },
-        PrimTy::I16 => quote! { i16 },
-        PrimTy::I32 => quote! { i32 },
-        PrimTy::U8 => quote! { u8 },
-        PrimTy::U16 => quote! { u16 },
-        PrimTy::U32 => quote! { u32 },
-        PrimTy::F32 => quote! { f32 },
-        PrimTy::F64 => quote! { f64 },
-        PrimTy::Bool => quote! { bool },
-    }
-}
-
-/// The Rust type of a 64-bit boundary integer.
-fn bigint_ty(big: BigIntTy) -> TokenStream {
-    match big {
-        BigIntTy::I64 => quote! { i64 },
-        BigIntTy::U64 => quote! { u64 },
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{expand, param_ident};
+    use super::expand;
     use crate::model::FnModel;
+    use bffi_macro_support::codegen::param_ident;
     use quote::quote;
 
     #[test]

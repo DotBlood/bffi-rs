@@ -37,6 +37,11 @@ ownership layer above the registry:
   the registry and fails with `ObjectError::TagInUse` on a second claim, so a
   handle of one type can never be reinterpreted as another. Tags live in the
   reserved range `0x0100-0x01FF`.
+- **Two tags may serve one type (legal, discouraged).** Nothing stops a type
+  from being declared under two different tags - the registry then holds two
+  independent tables for the same `T`, and handles are not interchangeable
+  between them. It is legal but confusing; the recommendation (and the
+  `bffi-class` convention) is one tag per type.
 - **Initialize once.** The wrap is just `(tag, marker)` - `Copy`,
   `Send + Sync` - so claim the tag once in a `OnceLock` static and share it:
 
