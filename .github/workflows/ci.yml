@@ -71,6 +71,9 @@ jobs:
       - name: tsc
         run: bun run typecheck
 
+      - name: bun unit tests (packages, bin)
+        run: bun test packages bin
+
       # the first real bun:ffi crossing: build the release cdylib and
       # run the e2e suite against it (ubuntu: .so artifact)
       - name: cargo build (release, example)
@@ -78,6 +81,11 @@ jobs:
 
       - name: bun test (native e2e)
         run: bun test examples/native
+
+      # native-template pack smoke: the pattern-A packaging script must
+      # assemble a valid platform package from the built artifact
+      - name: native-template pack smoke
+        run: bun packages/native-template/scripts/pack-platforms.ts --src target/release/libbffi_example_native.so --triple linux-x64-gnu
 
       # sequential e2e: sticky JS-thread bind + pump-driven async
       # delivery race other files under the parallel runner, so these

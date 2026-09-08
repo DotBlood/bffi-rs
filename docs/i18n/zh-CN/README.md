@@ -49,8 +49,9 @@ Bun 绑定框架 - napi-rs 的 Bun 等价物,基于 `bun:ffi` 与轻量 C ABI �
 | `crates/bffi-build` | 运行时 ABI 导出、瞬态缓冲区、`.d.ts`/loader JSON 生成器 |
 | `crates/bffi-async` | `#[bffi_async]`:Rust future 变为 JS Promise(取消、超时、tokio opt-in) |
 | `crates/bffi` | 门面:一个依赖覆盖整个栈 |
-| `packages/bffi-loader` | 仅限 Bun 的 JS 运行时:从 loader JSON 构建类型化 API(暂未发布) |
+| `packages/bffi-loader` | 仅限 Bun 的 JS 运行时:从 loader JSON 构建类型化 API(`@z2net/bffi-loader`,发布待定) |
 | `bin/` | `bffi codegen` CLI |
+| `packages/native-template` | COPY-ME 模板:原生模块的 pattern-A npm 打包(仅供参考) |
 
 ## 快速开始
 

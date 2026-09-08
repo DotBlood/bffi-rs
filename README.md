@@ -49,8 +49,9 @@ See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.m
 | `crates/bffi-build` | Runtime ABI exports, transient buffers, `.d.ts`/loader-JSON emitters |
 | `crates/bffi-async` | `#[bffi_async]`: Rust futures as JS Promises (cancel, timeout, tokio opt-in) |
 | `crates/bffi` | The facade: one dependency re-exporting the whole stack |
-| `packages/bffi-loader` | Bun-only JS runtime: typed APIs from the loader JSON (not yet published) |
+| `packages/bffi-loader` | Bun-only JS runtime: typed APIs from the loader JSON (`@z2net/bffi-loader`, publication pending) |
 | `bin/` | The `bffi codegen` CLI |
+| `packages/native-template` | COPY-ME template: pattern-A npm packaging of a native module (reference-only) |
 
 ## Getting started
 

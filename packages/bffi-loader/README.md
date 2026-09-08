@@ -1,11 +1,11 @@
-# bffi-loader
+# @z2net/bffi-loader
 
 Bun-only runtime loader for [bffi-rs](https://github.com/DotBlood/bffi-rs)
 native modules: the typed JS API is built from the loader schema the
 Rust side emits (`bffi_build::loader_json`, schema version 1), so no
-per-function binding is ever written by hand.
-
-Bun >= 1.4.0. No dependencies beyond `bun:ffi`.
+per-function binding is ever written by hand. Includes
+`resolvePlatformBinary` for pattern-A distribution (platform packages
+carrying prebuilt binaries).
 
 ## Layout
 
