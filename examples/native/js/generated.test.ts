@@ -13,7 +13,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { createApiFromJson } from "./api.gen.ts";
-import { hasArtifact } from "./load.ts";
+import { hasArtifact } from "./env.ts";
 
 const skip = !(await hasArtifact());
 

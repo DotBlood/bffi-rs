@@ -1,11 +1,13 @@
 /**
- * LEGACY (P4): the hand-written reference loader. The generated
- * `api.gen.ts` + `packages/bffi-loader` cover the same surface; this
- * file remains the baseline for the parity tests and the reference
- * sketch for loader behavior. Do not extend.
+ * Harness for the HAND-WRITTEN P1-P3 verification exports
+ * (`example_callback_*`, `example_loop_*`, `mirror_*`, ...): these
+ * exports have no descriptors, so the generated loader does not cover
+ * them. The generated world (`api.gen.ts` + `packages/bffi-loader`)
+ * does NOT depend on this file - the four legacy verification suites
+ * (native/numbers/callbacks/async .test.ts) are its only consumers.
  *
- * Loader for the example native module: dlopen declarations and thin
- * helpers over the bffi C ABI (CALLING-CONVENTION.md is the contract).
+ * Full removal (rewriting those suites against a raw symbol table)
+ * is a separate decision.
  *
  * Bun-only: paths are resolved from `import.meta.dir`, the artifact is
  * probed with `Bun.file().exists()`, and the library is dlopen'ed
