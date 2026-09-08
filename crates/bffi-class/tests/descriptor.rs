@@ -57,6 +57,7 @@ fn class_descriptor_matches_the_expected_literal() {
         bffi_meta_wallet_impl::CLASS,
         ClassDef {
             js_name: "wallet",
+            release_export: "bffi_wallet_release",
             docs: &["A wallet."],
             constructor: MethodDef {
                 js_name: "constructor",

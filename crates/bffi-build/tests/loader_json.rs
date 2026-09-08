@@ -162,6 +162,7 @@ fn fixture_module() -> ModuleDef {
     ];
     static CLASSES: &[ClassDef] = &[ClassDef {
         js_name: "counter",
+        release_export: "bffi_counter_release",
         docs: &["A native counter."],
         constructor: MethodDef {
             js_name: "constructor",

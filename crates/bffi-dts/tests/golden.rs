@@ -153,6 +153,7 @@ static EMPTY: ModuleDef = ModuleDef {
 /// method, a reserved-word method name, and multi-line JSDoc.
 static COUNTER_CLASS: &[ClassDef] = &[ClassDef {
     js_name: "counter",
+    release_export: "bffi_counter_release",
     docs: &["A native counter."],
     constructor: MethodDef {
         js_name: "constructor",

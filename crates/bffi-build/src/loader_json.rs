@@ -138,6 +138,8 @@ fn push_class(class: &ClassDef, out: &mut String, last: bool) {
     out.push_str("{\n");
     push_key_string(out, 3, "name", class.js_name);
     out.push_str(",\n");
+    push_key_string(out, 3, "release", class.release_export);
+    out.push_str(",\n");
     push_docs(out, 3, class.docs);
     out.push_str(",\n");
     push_indent(out, 3);

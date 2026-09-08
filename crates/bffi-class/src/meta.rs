@@ -66,6 +66,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
     let js_name = &model.js_name;
     let ctor = &model.constructor;
     let ctor_export = format!("bffi_{}_new", model.js_name);
+    let release_export = format!("bffi_{}_release", model.js_name);
     let ctor_docs = ctor.docs.iter().map(|doc| quote! { #doc });
     let ctor_params = ctor.params.iter().map(|param| {
         let name = &param.name;
@@ -122,6 +123,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
                 js_name: #js_name,
                 // `super` = the shared expansion scope holding the
                 // sibling `bffi_meta_<name>` module.
+                release_export: #release_export,
                 docs: &super::#base::DOCS,
                 constructor: CONSTRUCTOR,
                 fields: &super::#base::FIELDS,

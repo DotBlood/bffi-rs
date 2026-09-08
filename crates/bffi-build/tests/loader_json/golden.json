@@ -164,6 +164,7 @@
   "classes": [
     {
       "name": "counter",
+      "release": "bffi_counter_release",
       "docs": [
         "A native counter."
       ],

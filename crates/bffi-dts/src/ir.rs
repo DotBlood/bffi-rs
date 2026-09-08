@@ -361,6 +361,11 @@ pub struct FieldDef {
 pub struct ClassDef {
     /// The class name as seen from JavaScript.
     pub js_name: &'static str,
+    /// The C ABI export symbol of the generated release shim
+    /// (`bffi_<name>_release`); build-side only, carried so loader
+    /// descriptors stay self-describing (FinalizationRegistry +
+    /// explicit `release()`).
+    pub release_export: &'static str,
     /// Doc comment lines, rendered as a JSDoc block.
     pub docs: &'static [&'static str],
     /// The constructor declaration (exactly one in P2 v1).

@@ -92,6 +92,7 @@ fn dts_names_are_reexported() {
         }],
         classes: &[bffi::ClassDef {
             js_name: "point",
+            release_export: "bffi_point_release",
             docs: &[],
             constructor: bffi::MethodDef {
                 js_name: "constructor",
