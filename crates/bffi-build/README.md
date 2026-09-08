@@ -29,6 +29,7 @@ transport, buffer pairs) lives in one canonical document:
 | [`abi`]      | [`bffi_runtime_abi!`] - the export generator, plus the `*_as_u32` / `*_as_code` helpers       |
 | [`dts`]      | `write_to_file` - render a `ModuleDef` and write the `.d.ts` bytes to disk (criterion 6.2, build-time half) |
 | [`error`]    | [`BuildError`] and the lossless `From<BuildError> for BffiError` bridge                        |
+| [`loader_json`] | `to_json` / `write_to_file` - the canonical loader schema v1 the `bffi codegen` CLI consumes (deterministic, safe to commit) |
 | [`runtime`]  | `store_bytes` / `buffer_ptr` / `buffer_len` / `free_buffer` + `take_error` / `error_*` / `free_error` |
 
 ---

@@ -139,6 +139,12 @@ type Handle = u64;
 | 分发             | 源码存放于仓库;预编译二进制文件稍后提供 npm 版      |
 | 门面             | `bffi`:扁平化再导出整个栈;`unsafe_zero_copy` 是唯一的零拷贝入口;宏展开依赖用户的直接依赖 |
 | 异步             | `#[bffi_async]`:spawn-шим返回任务句柄;N-воркерный执行器(tokio 为 opt-in 特性:模式切换 + `spawn_on_tokio`;cancel 中止 токио任务);取消(协作式 drop)与超时;通过 event-loop 在 JS 线程上交付解析;描述符 `Promise<T>` |
+| 描述符 ABI | `FunctionDef`/`MethodDef` 携带 `AbiSig`(精确 C 宽度 + out 槽);`FieldDef` 携带 getter 的 `export_name` + out;`ClassDef` 携带 `release_export`;`.d.ts` 渲染忽略这些字段 |
+| Wire 编解码 | `bffi_types::wire`:统一的 `[tag][payload]` 表(LE,精确 `i64`),同时服务异步任务负载与回调签名/参数/结果 |
+| 回调 ABI | 通过 `bffi_callback_abi!()` 生成的泛型导出(`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`),在用户 crate 展开;签名/参数以 wire 编码;结果为瞬态缓冲区句柄;见 CALLING-CONVENTION.md §9 |
+| Loader JSON | `bffi_build::loader_json`:由聚合的 `ModuleDef` 渲染的规范、确定性 JSON 模式 v1(`"bffi": 1`);消费方为 JS 代码生成 |
+| TS 代码生成 | `bffi codegen <json> -o <ts>`(bin/):确定性渲染器,内嵌模式字面量;`bffi-loader` 中的 `ApiOf<>` 从字面量推导精确 TS 类型 |
+| Loader 运行时 | `packages/bffi-loader`(仅限 Bun,零依赖):wire 编解码、takeError/readBuffer、`wrapTask` + 显式 `pumpUntil`(无隐藏泵送)、类工厂(FinalizationRegistry + 显式 `release()`,静默吞掉重复释放)、callbacks API |
 | 许可证           | MIT                                                 |
 
 ---
@@ -160,6 +166,7 @@ type Handle = u64;
 | `bffi-build`       | 构建辅助、C ABI 生成、Bun 集成                       | P2       |
 | `bffi-rs`          | 重新导出整个技术栈的公共门面                         | P2       |
 | `bffi-async`       | Promise / async 支持                                 | P3       |
+| `bffi-loader` (JS) | 仅限 Bun 的运行时加载器:从 loader JSON 构建类型化 API(`packages/bffi-loader`) | P4       |
 
 ---
 
