@@ -1,8 +1,12 @@
 /**
+ * LEGACY (P4): the hand-written reference loader. The generated
+ * `api.gen.ts` + `packages/bffi-loader` cover the same surface; this
+ * file remains the baseline for the parity tests and the reference
+ * sketch for loader behavior. Do not extend.
+ *
  * Loader for the example native module: dlopen declarations and thin
  * helpers over the bffi C ABI (CALLING-CONVENTION.md is the contract).
  *
- * This file is the reference sketch for the facade's future JS loader.
  * Bun-only: paths are resolved from `import.meta.dir`, the artifact is
  * probed with `Bun.file().exists()`, and the library is dlopen'ed
  * lazily so `bun test` can skip cleanly when the release artifact has

@@ -307,8 +307,14 @@ function makeClass(
   takeError: () => Error | null,
 ): new (...args: unknown[]) => unknown {
   const ctor = callFunction(cls.constructor);
+  // A GC finalizer may race an explicit `release()`; the duplicate
+  // release is `InvalidHandle` (4) and must stay silent - every other
+  // status is a real error.
   const release = (handle: bigint): void => {
     const status = sym(lib, cls.release)(handle);
+    if (status === ErrorCode.InvalidHandle) {
+      return;
+    }
     if (status !== ErrorCode.Ok) {
       throw takeError() ?? new Error(`${cls.release} failed: ${String(status)}`);
     }

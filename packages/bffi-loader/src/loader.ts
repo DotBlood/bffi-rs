@@ -213,6 +213,38 @@ const CALLBACK_DECLARATIONS: Record<string, { args: FfiType[]; returns: FfiType 
   bffi_callback_revoke: { args: ["u64"], returns: "u32" },
 };
 
+/** The `bffi_runtime_abi!()` exports (error drain + transient-buffer
+ * pair): required by takeError/readBuffer, appended to every module. */
+const RUNTIME_DECLARATIONS: Record<string, { args: FfiType[]; returns: FfiType }> = {
+  bffi_error_take_last: { args: [], returns: "u64" },
+  bffi_error_name: { args: ["u64"], returns: "u32" },
+  bffi_error_message_ptr: { args: ["u64"], returns: "ptr" },
+  bffi_error_message_len: { args: ["u64"], returns: "u64" },
+  bffi_error_cause_ptr: { args: ["u64"], returns: "ptr" },
+  bffi_error_cause_len: { args: ["u64"], returns: "u64" },
+  bffi_error_free: { args: ["u64"], returns: "u32" },
+  bffi_buffer: { args: ["u64"], returns: "ptr" },
+  bffi_buffer_length: { args: ["u64"], returns: "u64" },
+  bffi_types_free: { args: ["u64"], returns: "u32" },
+};
+
+/** The `bffi_async_abi!()` exports (task attach/cancel): required by
+ * `wrapTask`, appended to every module. */
+const ASYNC_DECLARATIONS: Record<string, { args: FfiType[]; returns: FfiType }> = {
+  bffi_async_attach: {
+    args: ["u64", "u64", "u64", "pointer"],
+    returns: "u32",
+  },
+  bffi_async_cancel: { args: ["u64"], returns: "u32" },
+};
+
+/** Every built-in export declaration the loader appends. */
+const BUILTIN_DECLARATIONS: Record<string, { args: FfiType[]; returns: FfiType }> = {
+  ...RUNTIME_DECLARATIONS,
+  ...ASYNC_DECLARATIONS,
+  ...CALLBACK_DECLARATIONS,
+};
+
 /**
  * Builds the `dlopen` declarations object for a module: every export
  * keyed by symbol name, `args` derived from the ABI parameter view
@@ -270,7 +302,7 @@ export function buildDeclarations(json: ModuleJson): Record<string, {
       declarations[method.export] = { args, returns: "u32" };
     }
   }
-  for (const [name, declaration] of Object.entries(CALLBACK_DECLARATIONS)) {
+  for (const [name, declaration] of Object.entries(BUILTIN_DECLARATIONS)) {
     if (!(name in declarations)) {
       declarations[name] = declaration;
     }

@@ -49,3 +49,30 @@ export function mirror_u64(x: bigint): bigint;
  * `u64` through the bool parameter and return paths.
  */
 export function is_even(x: bigint): boolean;
+
+/**
+ * Facade-only mode probe: `crate = "bffi"` makes the generated shim
+ * and descriptor resolve through the `bffi` facade namespaces
+ * (`::bffi::core`, `::bffi::dts`, ...) instead of the direct
+ * dependencies. The other functions above stay in default mode, so
+ * both modes compile side by side in one crate.
+ */
+export function facade_probe(x: number): number;
+
+/**
+ * The `#[bffi_async]` macro: the spawn shim and `Promise<u32>`
+ * descriptor are generated; `js/async.test.ts` awaits the value.
+ */
+export function example_compute(x: number): Promise<number>;
+
+/**
+ * A native class: exercised end-to-end through bun:ffi.
+ * A native counter.
+ */
+export class counter {
+  /** Creates a counter. */
+  constructor(start: number);
+  get value(): number;
+  /** Adds one and returns the new value. */
+  increment(): number;
+}

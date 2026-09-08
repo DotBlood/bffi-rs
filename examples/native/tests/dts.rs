@@ -1,38 +1,16 @@
 //! `.d.ts` verification (kanboard criteria 6.1/6.2): the TypeScript
-//! surface of this example is rendered from the same `bffi_meta`
-//! descriptors the shims are generated from, written to disk via
+//! surface of this example is rendered from the crate's SINGLE
+//! descriptor aggregation (`src/module_def.rs`), written to disk via
 //! `bffi_build::dts::write_to_file`, pinned to the committed golden
 //! `js/api.d.ts` and consumed type-level by `js/api-usage.ts` under
 //! real tsc (`bun run typecheck`).
 //!
-//! Aggregation is explicit (the standing decision: no inventory, no
-//! linkme): every `#[bffi]` function of this example is listed below
-//! by its descriptor module.
+//! The same `module_def::MODULE` also feeds the loader JSON
+//! (`src/bin/emit_json.rs`) - one aggregation, two artifacts.
 
 #![allow(clippy::expect_used)]
 
-use bffi_dts::{FunctionDef, ModuleDef};
-
-/// The `#[bffi]` functions of this example, in declaration order.
-const FUNCTIONS: &[FunctionDef] = &[
-    bffi_example_native::bffi_meta_add::FUNCTION,
-    bffi_example_native::bffi_meta_greet::FUNCTION,
-    bffi_example_native::bffi_meta_greet_len::FUNCTION,
-    bffi_example_native::bffi_meta_shout::FUNCTION,
-    bffi_example_native::bffi_meta_echo_buffer::FUNCTION,
-    bffi_example_native::bffi_meta_checked_div::FUNCTION,
-    bffi_example_native::bffi_meta_boom::FUNCTION,
-    bffi_example_native::bffi_meta_mirror_i64::FUNCTION,
-    bffi_example_native::bffi_meta_mirror_u64::FUNCTION,
-    bffi_example_native::bffi_meta_is_even::FUNCTION,
-];
-
-/// The module definition the golden file is rendered from.
-const MODULE: ModuleDef = ModuleDef {
-    name: "api",
-    fns: FUNCTIONS,
-    classes: &[],
-};
+use bffi_example_native::module_def::MODULE;
 
 #[test]
 fn render_is_deterministic_lf_only_and_matches_the_golden() {

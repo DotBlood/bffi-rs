@@ -113,7 +113,7 @@ describe("renderModule", () => {
         release: cls.release,
         name: cls.name,
       })),
-      functions: [...FIXTURE.functions].reverse(),
+      functions: FIXTURE.functions.toReversed(),
       module: FIXTURE.module,
       bffi: FIXTURE.bffi,
     };

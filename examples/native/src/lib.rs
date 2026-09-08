@@ -48,6 +48,12 @@ bffi_runtime_abi!();
 // generated into this cdylib.
 bffi_async_abi!();
 
+// The four JS-facing generic callback exports (bffi_callback_*,
+// P4) generated into this cdylib.
+bffi_callback::bffi_callback_abi!();
+
+pub mod module_def;
+
 static LAST_GREET_LEN: AtomicU32 = AtomicU32::new(0);
 
 /// The value stored by the last executed marshal job (read through

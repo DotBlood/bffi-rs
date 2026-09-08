@@ -10,8 +10,15 @@ rust-version.workspace = true
 
 [lib]
 # cdylib is the Bun-loaded artifact; rlib lets the tests/ integration
-# suite link the crate for the bffi_meta descriptor aggregation.
+# suite and the emit-json binary link the crate for the bffi_meta
+# descriptor aggregation.
 crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+# Writes js/bffi.api.json from module_def::MODULE (the loader-JSON
+# artifact for the JS codegen; same aggregation as the .d.ts golden).
+name = "emit-json"
+path = "src/bin/emit_json.rs"
 
 [lints]
 workspace = true
