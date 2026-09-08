@@ -19,8 +19,10 @@ See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.m
 ## Documentation
 
 - [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) - architecture & decisions
+- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - the C ABI contract (every crossing, callback exports included)
 - [docs/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) - how to contribute (branching, commits, PRs)
 - [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) - engineering rules for humans and AI agents
+- [packages/bffi-loader](https://github.com/DotBlood/bffi-rs/blob/main/packages/bffi-loader) - the JS runtime loader (see its README)
 - [SECURITY.md](https://github.com/DotBlood/bffi-rs/blob/main/SECURITY.md) - security policy
 - [CONTACT.md](https://github.com/DotBlood/bffi-rs/blob/main/CONTACT.md) - contacts
 
@@ -29,6 +31,26 @@ See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.m
 - [Bun](https://bun.sh) >= 1.4.0
 - Rust 1.98.0 (pinned via `rust-toolchain.toml`; rustup installs it automatically)
 - bash (for the commit-msg hook; preinstalled on macOS/Linux, Git Bash on Windows)
+
+## Components
+
+| Part | Purpose |
+| ---- | ------- |
+| `crates/bffi-core` | Generational handles, lock-free tables, catch_unwind boundary |
+| `crates/bffi-types` | Number/string/buffer conversion, SIMD UTF-8, the shared wire codec |
+| `crates/bffi-error` | Unified `BffiError` -> JS Error mapping |
+| `crates/bffi-object` | `ObjectWrap<T>` ownership over the global `Registry` |
+| `crates/bffi-callback` | Callbacks in both directions + the generic callback ABI |
+| `crates/bffi-dts` | TypeScript IR + deterministic `.d.ts` renderer |
+| `crates/bffi-macros` | `#[bffi]` / `#[bffi_async]` (shims + descriptors) |
+| `crates/bffi-class` | `#[bffi_class]` / `#[bffi_impl]` over `ObjectWrap` |
+| `crates/bffi-macro-support` | Shared macro internals (kinds, classification, codegen) |
+| `crates/bffi-event-loop` | `run()` / `pump()` job queue on the JS thread |
+| `crates/bffi-build` | Runtime ABI exports, transient buffers, `.d.ts`/loader-JSON emitters |
+| `crates/bffi-async` | `#[bffi_async]`: Rust futures as JS Promises (cancel, timeout, tokio opt-in) |
+| `crates/bffi` | The facade: one dependency re-exporting the whole stack |
+| `packages/bffi-loader` | Bun-only JS runtime: typed APIs from the loader JSON (not yet published) |
+| `bin/` | The `bffi codegen` CLI |
 
 ## Getting started
 
@@ -45,12 +67,39 @@ For a native module, depend on [`bffi`](https://github.com/DotBlood/bffi-rs/blob
 attribute macros - on the individual `bffi-core`/`bffi-types`/
 `bffi-dts` crates their expansions name.
 
+## Generated TypeScript API
+
+The `#[bffi]` descriptors are the single source of truth: the same
+aggregated `ModuleDef` renders the committed `.d.ts`, the canonical
+loader JSON and the typed TS module - byte-deterministic, safe to
+commit and diff.
+
+```sh
+# build time (in your crate):
+cargo run --bin emit-json                          # writes js/bffi.api.json
+bun bffi codegen js/bffi.api.json -o js/api.gen.ts # typed TS module
+```
+
+```ts
+import { createApiFromJson } from "./api.gen.ts";
+
+const api = createApiFromJson("./target/release/libmy.so");
+api.add(1, 2);                       // number, typed; errors throw JS Errors
+const counter = new api.counter(10); // classes: FinalizationRegistry + release()
+await api.compute(21);               // `#[bffi_async]` -> Promise
+```
+
+A full worked example lives in
+[`examples/native`](https://github.com/DotBlood/bffi-rs/blob/main/examples/native)
+(shims, classes, async and callbacks through real `bun:ffi`, with a
+46-test e2e parity suite).
+
 ## Conventions
 
 - Conventional Commits are enforced by a `commit-msg` hook (`scripts/commit-msg.sh`).
 - Pre-commit runs oxlint, `tsc --noEmit`, `cargo fmt --check` and clippy.
 - Pre-push runs the workspace tests.
-- CI (GitHub Actions) is planned and will be introduced once `bffi-core` lands; until then `bun run ci` is the source of truth.
+- GitHub Actions CI is planned; until it lands, `bun run ci` is the source of truth.
 
 ## License
 

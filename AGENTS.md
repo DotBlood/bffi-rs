@@ -97,7 +97,8 @@ bffi-rs/
 │   ├── CONTRIBUTING.md
 │   └── CODE_OF_CONDUCT.md
 ├── examples/
-├── bin/                         # cli utility for bffi-rs
+├── packages/                      # JS-side packages (bffi-loader)
+├── bin/                           # cli utility (bffi codegen)
 └── scripts/
 ```
 

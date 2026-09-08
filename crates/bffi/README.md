@@ -96,6 +96,15 @@ cargo test -p bffi
 `tests/reexports.rs` is the surface audit: every documented name,
 both proc macros in use, and the zero-copy door.
 
+## The JS side
+
+JavaScript consumes this stack through
+[`packages/bffi-loader`](https://github.com/DotBlood/bffi-rs/blob/main/packages/bffi-loader):
+the `bffi codegen` CLI turns the aggregated `ModuleDef` (canonical
+loader JSON from `bffi_build::loader_json`) into a typed TS module
+whose `ApiOf<>` derives exact signatures from the descriptors - see
+the root README, "Generated TypeScript API".
+
 ## Requirements
 
 - Rust 1.98.0 (pinned via `rust-toolchain.toml`)
