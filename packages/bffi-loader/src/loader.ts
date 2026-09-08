@@ -56,6 +56,56 @@ export type TsName =
   | "void"
   | `Promise<${string}>`;
 
+/** Every valid `abi` parameter name (the codegen/CLI validator
+ * consumes this set). */
+export const ABI_NAMES: ReadonlySet<string> = new Set([
+  "i8",
+  "i16",
+  "i32",
+  "u8",
+  "u16",
+  "u32",
+  "f32",
+  "f64",
+  "i64",
+  "u64",
+  "bool",
+  "cstring",
+  "ptr_len",
+]);
+
+const OUT_NAMES_MUTABLE = new Set(ABI_NAMES);
+OUT_NAMES_MUTABLE.add("handle");
+
+/** Every valid out-slot name (primitive widths + the handle slot). */
+export const OUT_NAMES: ReadonlySet<string> = OUT_NAMES_MUTABLE;
+
+const RET_ABI_NAMES_MUTABLE = new Set(OUT_NAMES_MUTABLE);
+RET_ABI_NAMES_MUTABLE.add("buffer");
+RET_ABI_NAMES_MUTABLE.add("task");
+RET_ABI_NAMES_MUTABLE.add("void");
+
+/** Every valid return-transport name. */
+export const RET_ABI_NAMES: ReadonlySet<string> = RET_ABI_NAMES_MUTABLE;
+
+/** The TypeScript type names the `bffi-dts` renderer emits. */
+export const TS_NAMES: ReadonlySet<string> = new Set([
+  "number",
+  "bigint",
+  "boolean",
+  "string",
+  "Uint8Array",
+  "string | null",
+  "Uint8Array | null",
+  "void",
+  "Promise<void>",
+  "Promise<number>",
+  "Promise<bigint>",
+  "Promise<boolean>",
+  "Promise<string>",
+  "Promise<Uint8Array>",
+]);
+
 export interface ParamJson {
   name: string;
   ts: TsName;
