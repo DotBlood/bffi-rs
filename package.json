@@ -27,7 +27,7 @@
     "test": "cargo test --workspace",
     "build": "cargo build --release -p bffi-example-native",
     "codegen:native": "cargo run -q -p bffi-example-native --bin emit-json && bun bin/index.ts codegen examples/native/js/bffi.api.json -o examples/native/js/api.gen.ts --runtime ../../../packages/bffi-loader/src/index.ts",
-    "test:native": "bun run build && bun run codegen:native && bun test js && bun test generated-sequential",
+    "test:native": "bun run build && bun run codegen:native && bun test js && BFFI_SEQUENTIAL_E2E=1 bun test generated-sequential",
     "check": "bun run lint && bun run typecheck && cargo check --workspace",
     "ci": "bun run lint && bun run typecheck && bun run fmt:check && bun run clippy && bun run test"
   },

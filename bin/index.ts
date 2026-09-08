@@ -13,6 +13,7 @@
 import { parseArgs } from "node:util";
 import { renderModule, DEFAULT_RUNTIME } from "./codegen.ts";
 import { SchemaValidationError } from "./schema.ts";
+import { bunVersionProblem } from "../packages/bffi-loader/src/version.ts";
 
 const USAGE = `bffi - codegen for bffi-rs native modules
 
@@ -73,6 +74,14 @@ function parseOptions(argv: string[]): Options {
 
 /** The process entry point; resolves to the exit code. */
 export async function main(argv: string[]): Promise<number> {
+  // Environment gate first (exit 2: neither a usage nor an input
+  // error - the runtime itself is too old).
+  const versionProblem = bunVersionProblem(Bun.version);
+  if (versionProblem !== undefined) {
+    process.stderr.write(`bffi ${versionProblem}\n`);
+    return 2;
+  }
+
   let options: Options;
   try {
     options = parseOptions(argv);

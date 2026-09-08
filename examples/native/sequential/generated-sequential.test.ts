@@ -29,6 +29,14 @@ import { hasArtifact, native } from "../js/load.ts";
 
 const skip = !(await hasArtifact());
 
+// This file MUST NOT run inside a parallel `bun test` sweep: the
+// sticky JS-thread bind and the pump-driven async delivery race other
+// test files (seen on CI: callbacks.test.ts bindStatus 12). It runs
+// on its own, gated by the env variable:
+//
+//   BFFI_SEQUENTIAL_E2E=1 bun test generated-sequential
+const gated = process.env.BFFI_SEQUENTIAL_E2E !== "1";
+
 const artifact = `${import.meta.dir}/../../../target/release/${
   process.platform === "win32" ? "" : "lib"
 }bffi_example_native.${
@@ -42,7 +50,7 @@ function rawLib(): FfiLib {
   return symbols as unknown as FfiLib;
 }
 
-describe.skipIf(skip)("generated loader, sequential e2e", () => {
+describe.skipIf(skip || gated)("generated loader, sequential e2e", () => {
   test("async exports resolve through the pumped loop (exampleCompute)", async () => {
     const promise = api.example_compute(21);
     const deadline = Date.now() + 5000;

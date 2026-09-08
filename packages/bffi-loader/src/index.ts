@@ -44,3 +44,14 @@ export {
   type CbType,
   type CbValue,
 } from "./callbacks.ts";
+import { assertBunVersion } from "./version.ts";
+export {
+  assertBunVersion,
+  bunVersionProblem,
+  bunVersionSatisfies,
+  MIN_BUN_VERSION,
+} from "./version.ts";
+
+// Fail fast on unsupported runtimes: every public consumer (the
+// generated modules included) imports this entry.
+assertBunVersion();

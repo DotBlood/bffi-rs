@@ -28,7 +28,7 @@ See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.m
 
 ## Requirements
 
-- [Bun](https://bun.sh) >= 1.4.0
+- [Bun](https://bun.sh) >= 1.4.0 (enforced at runtime by `bffi-loader` and the `bffi` CLI)
 - Rust 1.98.0 (pinned via `rust-toolchain.toml`; rustup installs it automatically)
 - bash (for the commit-msg hook; preinstalled on macOS/Linux, Git Bash on Windows)
 

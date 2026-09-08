@@ -78,3 +78,11 @@ jobs:
 
       - name: bun test (native e2e)
         run: bun test examples/native
+
+      # sequential e2e: sticky JS-thread bind + pump-driven async
+      # delivery race other files under the parallel runner, so these
+      # run in their own pass (env-gated in the test file itself)
+      - name: bun test (sequential e2e)
+        run: bun test generated-sequential
+        env:
+          BFFI_SEQUENTIAL_E2E: "1"

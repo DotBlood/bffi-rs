@@ -28,7 +28,7 @@
 
 ## Требования
 
-- [Bun](https://bun.sh) >= 1.4.0
+- [Bun](https://bun.sh) >= 1.4.0 (проверяется в рантайме `bffi-loader` и CLI `bffi`)
 - Rust 1.98.0 (закреплён в `rust-toolchain.toml`; rustup установит его автоматически)
 - bash (для commit-msg хука; предустановлен на macOS/Linux, Git Bash на Windows)
 

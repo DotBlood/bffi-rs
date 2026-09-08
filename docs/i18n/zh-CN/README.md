@@ -28,7 +28,7 @@ Bun 绑定框架 - napi-rs 的 Bun 等价物,基于 `bun:ffi` 与轻量 C ABI �
 
 ## 环境要求
 
-- [Bun](https://bun.sh) >= 1.4.0
+- [Bun](https://bun.sh) >= 1.4.0(由 `bffi-loader` 与 `bffi` CLI 在运行时强制检查)
 - Rust 1.98.0(通过 `rust-toolchain.toml` 固定;rustup 会自动安装)
 - bash(commit-msg 钩子需要;macOS/Linux 预装,Windows 使用 Git Bash)
 
