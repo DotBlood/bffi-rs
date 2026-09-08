@@ -27,8 +27,10 @@ pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
     let docs = model.docs.iter().map(|doc| quote! { #doc });
     let fields = model.fields.iter().map(|field| {
         let name = &field.name;
+        let export = format!("bffi_{}_{}_get", model.js_name, field.name);
         let ts_ty = field_ts_kind(field.ty).tokens(&model.paths);
-        quote! { #dts::FieldDef { js_name: #name, docs: &[], ty: #ts_ty } }
+        let out = field_out(field.ty, &model.paths);
+        quote! { #dts::FieldDef { js_name: #name, export_name: #export, docs: &[], ty: #ts_ty, out: #out } }
     });
 
     quote! {
@@ -43,6 +45,15 @@ pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
             #[doc = #fields_doc]
             pub const FIELDS: &[#dts::FieldDef] = &[#(#fields),*];
         }
+    }
+}
+
+/// The getter's out-slot tokens of a field type: the exact width the
+/// generated `bffi_<class>_<field>_get` shim writes.
+fn field_out(ty: FieldTy, paths: &bffi_macro_support::paths::PathCtx) -> TokenStream {
+    match ty {
+        FieldTy::Prim(prim) => mapping::abi::prim_out(prim, paths),
+        FieldTy::BigInt(big) => mapping::abi::bigint_out(big, paths),
     }
 }
 
@@ -61,6 +72,8 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
         let ty = mapping::ts_type(&param.kind).tokens(&model.paths);
         quote! { #dts::ParamDef { name: #name, ty: #ty } }
     });
+    let ctor_abi =
+        mapping::abi::abi_sig_task(ctor.params.iter().map(|param| param.kind), &model.paths);
     let methods = model.methods.iter().map(|method| {
         let name = method.ident.to_string();
         let export = format!("bffi_{}_{}", model.js_name, method.ident);
@@ -70,6 +83,11 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
             quote! { #dts::ParamDef { name: #name, ty: #ty } }
         });
         let ret = mapping::ts_return(&method.ret).tokens(&model.paths);
+        let abi = mapping::abi::abi_sig(
+            method.params.iter().map(|param| param.kind),
+            &method.ret,
+            &model.paths,
+        );
         let docs = method.docs.iter().map(|doc| quote! { #doc });
         quote! {
             #dts::MethodDef {
@@ -78,6 +96,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
                 docs: &[#(#docs),*],
                 params: &[#(#params),*],
                 ret: #ret,
+                abi: #abi,
             }
         }
     });
@@ -92,6 +111,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
                 docs: &[#(#ctor_docs),*],
                 params: &[#(#ctor_params),*],
                 ret: #dts::TsType::BigInt,
+                abi: #ctor_abi,
             };
 
             #[doc = "The methods, in declaration order."]

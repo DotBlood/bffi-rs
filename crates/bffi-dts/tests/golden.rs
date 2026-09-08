@@ -15,7 +15,21 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 use bffi_dts::{
-    ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef, ParamDef, TsType, render::render,
+    AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef,
+    ParamDef, TsType, render::render,
+};
+
+const U32_ABI: AbiSig = AbiSig {
+    params: &[],
+    out: Some(AbiOut::Prim(AbiPrim::U32)),
+};
+const UNIT_ABI: AbiSig = AbiSig {
+    params: &[],
+    out: None,
+};
+const HANDLE_ABI: AbiSig = AbiSig {
+    params: &[],
+    out: Some(AbiOut::Handle),
 };
 
 static ADD_PARAMS: &[ParamDef] = &[
@@ -28,6 +42,10 @@ static ADD_PARAMS: &[ParamDef] = &[
         ty: TsType::Number,
     },
 ];
+static ADD_ABI: AbiSig = AbiSig {
+    params: &[AbiType::U32, AbiType::U32],
+    out: Some(AbiOut::Prim(AbiPrim::U32)),
+};
 
 static MATH_FNS: &[FunctionDef] = &[
     FunctionDef {
@@ -36,6 +54,7 @@ static MATH_FNS: &[FunctionDef] = &[
         docs: &["Adds two numbers."],
         params: ADD_PARAMS,
         ret: TsType::Number,
+        abi: ADD_ABI,
     },
     FunctionDef {
         js_name: "find_name",
@@ -43,6 +62,7 @@ static MATH_FNS: &[FunctionDef] = &[
         docs: &["Finds a name."],
         params: &[],
         ret: TsType::NullableString,
+        abi: HANDLE_ABI,
     },
     FunctionDef {
         js_name: "read_payload",
@@ -50,6 +70,7 @@ static MATH_FNS: &[FunctionDef] = &[
         docs: &["Reads a payload."],
         params: &[],
         ret: TsType::NullableUint8Array,
+        abi: HANDLE_ABI,
     },
 ];
 
@@ -66,6 +87,7 @@ static KITCHEN_FNS: &[FunctionDef] = &[
         docs: &["Adds two numbers."],
         params: ADD_PARAMS,
         ret: TsType::Number,
+        abi: ADD_ABI,
     },
     FunctionDef {
         js_name: "class",
@@ -86,6 +108,10 @@ static KITCHEN_FNS: &[FunctionDef] = &[
             },
         ],
         ret: TsType::Void,
+        abi: AbiSig {
+            params: &[AbiType::U64, AbiType::PtrLen, AbiType::Bool],
+            out: None,
+        },
     },
     FunctionDef {
         js_name: "greet",
@@ -96,6 +122,10 @@ static KITCHEN_FNS: &[FunctionDef] = &[
             ty: TsType::String,
         }],
         ret: TsType::String,
+        abi: AbiSig {
+            params: &[AbiType::Cstring],
+            out: Some(AbiOut::Handle),
+        },
     },
     FunctionDef {
         js_name: "noop",
@@ -103,6 +133,7 @@ static KITCHEN_FNS: &[FunctionDef] = &[
         docs: &[],
         params: &[],
         ret: TsType::Void,
+        abi: UNIT_ABI,
     },
 ];
 
@@ -132,11 +163,17 @@ static COUNTER_CLASS: &[ClassDef] = &[ClassDef {
             ty: TsType::Number,
         }],
         ret: TsType::BigInt,
+        abi: AbiSig {
+            params: &[AbiType::U32],
+            out: Some(AbiOut::Handle),
+        },
     },
     fields: &[FieldDef {
         js_name: "value",
+        export_name: "bffi_counter_value_get",
         docs: &["The current value."],
         ty: TsType::Number,
+        out: AbiOut::Prim(AbiPrim::U32),
     }],
     methods: &[
         MethodDef {
@@ -145,6 +182,7 @@ static COUNTER_CLASS: &[ClassDef] = &[ClassDef {
             docs: &["Adds one and returns the new value."],
             params: &[],
             ret: TsType::Number,
+            abi: U32_ABI,
         },
         MethodDef {
             js_name: "class",
@@ -152,6 +190,7 @@ static COUNTER_CLASS: &[ClassDef] = &[ClassDef {
             docs: &[],
             params: &[],
             ret: TsType::Void,
+            abi: UNIT_ABI,
         },
     ],
 }];

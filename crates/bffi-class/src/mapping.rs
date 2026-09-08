@@ -8,6 +8,7 @@
 use crate::errors::{method_param, method_return};
 use bffi_macro_support::classify as support;
 
+pub(crate) use bffi_macro_support::abi;
 pub(crate) use bffi_macro_support::classify::{PathKind, path_kind, ts_return, ts_type};
 pub(crate) use bffi_macro_support::kind::{BigIntTy, PrimTy, RetKind, ShimKind, TsKind};
 

@@ -9,6 +9,7 @@ use crate::errors::{param_type, return_type};
 use bffi_macro_support::classify as support;
 use bffi_macro_support::kind::{RetKind, ShimKind};
 
+pub(crate) use bffi_macro_support::abi;
 pub(crate) use bffi_macro_support::classify::{ts_return, ts_type};
 
 /// Classifies a parameter type: plain primitives and `i64`/`u64` as

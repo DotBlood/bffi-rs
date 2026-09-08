@@ -79,12 +79,13 @@ they are the P1 contract (criterion 6.2) that the macro output must match.
 ## Quick start
 
 ```rust
-use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType};
+use bffi_dts::{AbiOut, AbiPrim, AbiSig, AbiType, FunctionDef, ModuleDef, ParamDef, TsType};
 
 static PARAMS: &[ParamDef] = &[
     ParamDef { name: "a", ty: TsType::Number },
     ParamDef { name: "b", ty: TsType::Number },
 ];
+static ABI_PARAMS: &[AbiType] = &[AbiType::U32, AbiType::U32];
 static DOCS: &[&str] = &["Adds two numbers."];
 static FNS: &[FunctionDef] = &[FunctionDef {
     js_name: "add",
@@ -92,13 +93,28 @@ static FNS: &[FunctionDef] = &[FunctionDef {
     docs: DOCS,
     params: PARAMS,
     ret: TsType::Number,
+    abi: AbiSig {
+        params: ABI_PARAMS,
+        out: Some(AbiOut::Prim(AbiPrim::U32)),
+    },
 }];
 
-let module = ModuleDef { name: "math", fns: FNS };
+let module = ModuleDef { name: "math", fns: FNS, classes: &[] };
 let dts = bffi_dts::render(&module);
 assert!(dts.contains("/** Adds two numbers. */"));
 assert!(dts.contains("export function add(a: number, b: number): number;"));
 ```
+
+## The ABI signature
+
+Besides the TypeScript view, every function and method descriptor carries an
+`AbiSig`: one `AbiType` per JS-visible parameter (`Cstring` for `&str`,
+one `PtrLen` entry for `&[u8]`, exact widths for the primitives) plus the
+out-parameter slot (`AbiOut::Prim(width)` or `AbiOut::Handle` for the shared
+`u64` slot byte-carrying returns travel through). The `.d.ts` renderer ignores
+it; loader-side tooling consumes it so the exact C ABI shapes never have to be
+re-derived from the coarse `TsType`. Field getters carry their `export_name`
+(`bffi_<class>_<field>_get`) and out slot the same way.
 
 ## What does _not_ belong here
 

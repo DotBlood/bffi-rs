@@ -27,12 +27,15 @@
 //! ## Quick start
 //!
 //! ```rust
-//! use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType};
+//! use bffi_dts::{
+//!     AbiOut, AbiPrim, AbiSig, AbiType, FunctionDef, ModuleDef, ParamDef, TsType,
+//! };
 //!
 //! static PARAMS: &[ParamDef] = &[
 //!     ParamDef { name: "a", ty: TsType::Number },
 //!     ParamDef { name: "b", ty: TsType::Number },
 //! ];
+//! static ABI_PARAMS: &[AbiType] = &[AbiType::U32, AbiType::U32];
 //! static DOCS: &[&str] = &["Adds two numbers."];
 //! static FNS: &[FunctionDef] = &[FunctionDef {
 //!     js_name: "add",
@@ -40,6 +43,10 @@
 //!     docs: DOCS,
 //!     params: PARAMS,
 //!     ret: TsType::Number,
+//!     abi: AbiSig {
+//!         params: ABI_PARAMS,
+//!         out: Some(AbiOut::Prim(AbiPrim::U32)),
+//!     },
 //! }];
 //!
 //! let module = ModuleDef { name: "math", fns: FNS, classes: &[] };
@@ -55,5 +62,8 @@ pub mod ir;
 pub mod render;
 
 pub use ident::sanitize;
-pub use ir::{ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef, ParamDef, TsType};
+pub use ir::{
+    AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef,
+    ParamDef, TsType,
+};
 pub use render::render;

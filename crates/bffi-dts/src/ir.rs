@@ -98,6 +98,175 @@ impl TsType {
     }
 }
 
+/// The exact C ABI width of an out-parameter slot.
+///
+/// Out-parameters carry primitives and 64-bit integers at their Rust
+/// width plus `bool` (one byte on the C ABI); every byte-carrying
+/// return (`String` / `Vec<u8>` / `CopiedBuf` / `Option` of those)
+/// and every async task handle travels as a `u64` handle instead
+/// ([`AbiOut::Handle`], CALLING-CONVENTION.md §4).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum AbiPrim {
+    /// `i8`
+    I8,
+    /// `i16`
+    I16,
+    /// `i32`
+    I32,
+    /// `u8`
+    U8,
+    /// `u16`
+    U16,
+    /// `u32`
+    U32,
+    /// `f32`
+    F32,
+    /// `f64`
+    F64,
+    /// `bool` (one byte on the C ABI; bun:ffi spells it `"u8"`).
+    Bool,
+    /// `i64` (JS sees `bigint`).
+    I64,
+    /// `u64` (JS sees `bigint`).
+    U64,
+}
+
+impl AbiPrim {
+    /// The canonical name of this width, as written in the loader
+    /// JSON schema (e.g. `"u32"`, `"bool"`). The `bun:ffi` spelling
+    /// (where it differs) is a runtime concern: only `bool` does
+    /// (`"u8"` on the dlopen side).
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::I8 => "i8",
+            Self::I16 => "i16",
+            Self::I32 => "i32",
+            Self::U8 => "u8",
+            Self::U16 => "u16",
+            Self::U32 => "u32",
+            Self::F32 => "f32",
+            Self::F64 => "f64",
+            Self::Bool => "bool",
+            Self::I64 => "i64",
+            Self::U64 => "u64",
+        }
+    }
+}
+
+/// The exact C ABI shape of one parameter entry.
+///
+/// One entry per JS-visible parameter: a borrowed `&[u8]` is ONE
+/// [`AbiType::PtrLen`] here even though it crosses the dlopen
+/// declaration as a `("ptr", "u64")` pair - expanding the pair is the
+/// loader's job, not the IR's. `bool` keeps its canonical name; the
+/// `bun:ffi` spelling (`"u8"`) is applied by the runtime.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum AbiType {
+    /// `i8` by value.
+    I8,
+    /// `i16` by value.
+    I16,
+    /// `i32` by value.
+    I32,
+    /// `u8` by value.
+    U8,
+    /// `u16` by value.
+    U16,
+    /// `u32` by value.
+    U32,
+    /// `f32` by value.
+    F32,
+    /// `f64` by value.
+    F64,
+    /// `i64` (JS sees `bigint`).
+    I64,
+    /// `u64` (JS sees `bigint`; handles travel as `u64` too).
+    U64,
+    /// `bool` (one byte; bun:ffi `"u8"`, JS coerces `0`/`1`).
+    Bool,
+    /// A NUL-terminated UTF-8 cstring pointer (borrowed `&str`).
+    Cstring,
+    /// A borrowed byte view: one entry here, a `("ptr", "u64")`
+    /// dlopen pair after expansion (borrowed `&[u8]`).
+    PtrLen,
+}
+
+impl AbiType {
+    /// The canonical name of this shape, as written in the loader
+    /// JSON schema (e.g. `"u32"`, `"cstring"`, `"ptr_len"`).
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::I8 => "i8",
+            Self::I16 => "i16",
+            Self::I32 => "i32",
+            Self::U8 => "u8",
+            Self::U16 => "u16",
+            Self::U32 => "u32",
+            Self::F32 => "f32",
+            Self::F64 => "f64",
+            Self::I64 => "i64",
+            Self::U64 => "u64",
+            Self::Bool => "bool",
+            Self::Cstring => "cstring",
+            Self::PtrLen => "ptr_len",
+        }
+    }
+}
+
+/// The out-parameter description of an ABI signature: the slot the
+/// shim writes the return value into (`*mut T` on the C ABI, declared
+/// as a `"pointer"` dlopen argument and read through the TypedArray
+/// of the recorded width).
+///
+/// `None` (on [`AbiSig::out`]) means the unit return: no slot at all.
+/// [`AbiOut::Handle`] is the shared `u64` slot for every byte-carrying
+/// return (`String` / `Vec<u8>` / `CopiedBuf` / `Option` of those),
+/// every `#[bffi_async]` task handle, and every class constructor
+/// (CALLING-CONVENTION.md §4).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum AbiOut {
+    /// A primitive slot at the exact width (including `bool` as one
+    /// byte and the 64-bit integers).
+    Prim(AbiPrim),
+    /// The shared `u64` handle slot (transient buffers, async task
+    /// handles, class instances).
+    Handle,
+}
+
+impl AbiOut {
+    /// The canonical name of this slot, as written in the loader JSON
+    /// schema: the [`AbiPrim`] name or `"handle"`.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Prim(prim) => prim.as_str(),
+            Self::Handle => "handle",
+        }
+    }
+}
+
+/// The exact C ABI signature behind one descriptor: one
+/// [`AbiType`] per JS-visible parameter (declaration order) plus the
+/// out-parameter slot.
+///
+/// The signature describes the SHIM side of the boundary; the
+/// receiver handle of class methods and getters is not part of
+/// `params` (the loader always prepends it as a `u64` argument), and
+/// the C ABI return value - always the `ErrorCode` - is not part of
+/// `out` (CALLING-CONVENTION.md §1/§4).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct AbiSig {
+    /// The parameter shapes, in declaration order.
+    pub params: &'static [AbiType],
+    /// The out-parameter slot; `None` for the unit return.
+    pub out: Option<AbiOut>,
+}
+
 /// A single function parameter: its JS-visible name and type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ParamDef {
@@ -112,6 +281,8 @@ pub struct ParamDef {
 /// `export_name` follows the `bffi_` + `js_name` convention and is
 /// consumed by `bffi-build` to link the C ABI symbol; it is never
 /// rendered into the `.d.ts` output. `docs` feeds the JSDoc block.
+/// `abi` records the exact C ABI signature (loader-side concern; the
+/// `.d.ts` renderer ignores it).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FunctionDef {
     /// The function name as seen from JavaScript.
@@ -124,6 +295,8 @@ pub struct FunctionDef {
     pub params: &'static [ParamDef],
     /// The return type.
     pub ret: TsType,
+    /// The exact C ABI signature behind the generated shim.
+    pub abi: AbiSig,
 }
 
 /// A named module grouping the native functions and classes it
@@ -154,18 +327,32 @@ pub struct MethodDef {
     pub params: &'static [ParamDef],
     /// The return type.
     pub ret: TsType,
+    /// The exact C ABI signature behind the generated shim
+    /// (receiver excluded; the constructor writes the instance
+    /// handle into an [`AbiOut::Handle`] slot).
+    pub abi: AbiSig,
 }
 
 /// A class field exposed as a read-only getter (P2 v1: getters only -
 /// the Arc-based ownership model has no safe setter).
+///
+/// The getter shim takes the instance handle and writes the field
+/// into one primitive slot, recorded by `out`; the export symbol
+/// follows the `bffi_<class>_<field>_get` convention and is carried
+/// here so loader descriptors stay self-describing (no convention
+/// re-derivation on the JS side).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FieldDef {
     /// The field name as seen from JavaScript.
     pub js_name: &'static str,
+    /// The C ABI export symbol of the getter shim; build-side only.
+    pub export_name: &'static str,
     /// Doc comment lines, rendered as a JSDoc block.
     pub docs: &'static [&'static str],
     /// The field type.
     pub ty: TsType,
+    /// The getter's out-parameter slot.
+    pub out: AbiOut,
 }
 
 /// A native class exposed to JavaScript: generated by
@@ -186,7 +373,24 @@ pub struct ClassDef {
 
 #[cfg(test)]
 mod tests {
-    use super::{FunctionDef, ModuleDef, ParamDef, TsType};
+    use super::{AbiOut, AbiPrim, AbiSig, AbiType, FunctionDef, ModuleDef, ParamDef, TsType};
+
+    const UNIT_ABI: AbiSig = AbiSig {
+        params: &[],
+        out: None,
+    };
+    const U32_ABI: AbiSig = AbiSig {
+        params: &[],
+        out: Some(AbiOut::Prim(AbiPrim::U32)),
+    };
+    const U64_ABI: AbiSig = AbiSig {
+        params: &[],
+        out: Some(AbiOut::Prim(AbiPrim::U64)),
+    };
+    const HANDLE_ABI: AbiSig = AbiSig {
+        params: &[],
+        out: Some(AbiOut::Handle),
+    };
 
     #[test]
     fn ts_type_as_str_covers_all_variants() {
@@ -198,6 +402,59 @@ mod tests {
         assert_eq!(TsType::NullableString.as_str(), "string | null");
         assert_eq!(TsType::NullableUint8Array.as_str(), "Uint8Array | null");
         assert_eq!(TsType::Void.as_str(), "void");
+    }
+
+    #[test]
+    fn abi_names_cover_all_variants() {
+        assert_eq!(AbiPrim::I8.as_str(), "i8");
+        assert_eq!(AbiPrim::I16.as_str(), "i16");
+        assert_eq!(AbiPrim::I32.as_str(), "i32");
+        assert_eq!(AbiPrim::U8.as_str(), "u8");
+        assert_eq!(AbiPrim::U16.as_str(), "u16");
+        assert_eq!(AbiPrim::U32.as_str(), "u32");
+        assert_eq!(AbiPrim::F32.as_str(), "f32");
+        assert_eq!(AbiPrim::F64.as_str(), "f64");
+        assert_eq!(AbiPrim::Bool.as_str(), "bool");
+        assert_eq!(AbiPrim::I64.as_str(), "i64");
+        assert_eq!(AbiPrim::U64.as_str(), "u64");
+
+        assert_eq!(AbiType::Cstring.as_str(), "cstring");
+        assert_eq!(AbiType::PtrLen.as_str(), "ptr_len");
+        assert_eq!(AbiType::Bool.as_str(), "bool");
+        assert_eq!(AbiType::U64.as_str(), "u64");
+
+        assert_eq!(AbiOut::Prim(AbiPrim::F64).as_str(), "f64");
+        assert_eq!(AbiOut::Handle.as_str(), "handle");
+    }
+
+    #[test]
+    fn abi_shapes_are_copy_and_compare_by_value() {
+        fn assert_copy<T: Copy>() {}
+
+        assert_copy::<AbiPrim>();
+        assert_copy::<AbiType>();
+        assert_copy::<AbiOut>();
+        assert_copy::<AbiSig>();
+
+        let sig = AbiSig {
+            params: &[AbiType::Cstring],
+            out: Some(AbiOut::Handle),
+        };
+        let same = AbiSig {
+            params: &[AbiType::Cstring],
+            out: Some(AbiOut::Handle),
+        };
+        let different_params = AbiSig {
+            params: &[AbiType::PtrLen],
+            out: Some(AbiOut::Handle),
+        };
+        let different_out = AbiSig {
+            params: &[AbiType::Cstring],
+            out: Some(AbiOut::Prim(AbiPrim::U64)),
+        };
+        assert_eq!(sig, same, "identical sigs must compare equal");
+        assert_ne!(sig, different_params, "different params must not be equal");
+        assert_ne!(sig, different_out, "different outs must not be equal");
     }
 
     #[test]
@@ -238,6 +495,7 @@ mod tests {
             docs: DOCS,
             params: &PARAMS,
             ret: TsType::Number,
+            abi: U32_ABI,
         };
         let same = FunctionDef {
             js_name: "add",
@@ -245,6 +503,7 @@ mod tests {
             docs: DOCS,
             params: &PARAMS,
             ret: TsType::Number,
+            abi: U32_ABI,
         };
         let different_js_name = FunctionDef {
             js_name: "sub",
@@ -252,6 +511,7 @@ mod tests {
             docs: DOCS,
             params: &PARAMS,
             ret: TsType::Number,
+            abi: U32_ABI,
         };
         let with_different_docs = FunctionDef {
             js_name: "add",
@@ -259,6 +519,7 @@ mod tests {
             docs: DIFFERENT_DOCS,
             params: &PARAMS,
             ret: TsType::Number,
+            abi: U32_ABI,
         };
         assert_eq!(function, same, "identical defs must compare equal");
         assert_ne!(
@@ -279,6 +540,7 @@ mod tests {
             docs: &[],
             params: &[],
             ret: TsType::Number,
+            abi: U32_ABI,
         }];
         static FNS_B: [FunctionDef; 1] = [FunctionDef {
             js_name: "sub",
@@ -286,6 +548,7 @@ mod tests {
             docs: &[],
             params: &[],
             ret: TsType::Void,
+            abi: UNIT_ABI,
         }];
 
         let module = ModuleDef {
@@ -331,6 +594,7 @@ mod tests {
             docs: &[],
             params: &[],
             ret: TsType::NullableString,
+            abi: HANDLE_ABI,
         }];
         let module = ModuleDef {
             name: "native",
@@ -348,6 +612,7 @@ mod tests {
             docs: &[],
             params: &[],
             ret: TsType::BigInt,
+            abi: U64_ABI,
         },
         FunctionDef {
             js_name: "peek",
@@ -355,6 +620,7 @@ mod tests {
             docs: &[],
             params: &[],
             ret: TsType::NullableUint8Array,
+            abi: HANDLE_ABI,
         },
     ];
 

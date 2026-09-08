@@ -32,6 +32,11 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
         quote! { #dts::ParamDef { name: #name, ty: #ty } }
     });
     let ret = mapping::ts_return(&model.ret).tokens(&model.paths);
+    let abi = mapping::abi::abi_sig(
+        model.params.iter().map(|param| param.kind),
+        &model.ret,
+        &model.paths,
+    );
 
     quote! {
         #[doc = #module_doc]
@@ -43,6 +48,7 @@ pub(crate) fn expand(model: &FnModel) -> TokenStream {
                 docs: &[#(#docs),*],
                 params: &[#(#params),*],
                 ret: #ret,
+                abi: #abi,
             };
         }
     }

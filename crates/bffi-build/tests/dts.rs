@@ -8,7 +8,7 @@
 
 use std::path::{Path, PathBuf};
 
-use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType};
+use bffi_dts::{AbiOut, AbiPrim, AbiSig, AbiType, FunctionDef, ModuleDef, ParamDef, TsType};
 
 static ADD_PARAMS: &[ParamDef] = &[
     ParamDef {
@@ -27,6 +27,10 @@ static ADD_FNS: &[FunctionDef] = &[FunctionDef {
     docs: &["Adds two numbers."],
     params: ADD_PARAMS,
     ret: TsType::Number,
+    abi: AbiSig {
+        params: &[AbiType::U32, AbiType::U32],
+        out: Some(AbiOut::Prim(AbiPrim::U32)),
+    },
 }];
 
 static PING_FNS: &[FunctionDef] = &[FunctionDef {
@@ -35,6 +39,10 @@ static PING_FNS: &[FunctionDef] = &[FunctionDef {
     docs: &[],
     params: &[],
     ret: TsType::Void,
+    abi: AbiSig {
+        params: &[],
+        out: None,
+    },
 }];
 
 fn add_module() -> ModuleDef {

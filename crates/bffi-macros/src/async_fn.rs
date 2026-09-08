@@ -306,6 +306,18 @@ pub(crate) fn expand(model: &AsyncFnModel) -> TokenStream {
     quote! { #debug_shim #release_shim }
 }
 
+/// The boundary kind of an owned async parameter at the ABI level:
+/// `String` crosses as a cstring pointer, `Vec<u8>` as a `(ptr, len)`
+/// view (the shim copies both into the future before the spawn).
+fn abi_kind(kind: AsyncParam) -> bffi_macro_support::kind::ShimKind {
+    match kind {
+        AsyncParam::Prim(prim) => bffi_macro_support::kind::ShimKind::Prim(prim),
+        AsyncParam::BigInt(big) => bffi_macro_support::kind::ShimKind::BigInt(big),
+        AsyncParam::OwnedStr => bffi_macro_support::kind::ShimKind::Str,
+        AsyncParam::OwnedBytes => bffi_macro_support::kind::ShimKind::BufferView,
+    }
+}
+
 /// The descriptor module: the promise-returning function definition.
 pub(crate) fn async_meta(model: &AsyncFnModel) -> TokenStream {
     let module = format_ident!("bffi_meta_{}", model.ident);
@@ -323,6 +335,8 @@ pub(crate) fn async_meta(model: &AsyncFnModel) -> TokenStream {
         quote! { ::bffi_dts::ParamDef { name: #name, ty: #ty } }
     });
     let ret = ts_promise(&model.ret).tokens(paths);
+    let abi =
+        support::abi::abi_sig_task(model.params.iter().map(|(_, kind)| abi_kind(*kind)), paths);
 
     quote! {
         #[doc = #module_doc]
@@ -334,6 +348,7 @@ pub(crate) fn async_meta(model: &AsyncFnModel) -> TokenStream {
                 docs: &[#(#docs),*],
                 params: &[#(#params),*],
                 ret: #ret,
+                abi: #abi,
             };
         }
     }
