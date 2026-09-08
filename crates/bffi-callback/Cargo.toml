@@ -14,3 +14,8 @@ workspace = true
 
 [dependencies]
 bffi-core = { path = "../bffi-core" }
+# The generic callback ABI stores its encoded result in the shared
+# transient-buffer table and encodes values through the framework-wide
+# wire codec (same layering as bffi-async).
+bffi-build = { path = "../bffi-build" }
+bffi-types = { path = "../bffi-types" }

@@ -81,6 +81,7 @@ pub mod buffer;
 pub mod num;
 pub mod string;
 pub mod unsafe_zero_copy;
+pub mod wire;
 
 pub use buffer::CopiedBuf;
 pub use num::{ConversionError, JsNumber};

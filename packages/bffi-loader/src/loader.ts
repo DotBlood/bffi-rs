@@ -145,11 +145,30 @@ function ffiArg(abi: AbiName): FfiType[] {
   }
 }
 
+/** The generic callback ABI exports the runtime provides when the
+ * user crate expands `bffi_callback::bffi_callback_abi!()`. Their
+ * declarations are appended to EVERY module: a library without the
+ * expansion surfaces a loud `missing export` on first use instead of
+ * a silent gap in the schema. */
+const CALLBACK_DECLARATIONS: Record<string, { args: FfiType[]; returns: FfiType }> = {
+  bffi_callback_set_thread: { args: [], returns: "u32" },
+  bffi_callback_bind: {
+    args: ["u8", "ptr", "u64", "u64", "pointer"],
+    returns: "u32",
+  },
+  bffi_callback_invoke: {
+    args: ["u64", "ptr", "u64", "pointer"],
+    returns: "u32",
+  },
+  bffi_callback_revoke: { args: ["u64"], returns: "u32" },
+};
+
 /**
  * Builds the `dlopen` declarations object for a module: every export
  * keyed by symbol name, `args` derived from the ABI parameter view
  * (the receiver handle of class members prepended by the caller) and
- * the trailing out-parameter, `returns` always the `u32` ErrorCode.
+ * the trailing out-parameter, `returns` always the `u32` ErrorCode -
+ * plus the generic callback ABI exports.
  */
 export function buildDeclarations(json: ModuleJson): Record<string, {
   args: FfiType[];
@@ -199,6 +218,11 @@ export function buildDeclarations(json: ModuleJson): Record<string, {
         args.push("pointer");
       }
       declarations[method.export] = { args, returns: "u32" };
+    }
+  }
+  for (const [name, declaration] of Object.entries(CALLBACK_DECLARATIONS)) {
+    if (!(name in declarations)) {
+      declarations[name] = declaration;
     }
   }
   return declarations;

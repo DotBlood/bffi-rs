@@ -35,4 +35,12 @@ export {
 } from "./loader.ts";
 export { pumpUntil, wrapTask } from "./async.ts";
 export { createApi, createApiFromLib, type ApiOf, type ClassOf, type FnOf, type ParamsOf, type TsOf } from "./api.ts";
-export { type CbType, type CallbackSig, type CbValue } from "./callbacks.ts";
+export {
+  bindJsCallback,
+  invokeCallback,
+  revokeCallback,
+  setJsThread,
+  type CallbackSig,
+  type CbType,
+  type CbValue,
+} from "./callbacks.ts";
