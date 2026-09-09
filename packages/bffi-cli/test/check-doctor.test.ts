@@ -49,17 +49,20 @@ describe("bffi check / doctor", () => {
   });
 
   test("doctor passes on a complete project (exit 0)", () => {
-    // The cargo probe requires a real toolchain; CI js-jobs may ship
-    // without one (cargo missing -> doctor correctly fails, skip).
-    if (Bun.which("cargo") === null) {
-      console.info("skip: cargo not installed in this environment");
+    // The cargo probe requires a USABLE toolchain: CI runners may
+    // ship a cargo binary that cannot actually run (hangs on
+    // startup). Probe it first with a short timeout; skip when the
+    // probe fails.
+    const probe = Bun.spawnSync(["cargo", "--version"], { timeout: 2000 });
+    if (probe.exitCode !== 0) {
+      console.info("skip: cargo is missing or unusable in this environment");
       return;
     }
     const { code, stdout } = runCli(["doctor", "--root", ROOT]);
     expect(code).toBe(0);
     expect(stdout).toContain("ok    bun runtime");
     expect(stdout).not.toContain("FAIL");
-  });
+  }, 15000);
 
   test("check fails when the loader JSON is missing", async () => {
     await $`rm -rf ${BFFI_DIR}/bffi.api.json`;
