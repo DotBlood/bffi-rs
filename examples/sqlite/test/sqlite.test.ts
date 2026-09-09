@@ -19,10 +19,16 @@ afterAll(async () => {
 });
 
 describe("sqlite through the full pipeline", () => {
-  test("the pipeline builds, generates and loads the module", async () => {
-    api = await bffi({ config: `${import.meta.dir}/../.bffi/bffi.json` });
-    expect(api).toBeTypeOf("object");
-  });
+  // A COLD release build (LTO, whole workspace) takes minutes; bun's
+  // default per-test timeout is 5s.
+  test(
+    "the pipeline builds, generates and loads the module",
+    async () => {
+      api = await bffi({ config: `${import.meta.dir}/../.bffi/bffi.json` });
+      expect(api).toBeTypeOf("object");
+    },
+    600_000,
+  );
 
   test("sqlite_version returns the engine version", () => {
     expect(api.sqlite_version().length).toBeGreaterThan(0);
