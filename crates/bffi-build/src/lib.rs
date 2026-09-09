@@ -12,6 +12,9 @@
 //!   [`bffi_dts::ModuleDef`] with the deterministic
 //!   [`bffi_dts::render`] and writes the bytes to disk in one call
 //!   (descriptor aggregation stays the caller's explicit job);
+//! - [`loader_json`] - the loader-schema materializer: the same
+//!   aggregated [`ModuleDef`] rendered into the canonical JSON the
+//!   `bffi` codegen CLI turns into the typed JS loader;
 //! - [`runtime`] - safe Rust storage for **transient buffers**
 //!   (`String`/`Vec<u8>`/`CopiedBuf` returned to JS) and for **drained
 //!   last errors**, both addressed by opaque handles in the
@@ -74,6 +77,7 @@
 pub mod abi;
 pub mod dts;
 pub mod error;
+pub mod loader_json;
 pub mod runtime;
 
 pub use error::BuildError;

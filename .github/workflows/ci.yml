@@ -71,10 +71,13 @@ jobs:
       - name: tsc
         run: bun run typecheck
 
-      # the first real bun:ffi crossing: build the release cdylib and
-      # run the e2e suite against it (ubuntu: .so artifact)
+      - name: bun unit tests (packages, bin)
+        run: bun test packages bin
+
+      # prewarm the cargo cache (the sqlite pipeline reuses it: an
+      # unchanged crate makes the in-pipeline build nearly free)
       - name: cargo build (release, example)
         run: bun run build
 
-      - name: bun test (native e2e)
-        run: bun test examples/native
+      - name: bun test (sqlite e2e, full pipeline)
+        run: bun test examples/sqlite

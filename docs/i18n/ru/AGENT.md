@@ -97,7 +97,8 @@ bffi-rs/
 │   ├── CONTRIBUTING.md
 │   └── CODE_OF_CONDUCT.md
 ├── examples/
-├── bin/                         # cli utility for bffi-rs
+├── packages/                      # JS-пакеты (bffi-loader)
+├── bin/                           # cli-утилита (bffi codegen)
 └── scripts/
 ```
 
@@ -215,3 +216,8 @@ chore: pin rust-toolchain to 1.98.0
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry` (тег 0x0100-0x01FF); release освобождает слот |
 | Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; wrong-thread - reject |
 | Build ABI | Runtime-экспорты (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в юзер-крейте; теги 0x0400-0x04FF; канонический контракт: bffi-build/CALLING-CONVENTION.md |
+| ABI дескрипторов | `AbiSig` (точные C-ширины + out-слот) в `FunctionDef`/`MethodDef`; `export_name` геттера + out в `FieldDef`; `release_export` в `ClassDef` |
+| Wire-кодек | `bffi_types::wire`: одна таблица `[tag][payload]` для async-пейлоадов и колбэк-сигнатур/аргументов/результатов |
+| Callback ABI | Генерические экспорты через `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) в юзер-крейте; wire-кодирование; CALLING-CONVENTION.md §9 |
+| Loader JSON | `bffi_build::loader_json`: канонический детерминированный JSON схемы v1 из агрегированного `ModuleDef` |
+| TS API кодген | `bun bffi codegen <json> -o <ts>`: детерминированный рендер; вмонтирует литерал схемы; `ApiOf<>` выводит точные типы поверх `packages/bffi-loader` |

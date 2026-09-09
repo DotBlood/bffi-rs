@@ -5,7 +5,9 @@
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
-use bffi_dts::{ClassDef, MethodDef, ModuleDef, ParamDef, TsType};
+use bffi_dts::{
+    AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, MethodDef, ModuleDef, ParamDef, TsType,
+};
 
 #[bffi_class::bffi_class(tag = 0x0160)]
 /// A wallet.
@@ -42,9 +44,20 @@ fn class_descriptor_matches_the_expected_literal() {
     assert_eq!(bffi_meta_wallet::TAG, 0x0160);
     assert_eq!(bffi_meta_wallet::FIELDS.len(), 1);
     assert_eq!(
+        bffi_meta_wallet::FIELDS[0],
+        bffi_dts::FieldDef {
+            js_name: "balance",
+            export_name: "bffi_wallet_balance_get",
+            docs: &[],
+            ty: TsType::BigInt,
+            out: AbiOut::Prim(AbiPrim::U64),
+        }
+    );
+    assert_eq!(
         bffi_meta_wallet_impl::CLASS,
         ClassDef {
             js_name: "wallet",
+            release_export: "bffi_wallet_release",
             docs: &["A wallet."],
             constructor: MethodDef {
                 js_name: "constructor",
@@ -55,11 +68,17 @@ fn class_descriptor_matches_the_expected_literal() {
                     ty: TsType::BigInt,
                 }],
                 ret: TsType::BigInt,
+                abi: AbiSig {
+                    params: &[AbiType::U64],
+                    out: Some(AbiOut::Handle),
+                },
             },
             fields: &[bffi_dts::FieldDef {
                 js_name: "balance",
+                export_name: "bffi_wallet_balance_get",
                 docs: &[],
                 ty: TsType::BigInt,
+                out: AbiOut::Prim(AbiPrim::U64),
             }],
             methods: &[
                 MethodDef {
@@ -71,10 +90,15 @@ fn class_descriptor_matches_the_expected_literal() {
                         ty: TsType::BigInt,
                     }],
                     ret: TsType::BigInt,
+                    abi: AbiSig {
+                        params: &[AbiType::U64],
+                        out: Some(AbiOut::Prim(AbiPrim::U64)),
+                    },
                 },
                 // `Option` method returns render honest `| null`
                 // types; `docs` contain only the author lines (no
-                // auto-generated notes).
+                // auto-generated notes). The payload travels through
+                // the shared handle slot.
                 MethodDef {
                     js_name: "find_note",
                     export_name: "bffi_wallet_find_note",
@@ -84,6 +108,10 @@ fn class_descriptor_matches_the_expected_literal() {
                         ty: TsType::Boolean,
                     }],
                     ret: TsType::NullableString,
+                    abi: AbiSig {
+                        params: &[AbiType::Bool],
+                        out: Some(AbiOut::Handle),
+                    },
                 },
             ],
         }

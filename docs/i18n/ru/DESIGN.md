@@ -139,6 +139,12 @@ type Handle = u64;
 | Дистрибуция            | Исходники в репозитории; prebuilt-бинарники позже для npm |
 | Фасад                  | `bffi`: плоские ре-экспорты стека; `unsafe_zero_copy` - единственная точка zero-copy; раскрытие макросов - на прямых dep'ах юзера |
 | Async                  | `#[bffi_async]`: spawn-шим возвращает хендл задачи; N-воркерный executor (tokio - opt-in фича: режим + `spawn_on_tokio`; cancel прерывает токио-задачи); отмена (кооперативный drop) и таймауты; резолв доставляется через event-loop на JS-потоке; дескрипторы `Promise<T>` |
+| ABI дескрипторов | `FunctionDef`/`MethodDef` несут `AbiSig` (точные C-ширины + out-слот); `FieldDef` - `export_name` геттера + out; `ClassDef` - `release_export`; рендер `.d.ts` их игнорирует |
+| Wire-кодек | `bffi_types::wire`: одна таблица `[tag][payload]` (LE, точный `i64`) для async-пейлоадов И колбэк-сигнатур/аргументов/результатов |
+| Callback ABI | Генерические экспорты через `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`), раскрытие в юзер-крейте; сигнатуры/аргументы wire-кодируются; результаты - хендлы транзитных буферов; см. CALLING-CONVENTION.md §9 |
+| Loader JSON | `bffi_build::loader_json`: канонический детерминированный JSON схемы v1 (`"bffi": 1`) из агрегированного `ModuleDef`; потребитель - JS-кодген |
+| TS-кодген | `bffi codegen <json> -o <ts>` (bin/): детерминированный рендер, вмонтирующий литерал схемы; `ApiOf<>` в `bffi-loader` выводит точные TS-типы из литерала |
+| Loader-рантайм | `packages/bffi-loader` (только Bun, без зависимостей): wire-кодек, takeError/readBuffer, `wrapTask` + явный `pumpUntil` (без скрытой прокачки), фабрика классов (FinalizationRegistry + явный `release()`, глотающий дублирующий релиз), callbacks API |
 | Лицензия               | MIT                                                       |
 
 ---
@@ -160,6 +166,7 @@ type Handle = u64;
 | `bffi-build`      | Помощники сборки, генерация C ABI, интеграция с Bun           | P2        |
 | `bffi-rs`         | Публичный фасад, реэкспортирующий стек                        | P2        |
 | `bffi-async`      | Поддержка Promise / async                                     | P3        |
+| `bffi-loader` (JS) | Bun-only рантайм-лоадер: типизированный API из loader JSON (`packages/bffi-loader`) | P4 |
 
 ---
 

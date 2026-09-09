@@ -85,9 +85,14 @@ fn dts_names_are_reexported() {
                 ty: bffi::TsType::Number,
             }],
             ret: bffi::TsType::Number,
+            abi: bffi::AbiSig {
+                params: &[bffi::AbiType::U32],
+                out: Some(bffi::AbiOut::Prim(bffi::AbiPrim::U32)),
+            },
         }],
         classes: &[bffi::ClassDef {
             js_name: "point",
+            release_export: "bffi_point_release",
             docs: &[],
             constructor: bffi::MethodDef {
                 js_name: "constructor",
@@ -95,11 +100,17 @@ fn dts_names_are_reexported() {
                 docs: &[],
                 params: &[],
                 ret: bffi::TsType::BigInt,
+                abi: bffi::AbiSig {
+                    params: &[],
+                    out: Some(bffi::AbiOut::Handle),
+                },
             },
             fields: &[bffi::FieldDef {
                 js_name: "x",
+                export_name: "bffi_point_x_get",
                 docs: &[],
                 ty: bffi::TsType::Number,
+                out: bffi::AbiOut::Prim(bffi::AbiPrim::U32),
             }],
             methods: &[],
         }],

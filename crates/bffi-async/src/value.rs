@@ -5,8 +5,12 @@
 //! a `u64` handle JS reads through the `bffi_buffer` pair and frees
 //! with `bffi_types_free`. Exactness is preserved for `i64`/`u64`
 //! (no `f64` narrowing).
+//!
+//! The wire layout is the framework-wide codec (`bffi_types::wire`);
+//! this enum owns only the async-specific conversions.
 
 use bffi_types::CopiedBuf;
+use bffi_types::wire;
 
 /// The output value of a spawned task.
 #[derive(Clone, Debug, PartialEq)]
@@ -28,17 +32,6 @@ pub enum AsyncValue {
     Bytes(CopiedBuf),
 }
 
-/// The payload tag byte shared with the JS decoder (`load.ts`).
-pub(crate) mod tag {
-    pub(crate) const UNIT: u8 = 0;
-    pub(crate) const I32: u8 = 1;
-    pub(crate) const I64: u8 = 2;
-    pub(crate) const F64: u8 = 3;
-    pub(crate) const BOOL: u8 = 4;
-    pub(crate) const STR: u8 = 5;
-    pub(crate) const BYTES: u8 = 6;
-}
-
 impl AsyncValue {
     /// Encodes the value into the transient-buffer payload:
     /// `[tag][payload...]`. `Str` payloads are UTF-8 with a `u32`
@@ -48,31 +41,31 @@ impl AsyncValue {
     pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
         match self {
-            Self::Unit => out.push(tag::UNIT),
+            Self::Unit => out.push(wire::TAG_UNIT),
             Self::I32(v) => {
-                out.push(tag::I32);
-                out.extend_from_slice(&v.to_le_bytes());
+                out.push(wire::TAG_I32);
+                wire::push_i32_le(&mut out, *v);
             }
             Self::I64(v) => {
-                out.push(tag::I64);
-                out.extend_from_slice(&v.to_le_bytes());
+                out.push(wire::TAG_I64);
+                wire::push_i64_le(&mut out, *v);
             }
             Self::F64(v) => {
-                out.push(tag::F64);
-                out.extend_from_slice(&v.to_le_bytes());
+                out.push(wire::TAG_F64);
+                wire::push_f64_le(&mut out, *v);
             }
             Self::Bool(v) => {
-                out.push(tag::BOOL);
-                out.push(u8::from(*v));
+                out.push(wire::TAG_BOOL);
+                wire::push_bool(&mut out, *v);
             }
             Self::Str(text) => {
-                out.push(tag::STR);
-                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.push(wire::TAG_STR);
+                wire::push_u32_le(&mut out, text.len() as u32);
                 out.extend_from_slice(text.as_bytes());
             }
             Self::Bytes(bytes) => {
-                out.push(tag::BYTES);
-                out.extend_from_slice(&(bytes.as_slice().len() as u32).to_le_bytes());
+                out.push(wire::TAG_BYTES);
+                wire::push_u32_le(&mut out, bytes.as_slice().len() as u32);
                 out.extend_from_slice(bytes.as_slice());
             }
         }
@@ -173,31 +166,32 @@ impl From<()> for AsyncValue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bffi_types::wire::{TAG_BOOL, TAG_BYTES, TAG_I32, TAG_I64, TAG_STR, TAG_UNIT};
 
     #[test]
     fn unit_encodes_as_a_single_tag() {
-        assert_eq!(AsyncValue::Unit.encode(), vec![tag::UNIT]);
+        assert_eq!(AsyncValue::Unit.encode(), vec![TAG_UNIT]);
     }
 
     #[test]
     fn primitives_encode_little_endian_after_the_tag() {
         assert_eq!(
             AsyncValue::I32(-2).encode(),
-            vec![tag::I32, 0xFE, 0xFF, 0xFF, 0xFF]
+            vec![TAG_I32, 0xFE, 0xFF, 0xFF, 0xFF]
         );
         assert_eq!(
             AsyncValue::I64(1).encode(),
-            vec![tag::I64, 1, 0, 0, 0, 0, 0, 0, 0]
+            vec![TAG_I64, 1, 0, 0, 0, 0, 0, 0, 0]
         );
-        assert_eq!(AsyncValue::Bool(true).encode(), vec![tag::BOOL, 1]);
+        assert_eq!(AsyncValue::Bool(true).encode(), vec![TAG_BOOL, 1]);
     }
 
     #[test]
     fn strings_and_bytes_carry_a_u32_length_prefix() {
         let encoded = AsyncValue::Str("hey".to_owned()).encode();
-        assert_eq!(encoded, vec![tag::STR, 3, 0, 0, 0, b'h', b'e', b'y']);
+        assert_eq!(encoded, vec![TAG_STR, 3, 0, 0, 0, b'h', b'e', b'y']);
 
         let encoded = AsyncValue::Bytes(CopiedBuf::from_slice(&[9, 8])).encode();
-        assert_eq!(encoded, vec![tag::BYTES, 2, 0, 0, 0, 9, 8]);
+        assert_eq!(encoded, vec![TAG_BYTES, 2, 0, 0, 0, 9, 8]);
     }
 }

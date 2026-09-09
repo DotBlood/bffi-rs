@@ -74,7 +74,8 @@ pub use bffi_core::{
     take_last_error,
 };
 pub use bffi_dts::{
-    ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef, ParamDef, TsType, render, sanitize,
+    AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef,
+    ParamDef, TsType, render, sanitize,
 };
 pub use bffi_error::{JsErrorExt, JsErrorName, JsErrorShape, js_error_name, take_last_error_shape};
 pub use bffi_event_loop::{

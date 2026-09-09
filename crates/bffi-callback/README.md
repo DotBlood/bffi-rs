@@ -22,6 +22,7 @@ marshalling and the C ABI exports arrive with `bffi-event-loop` /
 
 | Module      | Provides                                                                            |
 | ----------- | ------------------------------------------------------------------------------------ |
+| [`abi`]     | the generic callback ABI bodies + `bffi_callback_abi!()` - the four JS-facing exports (see the ["Callback ABI exports" section](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) of CALLING-CONVENTION.md) |
 | [`error`]   | [`CallbackError`] and the lossless `From<CallbackError> for BffiError` bridge         |
 | [`registry`] | register / invoke / revoke + `bind_js_callback` / `js_callback` over the two tables |
 | [`thread`]  | `set_js_thread` / `ensure_js_thread` - the process-wide JS-thread gate               |

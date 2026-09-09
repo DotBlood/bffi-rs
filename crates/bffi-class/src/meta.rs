@@ -27,8 +27,10 @@ pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
     let docs = model.docs.iter().map(|doc| quote! { #doc });
     let fields = model.fields.iter().map(|field| {
         let name = &field.name;
+        let export = format!("bffi_{}_{}_get", model.js_name, field.name);
         let ts_ty = field_ts_kind(field.ty).tokens(&model.paths);
-        quote! { #dts::FieldDef { js_name: #name, docs: &[], ty: #ts_ty } }
+        let out = field_out(field.ty, &model.paths);
+        quote! { #dts::FieldDef { js_name: #name, export_name: #export, docs: &[], ty: #ts_ty, out: #out } }
     });
 
     quote! {
@@ -46,6 +48,15 @@ pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
     }
 }
 
+/// The getter's out-slot tokens of a field type: the exact width the
+/// generated `bffi_<class>_<field>_get` shim writes.
+fn field_out(ty: FieldTy, paths: &bffi_macro_support::paths::PathCtx) -> TokenStream {
+    match ty {
+        FieldTy::Prim(prim) => mapping::abi::prim_out(prim, paths),
+        FieldTy::BigInt(big) => mapping::abi::bigint_out(big, paths),
+    }
+}
+
 /// Renders the `bffi_meta_<name>_impl` module for `#[bffi_impl]`.
 pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
     let dts = &model.paths.dts;
@@ -55,12 +66,15 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
     let js_name = &model.js_name;
     let ctor = &model.constructor;
     let ctor_export = format!("bffi_{}_new", model.js_name);
+    let release_export = format!("bffi_{}_release", model.js_name);
     let ctor_docs = ctor.docs.iter().map(|doc| quote! { #doc });
     let ctor_params = ctor.params.iter().map(|param| {
         let name = &param.name;
         let ty = mapping::ts_type(&param.kind).tokens(&model.paths);
         quote! { #dts::ParamDef { name: #name, ty: #ty } }
     });
+    let ctor_abi =
+        mapping::abi::abi_sig_task(ctor.params.iter().map(|param| param.kind), &model.paths);
     let methods = model.methods.iter().map(|method| {
         let name = method.ident.to_string();
         let export = format!("bffi_{}_{}", model.js_name, method.ident);
@@ -70,6 +84,11 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
             quote! { #dts::ParamDef { name: #name, ty: #ty } }
         });
         let ret = mapping::ts_return(&method.ret).tokens(&model.paths);
+        let abi = mapping::abi::abi_sig(
+            method.params.iter().map(|param| param.kind),
+            &method.ret,
+            &model.paths,
+        );
         let docs = method.docs.iter().map(|doc| quote! { #doc });
         quote! {
             #dts::MethodDef {
@@ -78,6 +97,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
                 docs: &[#(#docs),*],
                 params: &[#(#params),*],
                 ret: #ret,
+                abi: #abi,
             }
         }
     });
@@ -92,6 +112,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
                 docs: &[#(#ctor_docs),*],
                 params: &[#(#ctor_params),*],
                 ret: #dts::TsType::BigInt,
+                abi: #ctor_abi,
             };
 
             #[doc = "The methods, in declaration order."]
@@ -102,6 +123,7 @@ pub(crate) fn impl_meta(model: &ImplModel) -> TokenStream {
                 js_name: #js_name,
                 // `super` = the shared expansion scope holding the
                 // sibling `bffi_meta_<name>` module.
+                release_export: #release_export,
                 docs: &super::#base::DOCS,
                 constructor: CONSTRUCTOR,
                 fields: &super::#base::FIELDS,

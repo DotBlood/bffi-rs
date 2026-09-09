@@ -8,7 +8,7 @@
 // generated descriptors carry the docs.
 #![allow(missing_docs)]
 
-use bffi_dts::{FunctionDef, ModuleDef, ParamDef, TsType};
+use bffi_dts::{AbiOut, AbiPrim, AbiSig, AbiType, FunctionDef, ModuleDef, ParamDef, TsType};
 
 #[bffi_macros::bffi]
 /// Adds two numbers.
@@ -92,6 +92,10 @@ fn descriptor_matches_the_expected_literal() {
                 },
             ],
             ret: TsType::Number,
+            abi: AbiSig {
+                params: &[AbiType::U32, AbiType::U32],
+                out: Some(AbiOut::Prim(AbiPrim::U32)),
+            },
         }
     );
     assert_eq!(
@@ -105,9 +109,14 @@ fn descriptor_matches_the_expected_literal() {
                 ty: TsType::String
             }],
             ret: TsType::Number,
+            abi: AbiSig {
+                params: &[AbiType::Cstring],
+                out: Some(AbiOut::Prim(AbiPrim::U32)),
+            },
         }
     );
-    // Buffer payloads: String -> `string`, Vec<u8> -> `Uint8Array`.
+    // Buffer payloads: String -> `string`, Vec<u8> -> `Uint8Array`;
+    // the ABI return travels as the shared u64 handle slot.
     assert_eq!(
         bffi_meta_build_greeting::FUNCTION,
         FunctionDef {
@@ -119,6 +128,10 @@ fn descriptor_matches_the_expected_literal() {
                 ty: TsType::String
             }],
             ret: TsType::String,
+            abi: AbiSig {
+                params: &[AbiType::Cstring],
+                out: Some(AbiOut::Handle),
+            },
         }
     );
     // `Option` returns render honest `| null` types; `docs` contain
@@ -134,6 +147,14 @@ fn descriptor_matches_the_expected_literal() {
         "docs contain only the author line"
     );
     assert_eq!(
+        bffi_meta_payload::FUNCTION.abi,
+        AbiSig {
+            params: &[],
+            out: Some(AbiOut::Handle),
+        },
+        "the Option payload returns through the handle slot"
+    );
+    assert_eq!(
         bffi_meta_find_name::FUNCTION,
         FunctionDef {
             js_name: "find_name",
@@ -144,10 +165,15 @@ fn descriptor_matches_the_expected_literal() {
                 ty: TsType::Boolean
             }],
             ret: TsType::NullableString,
+            abi: AbiSig {
+                params: &[AbiType::Bool],
+                out: Some(AbiOut::Handle),
+            },
         }
     );
     // A borrowed `&[u8]` parameter renders as ONE `Uint8Array`
-    // ParamDef: the `(ptr, len)` C pair is ABI-level only.
+    // ParamDef: the `(ptr, len)` C pair is ABI-level only - and the
+    // ABI signature records it as ONE `PtrLen` entry.
     assert_eq!(
         bffi_meta_byte_sum::FUNCTION,
         FunctionDef {
@@ -159,6 +185,10 @@ fn descriptor_matches_the_expected_literal() {
                 ty: TsType::Uint8Array
             }],
             ret: TsType::Number,
+            abi: AbiSig {
+                params: &[AbiType::PtrLen],
+                out: Some(AbiOut::Prim(AbiPrim::U32)),
+            },
         }
     );
 }
@@ -176,6 +206,10 @@ fn crate_option_descriptor_values_are_unaffected() {
                 ty: TsType::Number
             }],
             ret: TsType::Number,
+            abi: AbiSig {
+                params: &[AbiType::U32],
+                out: Some(AbiOut::Prim(AbiPrim::U32)),
+            },
         }
     );
 }

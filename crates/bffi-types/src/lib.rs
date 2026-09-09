@@ -81,8 +81,13 @@ pub mod buffer;
 pub mod num;
 pub mod string;
 pub mod unsafe_zero_copy;
+pub mod utf16;
+pub mod wire;
 
 pub use buffer::CopiedBuf;
 pub use num::{ConversionError, JsNumber};
 pub use string::{bytes_to_string, string_to_bytes};
 pub use unsafe_zero_copy::{ZeroCopyBuf, ZeroCopyStr, buf_view, str_view};
+pub use utf16::{
+    string_to_utf16, string_to_utf32, utf16_to_string, utf16_to_string_lossy, utf32_to_string,
+};

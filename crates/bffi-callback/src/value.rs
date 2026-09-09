@@ -6,6 +6,8 @@
 //! [`Value`]s matches a declared callback signature (arity first, then
 //! per-element types).
 
+use bffi_types::wire;
+
 /// The static classification of a [`Value`] payload crossing the
 /// callback boundary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -19,6 +21,33 @@ pub enum ValueType {
     F64,
     /// Boolean.
     Bool,
+}
+
+impl ValueType {
+    /// The wire tag of this value type (`bffi_types::wire`, the
+    /// framework-wide codec table).
+    #[must_use]
+    pub const fn wire_tag(self) -> u8 {
+        match self {
+            Self::I32 => wire::TAG_I32,
+            Self::I64 => wire::TAG_I64,
+            Self::F64 => wire::TAG_F64,
+            Self::Bool => wire::TAG_BOOL,
+        }
+    }
+
+    /// Parses a wire tag into this type; `None` for tags outside the
+    /// callback value matrix.
+    #[must_use]
+    pub const fn from_wire_tag(tag: u8) -> Option<Self> {
+        match tag {
+            wire::TAG_I32 => Some(Self::I32),
+            wire::TAG_I64 => Some(Self::I64),
+            wire::TAG_F64 => Some(Self::F64),
+            wire::TAG_BOOL => Some(Self::Bool),
+            _ => None,
+        }
+    }
 }
 
 /// A dynamically typed payload passed to or from a callback.
@@ -47,6 +76,38 @@ impl Value {
             Self::I64(_) => ValueType::I64,
             Self::F64(_) => ValueType::F64,
             Self::Bool(_) => ValueType::Bool,
+        }
+    }
+
+    /// The wire bytes of this value: one `[tag][payload]` record in
+    /// the framework-wide codec (`bffi_types::wire`).
+    #[must_use]
+    pub fn encode(self) -> Vec<u8> {
+        let mut out = Vec::new();
+        self.encode_into(&mut out);
+        out
+    }
+
+    /// Encodes this value into an existing buffer (the multi-argument
+    /// form of [`Value::encode`]).
+    pub fn encode_into(self, out: &mut Vec<u8>) {
+        match self {
+            Self::I32(v) => {
+                out.push(wire::TAG_I32);
+                wire::push_i32_le(out, v);
+            }
+            Self::I64(v) => {
+                out.push(wire::TAG_I64);
+                wire::push_i64_le(out, v);
+            }
+            Self::F64(v) => {
+                out.push(wire::TAG_F64);
+                wire::push_f64_le(out, v);
+            }
+            Self::Bool(v) => {
+                out.push(wire::TAG_BOOL);
+                wire::push_bool(out, v);
+            }
         }
     }
 }

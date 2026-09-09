@@ -97,7 +97,8 @@ bffi-rs/
 │   ├── CONTRIBUTING.md
 │   └── CODE_OF_CONDUCT.md
 ├── examples/
-├── bin/                         # cli utility for bffi-rs
+├── packages/                      # JS-side packages (bffi-loader)
+├── bin/                           # cli utility (bffi codegen)
 └── scripts/
 ```
 
@@ -215,3 +216,8 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Object ownership | `ObjectWrap<T>` over global `Registry` (tag 0x0100-0x01FF); release frees the slot |
 | Callbacks | `register`/`revoke` + `bind_js_callback`; tags 0x0200-0x0201; wrong-thread reject |
 | Build ABI | Runtime exports (`bffi_error_*`, `bffi_buffer` pair, `bffi_types_free`) via `bffi_runtime_abi!()` in the user crate; tags 0x0400-0x04FF; canonical contract: bffi-build/CALLING-CONVENTION.md |
+| Descriptor ABI | `AbiSig` (exact C widths + out slot) on `FunctionDef`/`MethodDef`; getter `export_name` + out on `FieldDef`; `release_export` on `ClassDef` |
+| Wire codec | `bffi_types::wire`: one `[tag][payload]` table for async payloads and callback sigs/args/results |
+| Callback ABI | Generic exports via `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) in the user crate; wire-encoded; CALLING-CONVENTION.md §9 |
+| Loader JSON | `bffi_build::loader_json`: canonical deterministic schema v1 from the aggregated `ModuleDef` |
+| TS API codegen | `bun bffi codegen <json> -o <ts>`: deterministic renderer; embeds the schema literal; `ApiOf<>` derives exact types over `packages/bffi-loader` |

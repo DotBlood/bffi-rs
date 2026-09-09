@@ -56,6 +56,12 @@ pub mod bffi_meta_add {
         docs: &["Adds two numbers."],
         params: &[ /* ParamDef { name, ty } ... */ ],
         ret: ::bffi_dts::TsType::Number,
+        abi: ::bffi_dts::AbiSig {
+            params: &[ /* one AbiType per parameter ... */ ],
+            out: ::std::option::Option::Some(
+                ::bffi_dts::AbiOut::Prim(::bffi_dts::AbiPrim::U32),
+            ),
+        },
     };
 }
 ```

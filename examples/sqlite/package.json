@@ -1,0 +1,8 @@
+{
+  "name": "bffi-example-sqlite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Example bffi-rs native module: a small functional SQLite surface consumed through the @z2net/bffi pipeline. @z2net/bffi resolves via the root tsconfig paths inside this monorepo; in a standalone project use `bun add @z2net/bffi`.",
+  "license": "MIT",
+  "type": "module"
+}

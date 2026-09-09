@@ -139,6 +139,12 @@ Outside only the opaque handle is visible.
 | Distribution     | Source in repo; prebuilt binaries later for npm     |
 | Facade           | `bffi`: flat re-exports of the stack; `unsafe_zero_copy` is the only zero-copy door; macro expansions stay on the user's direct deps |
 | Async            | `#[bffi_async]`: spawn shim returns a task handle; N-worker executor (tokio runtime - opt-in feature: mode switch + `spawn_on_tokio`; cancel aborts tokio tasks); cancel (cooperative drop) and timeout combinators; resolution delivered through the event loop on the JS thread; descriptors `Promise<T>` |
+| Descriptor ABI | `FunctionDef`/`MethodDef` carry `AbiSig` (exact C widths + out slot); `FieldDef` carries the getter `export_name` + out; `ClassDef` carries `release_export`; `.d.ts` render ignores all of it |
+| Wire codec | `bffi_types::wire`: one `[tag][payload]` table (LE, exact `i64`) for async task payloads AND callback signatures/arguments/results |
+| Callback ABI | Generic exports via `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) expanded in the user crate; wire-encoded signatures/arguments; results as transient-buffer handles; see CALLING-CONVENTION.md §9 |
+| Loader JSON | `bffi_build::loader_json`: canonical, deterministic schema v1 (`"bffi": 1`) rendered from the aggregated `ModuleDef`; the JS-side codegen consumes it |
+| TS codegen | `bffi codegen <json> -o <ts>` (bin/): deterministic renderer embedding the schema literal; `ApiOf<>` in `bffi-loader` derives exact TS types from the literal |
+| Loader runtime | `packages/bffi-loader` (Bun-only, no deps): wire codec, takeError/readBuffer, `wrapTask` + explicit `pumpUntil` (no hidden pumping), class factory (FinalizationRegistry + explicit `release()` swallowing duplicate-release), callbacks API |
 | License          | MIT                                                 |
 
 ---
@@ -160,6 +166,7 @@ Outside only the opaque handle is visible.
 | `bffi-build`       | Build helpers, C ABI generation, Bun integration     | P2       |
 | `bffi`             | Public facade that re-exports the stack              | P2       |
 | `bffi-async`       | Promise / async support (spawn, cancel, timeout, tokio opt-in) | P3 |
+| `bffi-loader` (JS) | Bun-only runtime loader: typed API from the loader JSON (`packages/bffi-loader`) | P4 |
 
 ---
 
