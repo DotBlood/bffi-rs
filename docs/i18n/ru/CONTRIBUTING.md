@@ -1,17 +1,17 @@
 # Как внести вклад в bffi-rs
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) | **[Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md)** | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
 
 Спасибо за ваш интерес к внесению вклада.
 
-Репозиторий: https://github.com/DotBlood/bffi-rs
+Репозиторий: https://github.com/z2net/bffi-rs
 Контакт: contact@z2net.com
 
 Пожалуйста, прочитайте также:
 
-- [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) - архитектура и решения
-- [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) - правила для людей и AI-агентов
-- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md)
+- [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) - архитектура и решения
+- [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) - правила для людей и AI-агентов
+- [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -29,7 +29,7 @@ rustup toolchain install 1.98.0
 rustup default 1.98.0
 
 # Clone
-git clone https://github.com/DotBlood/bffi-rs.git
+git clone https://github.com/z2net/bffi-rs.git
 cd bffi-rs
 
 # JS tooling
@@ -185,7 +185,7 @@ gitGraph
 
 ## Кодекс поведения
 
-Будьте уважительны. См. [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md).
+Будьте уважительны. См. [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md).
 
 Травля, токсичное поведение или недобросовестные вклады не допускаются.
 

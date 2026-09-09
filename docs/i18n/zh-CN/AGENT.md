@@ -1,10 +1,10 @@
 # AGENTS.md - AI 代理与贡献者规则
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) | **[简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)**
+[English](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) | **[简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)**
 
 本文件定义了人类与 AI 代理在 **bffi-rs** 上工作时必须遵循的规则。
 
-仓库:https://github.com/DotBlood/bffi-rs
+仓库:https://github.com/z2net/bffi-rs
 联系方式:contact@z2net.com
 
 ---
@@ -153,7 +153,7 @@ chore: pin rust-toolchain to 1.98.0
 - PR `dev/<feature>` → `dev/main` 需要 1 个批准以及绿色的 `bun run ci`。
 - 发布标签 `v<semver>`(附注标签)仅放置在 `main` 上,且仅由所有者创建。
 
-完整规则:[docs/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) → “分支与发布”。
+完整规则:[docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) → “分支与发布”。
 
 ### 拉取请求
 

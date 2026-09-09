@@ -1,6 +1,6 @@
 error: bffi[E001]: unsupported function shape: async function
          = help: plain `fn`s only in P1
-         = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+         = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
  --> tests/ui/async_fn.rs:5:1
   |
 5 | async fn f() {}

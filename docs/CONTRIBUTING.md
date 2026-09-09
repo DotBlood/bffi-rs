@@ -1,17 +1,17 @@
 # Contributing to bffi-rs
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
 
 Thank you for your interest in contributing.
 
-Repository: https://github.com/DotBlood/bffi-rs
+Repository: https://github.com/z2net/bffi-rs
 Contact: contact@z2net.com
 
 Please also read:
 
-- [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) - architecture and decisions
-- [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) - rules for humans and AI agents
-- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
+- [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) - architecture and decisions
+- [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) - rules for humans and AI agents
+- [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -29,7 +29,7 @@ rustup toolchain install 1.98.0
 rustup default 1.98.0
 
 # Clone
-git clone https://github.com/DotBlood/bffi-rs.git
+git clone https://github.com/z2net/bffi-rs.git
 cd bffi-rs
 
 # JS tooling
@@ -185,7 +185,7 @@ When reporting a bug, include:
 
 ## Code of conduct
 
-Be respectful. See [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md).
+Be respectful. See [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md).
 
 Harassment, toxic behavior, or bad-faith contributions will not be tolerated.
 

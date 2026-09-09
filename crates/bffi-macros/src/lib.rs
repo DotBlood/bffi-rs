@@ -3,7 +3,7 @@
 //! The `#[bffi]` attribute macro of the bffi-rs framework: native
 //! bindings for [Bun](https://bun.sh) that target `bun:ffi` and a
 //! thin C ABI layer (see
-//! [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)).
+//! [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)).
 //!
 //! ## Mission
 //!
@@ -164,7 +164,7 @@ use proc_macro::TokenStream;
 /// error: bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`
 ///   = help: supported in P1: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|()
 ///   = note: buffers, Option, structs and Result arrive with bffi-build (P2)
-///   = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+///   = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
 /// ```
 ///
 /// These codes are the compile-time counterpart of the runtime
@@ -190,7 +190,7 @@ use proc_macro::TokenStream;
 ///
 /// Inputs outside these rules produce a spanned compile error with the
 /// documented help lines; see
-/// [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md).
+/// [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md).
 #[proc_macro_attribute]
 pub fn bffi(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = proc_macro2::TokenStream::from(attrs);

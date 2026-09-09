@@ -1,10 +1,10 @@
 # AGENTS.md - Правила для AI-агентов и контрибьюторов
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) | **[Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md)** | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)
 
 Этот файл определяет, как люди и AI-агенты должны работать над **bffi-rs**.
 
-Репозиторий: https://github.com/DotBlood/bffi-rs
+Репозиторий: https://github.com/z2net/bffi-rs
 Контакт: contact@z2net.com
 
 ---
@@ -153,7 +153,7 @@ chore: pin rust-toolchain to 1.98.0
 - Пул-реквест `dev/<feature>` → `dev/main` требует 1 одобрения и зелёного `bun run ci`.
 - Релизные теги `v<semver>` (аннотированные) ставятся только на `main` и только владельцем.
 
-Полные правила: [docs/i18n/ru/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) → "Ветвление и релизы".
+Полные правила: [docs/i18n/ru/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) → "Ветвление и релизы".
 
 ### Пул-реквесты
 

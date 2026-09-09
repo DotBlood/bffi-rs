@@ -1,14 +1,14 @@
 # bffi-callback
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
-Callback crate of [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the Bun-only native
+Callback crate of [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the Bun-only native
 binding framework. Callbacks exist only because a host registered them:
 Rust closures live as `Arc<dyn Fn>` behind opaque `u64` handles in the
-process-wide [`Registry`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core),
+process-wide [`Registry`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-core),
 JS-side callbacks are stored as opaque bind-slots, per the design in
-[docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) §6.
+[docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) §6.
 
 **Status:** P1 core complete - explicit [`register`] / [`invoke`] /
 [`revoke`] (JS -> Rust), [`bind_js_callback`] / [`js_callback`]
@@ -22,7 +22,7 @@ marshalling and the C ABI exports arrive with `bffi-event-loop` /
 
 | Module      | Provides                                                                            |
 | ----------- | ------------------------------------------------------------------------------------ |
-| [`abi`]     | the generic callback ABI bodies + `bffi_callback_abi!()` - the four JS-facing exports (see the ["Callback ABI exports" section](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) of CALLING-CONVENTION.md) |
+| [`abi`]     | the generic callback ABI bodies + `bffi_callback_abi!()` - the four JS-facing exports (see the ["Callback ABI exports" section](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) of CALLING-CONVENTION.md) |
 | [`error`]   | [`CallbackError`] and the lossless `From<CallbackError> for BffiError` bridge         |
 | [`registry`] | register / invoke / revoke + `bind_js_callback` / `js_callback` over the two tables |
 | [`thread`]  | `set_js_thread` / `ensure_js_thread` - the process-wide JS-thread gate               |
@@ -37,7 +37,7 @@ other. The callback layer makes every crossing an explicit, owned
 transaction:
 
 - **Rust closures live under handles.** `register(sig, f)` stores the
-  closure in the global [`Registry`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core)
+  closure in the global [`Registry`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-core)
   and returns an opaque `u64` handle; nothing else is ever handed out.
 - **JS hands out bind-slots.** `bind_js_callback(sig, ptr)` stores the
   opaque, handle-sized token JS gave us - never dereferenced here; the
@@ -138,4 +138,4 @@ revoke-vs-parallel-invoke race (`tests/concurrency.rs`).
 
 ## License
 
-MIT - see [LICENSE](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/z2net/bffi-rs/blob/main/LICENSE).

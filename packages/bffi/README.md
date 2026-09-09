@@ -1,7 +1,7 @@
 # @z2net/bffi
 
 Bun-only typed loader and build pipeline for
-[bffi-rs](https://github.com/DotBlood/bffi-rs) native modules: the
+[bffi-rs](https://github.com/z2net/bffi-rs) native modules: the
 typed JS API is built from the loader schema the Rust side emits
 (`bffi_build::loader_json`, schema version 1), so no per-function
 binding is ever written by hand.

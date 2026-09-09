@@ -1,6 +1,6 @@
 # Code of Conduct
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)
 
 ## Our pledge
 

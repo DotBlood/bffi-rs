@@ -1,18 +1,18 @@
 # bffi-class
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
-Class-declaration crate of [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the Bun-only native
+Class-declaration crate of [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the Bun-only native
 binding framework: declare a Rust struct, get the JS-facing
 constructor/method/destructor shims plus a const TypeScript descriptor,
 per DESIGN.md §6.2 and the `bffi-object` ownership model.
 
 **Status:** P2 complete - `#[bffi_class]` / `#[bffi_impl]` /
 `#[bffi_constructor]` over
-[`ObjectWrap`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-object)
+[`ObjectWrap`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-object)
 (tags `0x0100-0x01FF`), with `ClassDef` descriptors rendered by
-[`bffi-dts`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-dts).
+[`bffi-dts`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-dts).
 Diagnostics continue the stable series at `E005`-`E008`.
 
 ---
@@ -45,7 +45,7 @@ Both `#[bffi_class]` and `#[bffi_impl]` accept one optional
 `crate = "<name>"` option (facade-only mode): the generated paths then
 resolve through `::<name>::{core, types, dts, object, build}` - the
 re-export namespaces of the
-[`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+[`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
 facade - instead of the direct dependencies. Use the same value on
 both macros of one class; anything else besides `tag` is rejected.
 
@@ -141,7 +141,7 @@ wrong-tag / forged generation), buffer and `Result` returns.
   `::bffi_types`, `::bffi_dts`, `::bffi_build` at the call site.
 - Facade-only mode (`crate = "bffi"` on both `#[bffi_class]` and
   `#[bffi_impl]`): the
-  [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  [`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
   facade alone - the expansion names `::bffi::core`, `::bffi::object`,
   `::bffi::types`, `::bffi::dts`, `::bffi::build`.
 - Rust **edition 2024** (`#[unsafe(no_mangle)]` shims).
@@ -152,4 +152,4 @@ wrong-tag / forged generation), buffer and `Result` returns.
 
 ## License
 
-[MIT](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
+[MIT](https://github.com/z2net/bffi-rs/blob/main/LICENSE)

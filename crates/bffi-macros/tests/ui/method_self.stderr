@@ -1,6 +1,6 @@
 error: bffi[E001]: unsupported function shape: method (self receiver)
          = help: plain `fn`s only in P1
-         = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+         = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
  --> tests/ui/method_self.rs:8:10
   |
 8 |     fn f(&self) {}

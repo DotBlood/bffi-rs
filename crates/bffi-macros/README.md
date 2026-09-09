@@ -1,12 +1,12 @@
 # bffi-macros
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
-The single ABI generator of [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) -
+The single ABI generator of [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) -
 the Bun-only native binding framework. The `#[bffi]` attribute macro owns everything that crosses
 the FFI boundary: no hand-written shims, no drift between the Rust signature and the generated C
-ABI (see [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)).
+ABI (see [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)).
 
 The macro runs in the USER crate: the expansion lands wherever `#[bffi]` is used and names
 `::bffi_core`, `::bffi_types`, and `::bffi_dts` in that crate's namespace. There is no Bun e2e
@@ -24,11 +24,11 @@ those) and `Result<T, E>` through the err channel. Class declarations arrive wit
 
 | Module                                                        | Provides                                                         |
 | ------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [`src/model.rs`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros/src/model.rs)     | `FnModel` - the parsed, validated function signature             |
-| [`src/mapping.rs`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros/src/mapping.rs) | Type classification and TypeScript name mapping                  |
-| [`src/errors.rs`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros/src/errors.rs)   | `MacroDiagnostic` - stable `E001`..`E004` compile-time codes     |
-| [`src/shim.rs`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros/src/shim.rs)       | `extern "C"` shim codegen under the boundary policy              |
-| [`src/meta.rs`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros/src/meta.rs)       | Const `bffi_meta_*` descriptor codegen for `bffi-dts`            |
+| [`src/model.rs`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros/src/model.rs)     | `FnModel` - the parsed, validated function signature             |
+| [`src/mapping.rs`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros/src/mapping.rs) | Type classification and TypeScript name mapping                  |
+| [`src/errors.rs`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros/src/errors.rs)   | `MacroDiagnostic` - stable `E001`..`E004` compile-time codes     |
+| [`src/shim.rs`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros/src/shim.rs)       | `extern "C"` shim codegen under the boundary policy              |
+| [`src/meta.rs`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros/src/meta.rs)       | Const `bffi_meta_*` descriptor codegen for `bffi-dts`            |
 
 ---
 
@@ -97,7 +97,7 @@ borrowed: it never outlives the call, so owned returns copy
 `ParamDef` - the `(ptr, len)` pair is ABI-level only.
 
 **Buffer returns (P2).** `String` / `Vec<u8>` / `CopiedBuf` / `Option` of these are
-copied into the [`bffi-build`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build)
+copied into the [`bffi-build`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build)
 transient-buffer table; the shim returns a handle the JS side reads through the
 `bffi_buffer` / `bffi_buffer_length` pair and releases with `bffi_types_free`
 (the full ABI contract lives in that crate's CALLING-CONVENTION.md).
@@ -118,7 +118,7 @@ returns the matching `ErrorCode`; success returns `ErrorCode::Ok` and stores not
   (`::bffi_core`, `::bffi_types`, `::bffi_dts`, `::bffi_build`).
 - `#[bffi(crate = "bffi")]` - **facade-only mode**: the expansion names
   `::bffi::core`, `::bffi::types`, `::bffi::dts`, `::bffi::build`, the
-  re-export namespaces of the [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  re-export namespaces of the [`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
   facade. A user crate whose only dependency is `bffi` can then use the
   macro.
 
@@ -151,7 +151,7 @@ Shape violations are rejected too (`E001`): `async`, generic, `unsafe`, method r
 ## Diagnostics
 
 Rejections carry stable codes - do not renumber, the golden `.stderr` files in
-[`tests/ui`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros/tests/ui) lock them:
+[`tests/ui`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros/tests/ui) lock them:
 
 | Code   | Meaning                                                          |
 | ------ | ---------------------------------------------------------------- |
@@ -166,12 +166,12 @@ Format - `bffi[<code>]: <message>` first line, then `  = help: ` and `  = note: 
 error: bffi[E002]: unsupported type `Vec < u8 >` for parameter `data`
   = help: supported: i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|&str|&[u8]|()
   = note: borrowed `&[u8]` is the only buffer parameter; owned buffers are return-only (CALLING-CONVENTION.md)
-  = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+  = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
 ```
 
 This is the compile-time counterpart of the runtime `BffiError` scheme
-(code + message + source, in [`bffi-core`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core));
-mapping runtime errors to JS is [`bffi-error`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-error)'s
+(code + message + source, in [`bffi-core`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-core));
+mapping runtime errors to JS is [`bffi-error`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-error)'s
 job - the macro never depends on it.
 
 ## Requirements on the user crate
@@ -182,7 +182,7 @@ job - the macro never depends on it.
   `::bffi_build` - add it when those returns are used (or
   unconditionally).
 - Facade-only mode (`#[bffi(crate = "bffi")]`): the
-  [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+  [`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
   facade alone - the expansion names `::bffi::core`, `::bffi::types`,
   `::bffi::dts`, and `::bffi::build`, which the facade re-exports.
 - Unique function names: each shim is `#[unsafe(no_mangle)]`, so two `#[bffi]`
@@ -193,7 +193,7 @@ job - the macro never depends on it.
 ## Quick start
 
 Annotate plain functions and render `.d.ts` from the descriptors (as in
-[`tests/descriptor.rs`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros/tests/descriptor.rs)):
+[`tests/descriptor.rs`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros/tests/descriptor.rs)):
 
 ```rust
 use bffi_dts::{FunctionDef, ModuleDef};
@@ -260,4 +260,4 @@ Per DESIGN §8-9 (one responsibility per crate):
 
 ## License
 
-MIT - see [LICENSE](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/z2net/bffi-rs/blob/main/LICENSE).

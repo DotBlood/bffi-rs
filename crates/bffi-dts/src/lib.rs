@@ -4,7 +4,7 @@
 //! bindings for [Bun](https://bun.sh). Types are generated from day
 //! one so every exported symbol ships with an accurate declaration
 //! file (see the "TS types" decision in
-//! [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)).
+//! [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)).
 //!
 //! ## Mission
 //!

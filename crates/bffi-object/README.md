@@ -1,13 +1,13 @@
 # bffi-object
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
-Object ownership crate of [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the Bun-only native
+Object ownership crate of [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the Bun-only native
 binding framework. Rust values live as `Arc<T>` inside the process-wide
-[`Registry`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core) and JavaScript only ever
+[`Registry`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-core) and JavaScript only ever
 sees an opaque `u64` handle, per the ownership contract in
-[docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) §6.2.
+[docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) §6.2.
 
 **Status:** P1 core complete - [`ObjectWrap`] over generational handles with
 three use-after-free barriers. The C ABI exports and the JS-side wrapper are
@@ -31,7 +31,7 @@ must never be handed over as a reference. [`ObjectWrap`] is the typed
 ownership layer above the registry:
 
 - **Rust owns the value.** Every wrapped object is stored as `Arc<T>` in the
-  global [`Registry`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core);
+  global [`Registry`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-core);
   JS receives only the opaque `u64` handle.
 - **One tag = one type per process.** [`ObjectWrap::new`] claims the tag in
   the registry and fails with `ObjectError::TagInUse` on a second claim, so a
@@ -144,4 +144,4 @@ tests covering concurrent wrap/get/release traffic and a release-vs-get race
 
 ## License
 
-MIT - see [LICENSE](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/z2net/bffi-rs/blob/main/LICENSE).

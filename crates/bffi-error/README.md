@@ -1,10 +1,10 @@
 # bffi-error
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
 Unified mapping of bffi errors to JavaScript error shapes. Part of
-[bffi-rs](https://github.com/DotBlood/bffi-rs) - the Bun-only native binding
+[bffi-rs](https://github.com/z2net/bffi-rs) - the Bun-only native binding
 framework.
 
 `bffi-core` transports failures across the C ABI (`ErrorCode` return values
@@ -71,4 +71,4 @@ cargo test -p bffi-error
 
 ## License
 
-MIT - see [LICENSE](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/z2net/bffi-rs/blob/main/LICENSE).

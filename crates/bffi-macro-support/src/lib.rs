@@ -2,7 +2,7 @@
 //!
 //! Shared model, classification, codegen and diagnostics for the
 //! proc-macro crates of
-//! [bffi-rs](https://github.com/DotBlood/bffi-rs): `bffi-macros`
+//! [bffi-rs](https://github.com/z2net/bffi-rs): `bffi-macros`
 //! (the `#[bffi]` attribute) and `bffi-class`
 //! (`#[bffi_class]`/`#[bffi_impl]`).
 //!

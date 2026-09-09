@@ -1,6 +1,6 @@
 # Политика безопасности
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/SECURITY.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/SECURITY.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/SECURITY.md) | **[Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/SECURITY.md)** | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md)
 
 ## Сообщение об уязвимости
 

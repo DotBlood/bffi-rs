@@ -1,6 +1,6 @@
 # @z2net/bffi-native
 
-The [bffi-rs](https://github.com/DotBlood/bffi-rs) reference native
+The [bffi-rs](https://github.com/z2net/bffi-rs) reference native
 module, distributed as **pattern A** (napi-rs style): this main
 package is pure TypeScript; every platform ships as its own npm
 package carrying the prebuilt cdylib. npm/Bun installs only the one

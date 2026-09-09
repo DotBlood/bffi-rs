@@ -1,17 +1,17 @@
 # 为 bffi-rs 做贡献
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) | **[简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)**
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) | **[简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)**
 
 感谢你有兴趣参与贡献。
 
-仓库:https://github.com/DotBlood/bffi-rs
+仓库:https://github.com/z2net/bffi-rs
 联系方式:contact@z2net.com
 
 请同时阅读:
 
-- [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
-- [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md) - 人类与 AI 代理的规则
-- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)
+- [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
+- [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md) - 人类与 AI 代理的规则
+- [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -29,7 +29,7 @@ rustup toolchain install 1.98.0
 rustup default 1.98.0
 
 # Clone
-git clone https://github.com/DotBlood/bffi-rs.git
+git clone https://github.com/z2net/bffi-rs.git
 cd bffi-rs
 
 # JS tooling
@@ -185,7 +185,7 @@ gitGraph
 
 ## 行为准则
 
-请保持尊重。参见 [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)。
+请保持尊重。参见 [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CODE_OF_CONDUCT.md)。
 
 骚扰、恶意行为或不怀好意的贡献都不会被容忍。
 

@@ -16,7 +16,7 @@ use proc_macro2::Span;
 /// Note pointing at the boundary rules in DESIGN.md (shared by all
 /// diagnostics of both proc-macro crates).
 pub const DESIGN_NOTE: &str =
-    "boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)";
+    "boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)";
 
 /// One structured macro diagnostic: a stable code, a message,
 /// actionable help lines and context notes. Rendered to a
@@ -92,7 +92,7 @@ mod tests {
     fn design_note_carries_the_absolute_docs_url() {
         assert_eq!(
             DESIGN_NOTE,
-            "boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)"
+            "boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)"
         );
     }
 }

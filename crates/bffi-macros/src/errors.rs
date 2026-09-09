@@ -153,7 +153,7 @@ mod tests {
                     "  = note: borrowed `&[u8]` is the only buffer parameter; owned buffers are return-only (CALLING-CONVENTION.md)"
                 )
                 && text.contains(
-                    "  = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)"
+                    "  = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)"
                 )
         );
     }

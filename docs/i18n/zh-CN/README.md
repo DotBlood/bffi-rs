@@ -4,27 +4,27 @@
 
 [![Bun](https://img.shields.io/badge/Bun-%3E%3D1.4.0-F472B6?logo=bun&logoColor=white)](https://bun.sh)
 [![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639?logo=opensourceinitiative&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![GitHub Issues](https://img.shields.io/github/issues/DotBlood/bffi-rs)](https://github.com/DotBlood/bffi-rs/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/DotBlood/bffi-rs)](https://github.com/DotBlood/bffi-rs/pulls)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639?logo=opensourceinitiative&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/z2net/bffi-rs)](https://github.com/z2net/bffi-rs/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/z2net/bffi-rs)](https://github.com/z2net/bffi-rs/pulls)
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/README.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/README.md) | **简体中文**
+[English](https://github.com/z2net/bffi-rs/blob/main/README.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/README.md) | **简体中文**
 
 </div>
 
 Bun 绑定框架 - napi-rs 的 Bun 等价物,基于 `bun:ffi` 与轻量 C ABI 构建。使用 Rust 编写,自底向上由多个小型专用 crate 组成。
 
-架构见 [docs/i18n/zh-CN/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md),工程规则见 [docs/i18n/zh-CN/AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)。
+架构见 [docs/i18n/zh-CN/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md),工程规则见 [docs/i18n/zh-CN/AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)。
 
 ## 文档
 
-- [docs/i18n/zh-CN/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
-- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - C ABI 契约(所有跨界,含回调导出)
-- [docs/i18n/zh-CN/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) - 贡献指南(分支、提交、PR)
-- [docs/i18n/zh-CN/AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md) - 面向人类与 AI 代理的工程规则
-- [packages/bffi-loader](https://github.com/DotBlood/bffi-rs/blob/main/packages/bffi-loader) - JS 运行时加载器(见其 README)
-- [docs/i18n/zh-CN/SECURITY.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md) - 安全策略
-- [docs/i18n/zh-CN/CONTACT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTACT.md) - 联系方式
+- [docs/i18n/zh-CN/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
+- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - C ABI 契约(所有跨界,含回调导出)
+- [docs/i18n/zh-CN/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) - 贡献指南(分支、提交、PR)
+- [docs/i18n/zh-CN/AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md) - 面向人类与 AI 代理的工程规则
+- [packages/bffi-loader](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-loader) - JS 运行时加载器(见其 README)
+- [docs/i18n/zh-CN/SECURITY.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md) - 安全策略
+- [docs/i18n/zh-CN/CONTACT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTACT.md) - 联系方式
 
 ## 环境要求
 
@@ -64,7 +64,7 @@ bun run check           # oxlint + tsc + cargo check
 bun run ci              # 完整 CI 对齐:lint、typecheck、fmt、clippy、测试
 ```
 
-编写原生模块时,依赖 [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+编写原生模块时,依赖 [`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
 (门面:一个依赖覆盖整个栈);使用属性宏时,还需依赖其展开所引用的
 `bffi-core`/`bffi-types`/`bffi-dts` 等 crate。
 
@@ -90,7 +90,7 @@ await api.compute(21);               // `#[bffi_async]` -> Promise
 ```
 
 完整示例见
-[`examples/native`](https://github.com/DotBlood/bffi-rs/blob/main/examples/native)
+[`examples/native`](https://github.com/z2net/bffi-rs/blob/main/examples/native)
 (通过真实 `bun:ffi` 演示 shim、类、异步与回调,含 46 个测试的 e2e
 对齐套件)。
 
@@ -103,4 +103,4 @@ await api.compute(21);               // `#[bffi_async]` -> Promise
 
 ## 许可证
 
-[MIT](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
+[MIT](https://github.com/z2net/bffi-rs/blob/main/LICENSE)

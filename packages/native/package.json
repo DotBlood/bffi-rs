@@ -5,11 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DotBlood/bffi-rs.git",
+    "url": "git+https://github.com/z2net/bffi-rs.git",
     "directory": "packages/native"
   },
   "bugs": {
-    "url": "https://github.com/DotBlood/bffi-rs/issues",
+    "url": "https://github.com/z2net/bffi-rs/issues",
     "email": "contact@z2net.com"
   },
   "author": {

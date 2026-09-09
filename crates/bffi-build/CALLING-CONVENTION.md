@@ -152,4 +152,4 @@ bffi_callback::bffi_callback_abi!();
 (the crate depends on `bffi-core`, `bffi-callback`, `bffi-build`,
 `bffi-types`).
 
-[`ErrorCode`]: https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-core
+[`ErrorCode`]: https://github.com/z2net/bffi-rs/blob/main/crates/bffi-core

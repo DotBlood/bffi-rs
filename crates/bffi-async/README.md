@@ -1,13 +1,13 @@
 # bffi-async
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
-Promise / async support for [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) -
+Promise / async support for [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) -
 the Bun-only native binding framework. Rust futures spawned by
 `#[bffi_async]` run on an N-worker executor and resolve attached
 JavaScript Promises through the event loop, per DESIGN.md §7 and the
-[`bffi-event-loop`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-event-loop)
+[`bffi-event-loop`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-event-loop)
 delivery contract.
 
 **Status:** P3 core complete - [`spawn`] with cooperative [`cancel`],
@@ -15,9 +15,9 @@ delivery contract.
 attachment (`bffi_async_attach` via [`bffi_async_abi!`]), the
 `AsyncValue` codec, and the opt-in `tokio` feature. Descriptors:
 `#[bffi_async]` in
-[`bffi-macros`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-macros)
+[`bffi-macros`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-macros)
 emits `Promise<T>` types from
-[`bffi-dts`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-dts).
+[`bffi-dts`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-dts).
 
 ## Threading model
 
@@ -101,4 +101,4 @@ mixed runner/pumper load.
 
 ## License
 
-[MIT](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
+[MIT](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
