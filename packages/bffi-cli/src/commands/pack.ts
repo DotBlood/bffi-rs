@@ -1,5 +1,5 @@
 /** `bffi pack --src <binary> --triple <t> [--name <base>] [--binary <b>] [--out <dir>]`:
- * assembles one platform npm package (pattern A) from a built
+ * assembles one platform npm package (napi-rs style) from a built
  * cdylib - the binary (renamed to the artifact convention
  * `[lib]<binary>.<ext>` that `resolvePlatformBinary` looks up), a
  * package.json carrying os/cpu/libc, and an `index.js` entry shim.
@@ -34,7 +34,7 @@ export async function pack(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
   const src = flagString(args, "src");
   const triple = flagString(args, "triple") ?? platformTriple();
-  const base = flagString(args, "name") ?? "@z2net/native-template";
+  const base = flagString(args, "name") ?? "@z2net/bffi-native";
   const outDir = flagString(args, "out") ?? "platform";
 
   if (src === undefined) {

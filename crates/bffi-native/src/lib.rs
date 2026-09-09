@@ -2,7 +2,7 @@
 //! the runtime ABI (`bffi_error_*`, the `bffi_buffer` pair,
 //! `bffi_types_free`).
 //!
-//! This is the library the pattern-A platform npm packages carry
+//! This is the library the napi-rs-style platform npm packages carry
 //! (`@z2net/bffi-native-<triple>`, assembled by `bffi pack` from the
 //! release artifacts). It is deliberately tiny - the point is a REAL
 //! bffi surface crossing the boundary, loadable through the

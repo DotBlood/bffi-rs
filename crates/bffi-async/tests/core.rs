@@ -2,7 +2,7 @@
 //!
 //! Delivery tests stop short of invoking resolver trampolines: fake
 //! pointers would segfault. The trampoline path is exercised by the
-//! real bun:ffi e2e suite (examples/native).
+//! real bun:ffi e2e suite (examples/async).
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use std::future::Future;

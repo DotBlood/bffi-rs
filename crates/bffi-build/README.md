@@ -122,7 +122,7 @@ bffi_build::dts::write_to_file(&module, std::path::Path::new("js/api.d.ts"))?;
 
 Call it from a `#[test]` that refreshes the committed golden or from a
 small bin. The reference use is
-[examples/native/tests/dts.rs](https://github.com/z2net/bffi-rs/blob/main/examples/native/tests/dts.rs);
+[this crate's `tests/loader_json.rs`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/tests/loader_json.rs);
 the C ABI surface the declarations describe is specified in
 [CALLING-CONVENTION.md](CALLING-CONVENTION.md).
 
@@ -144,9 +144,9 @@ cargo test --release -p bffi-build # the release cfg variant of the generated ex
 ```
 
 The integration suite (`tests/abi.rs`) expands `bffi_runtime_abi!()`
-into the test binary and calls all ten exports directly - the P1 shim
+into the test binary and calls all ten exports directly - the shim
 testing model (no Bun in the loop; the real `bun:ffi` round-trip lives
-in `examples/native`).
+in the example suites, e.g. `examples/sqlite`).
 
 ## Requirements
 

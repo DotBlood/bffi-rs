@@ -6,7 +6,7 @@
 //! converts the (synchronous) parameters, moves them into the future,
 //! spawns it on the built-in executor and writes the task handle to
 //! `__ret`. JavaScript turns the handle into a `Promise` with
-//! `wrapTask` (see examples/native).
+//! `wrapTask` (see examples/async).
 //!
 //! Borrowed parameters (`&str`, `&[u8]`) are rejected: they cannot
 //! cross the spawn boundary (the borrow must outlive the future, but

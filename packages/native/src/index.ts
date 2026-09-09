@@ -1,7 +1,8 @@
 /**
  * The `@z2net/bffi-native` entry: resolves the prebuilt binary of
- * the RUNNING platform (installed as an optional dependency by
- * pattern A) and opens it through the `@z2net/bffi` typed loader.
+ * the RUNNING platform (installed as an optional dependency of the
+ * main package, napi-rs style) and opens it through the
+ * `@z2net/bffi` typed loader.
  *
  * An explicit `libraryPath` overrides the resolution (useful for
  * tests and locally built artifacts).

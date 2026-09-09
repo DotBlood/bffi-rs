@@ -299,7 +299,7 @@ while YOU pump (see §7). The mechanics, including the exactly-once
 guarantee and the sticky stop:
 [examples/event-loop](https://github.com/z2net/bffi-rs/blob/main/examples/event-loop).
 
-## 10. Platform packages (pattern A)
+## 10. Platform packages (napi-rs style)
 
 Prebuilt binaries ship as per-platform npm packages, napi-rs style:
 
@@ -336,7 +336,7 @@ const path = resolvePlatformBinary("@scope/mylib", { binary: "bffi_mylib" });
 
 A published, installable reference:
 [packages/native](https://github.com/z2net/bffi-rs/blob/main/packages/native)
-(`@z2net/bffi-native` + three platform packages).
+(`@z2net/bffi-native` + seven platform packages).
 
 ## 11. The version gate
 

@@ -1,6 +1,6 @@
 [package]
 name = "bffi-native"
-description = "The bffi-rs reference native library: a minimal cdylib expanding the runtime ABI, distributed as pattern-A platform npm packages (@z2net/bffi-native-<triple>)."
+description = "The bffi-rs reference native library: a minimal cdylib expanding the runtime ABI, distributed as napi-rs-style platform npm packages (@z2net/bffi-native-<triple>)."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -1,10 +1,11 @@
 # @z2net/bffi-native
 
 The [bffi-rs](https://github.com/z2net/bffi-rs) reference native
-module, distributed as **pattern A** (napi-rs style): this main
-package is pure TypeScript; every platform ships as its own npm
-package carrying the prebuilt cdylib. npm/Bun installs only the one
-matching the running platform through `optionalDependencies`.
+module, distributed with the napi-rs-style platform-package
+layout: this main package is pure TypeScript; every platform
+ships as its own npm package carrying the prebuilt cdylib.
+npm/Bun installs only the one matching the running platform
+through `optionalDependencies`.
 
 **Bun only** (>= 1.4.0).
 
@@ -15,9 +16,13 @@ matching the running platform through `optionalDependencies`.
 | `@z2net/bffi-native` | - (this package, pure TS) | - |
 | `@z2net/bffi-native-win32-x64-msvc` | Windows x64 | `bffi_native.dll` |
 | `@z2net/bffi-native-linux-x64-gnu` | Linux x64 (glibc) | `libbffi_native.so` |
+| `@z2net/bffi-native-linux-x64-musl` | Linux x64 (musl) | `libbffi_native.so` |
+| `@z2net/bffi-native-linux-arm64-gnu` | Linux arm64 (glibc) | `libbffi_native.so` |
+| `@z2net/bffi-native-linux-arm64-musl` | Linux arm64 (musl) | `libbffi_native.so` |
 | `@z2net/bffi-native-darwin-aarch64` | macOS arm64 | `libbffi_native.dylib` |
+| `@z2net/bffi-native-darwin-x64` | macOS x64 | `libbffi_native.dylib` |
 
-This package pins all three platform packages in
+This package pins all seven platform packages in
 `optionalDependencies` with EXACT versions (no caret - a loose pin
 would let npm pair a JS update with a stale binary). npm/Bun installs
 only the entry matching the running `os`/`cpu`; the others are
@@ -38,16 +43,20 @@ minimal cdylib expanding the runtime ABI
 
 The build matrix
 ([.github/workflows/release-native.yml](https://github.com/z2net/bffi-rs/blob/main/.github/workflows/release-native.yml),
-manual trigger) compiles the crate on `windows-latest`,
-`ubuntu-latest` and `macos-latest` and uploads the cdylibs; each is
-then assembled with `bffi pack` from
+manual trigger) compiles the crate on all seven triples:
+`windows-latest` (msvc), `ubuntu-latest` (glibc x64),
+`ubuntu-24.04-arm` (glibc arm64), the musl pair on the same
+runners (the crates are pure Rust, so musl needs only
+`rustup target add` - no extra system packages) and the macOS
+pair (`macos-13` builds the x64 side, `macos-latest` arm64); it
+uploads the cdylibs; each is then assembled with `bffi pack` from
 [@z2net/bffi-cli](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-cli)
 - which renames the binary to the artifact convention, writes the
 `os`/`cpu`/`libc` package.json and the `{ path }` entry shim.
 
 Publish order matters: **platform packages first, then this main
-package** - a main release with missing platform pins is the classic
-pattern-A breakage.
+package** - a main release with missing platform pins is the
+classic napi-rs-style distribution breakage.
 
 ## Usage
 

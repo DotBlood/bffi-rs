@@ -1,9 +1,9 @@
 /**
- * Platform-binary resolution for pattern-A distribution (napi-rs
- * style): the main package declares every platform package in
- * `optionalDependencies`; npm/bun installs ONLY the one matching the
- * running platform (`os`/`cpu`/`libc` fields), and this module turns
- * that package into the dlopen path.
+ * Platform-binary resolution for platform-package distribution
+ * (napi-rs style): the main package declares every platform package
+ * in `optionalDependencies`; npm/bun installs ONLY the one matching
+ * the running platform (`os`/`cpu`/`libc` fields), and this module
+ * turns that package into the dlopen path.
  *
  * Triple naming follows the napi-rs convention
  * (`<base>-win32-x64-msvc`, `<base>-linux-x64-gnu`,

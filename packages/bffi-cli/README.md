@@ -120,7 +120,7 @@ embedded as a `const ... satisfies ModuleJson` literal from which
 byte-identical. Malformed JSON and schema violations exit `2` with
 path-precise diagnostics.
 
-### `bffi pack` - assemble one platform package (pattern A)
+### `bffi pack` - assemble one platform package (napi-rs style)
 
 ```
 bffi pack --src <binary> --triple <t> [--name <base>] [--binary <b>] [--out <dir>]

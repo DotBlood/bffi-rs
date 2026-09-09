@@ -1,6 +1,6 @@
 # Builds the reference native library (crates/bffi-native) on every
 # shipped platform and uploads the cdylib artifacts. The artifacts
-# are assembled into the pattern-A platform npm packages
+# are assembled into the napi-rs-style platform npm packages
 # (@z2net/bffi-native-<triple>) with `bffi pack`.
 #
 # Manual trigger: the release flow runs this first, downloads the
@@ -25,6 +25,22 @@ jobs:
           - os: ubuntu-latest
             triple: linux-x64-gnu
             artifact: libbffi_native.so
+          # Pure-Rust crates: musl needs only the added rust target.
+          - os: ubuntu-latest
+            triple: linux-x64-musl
+            artifact: libbffi_native.so
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-24.04-arm
+            triple: linux-arm64-gnu
+            artifact: libbffi_native.so
+          - os: ubuntu-24.04-arm
+            triple: linux-arm64-musl
+            artifact: libbffi_native.so
+            target: aarch64-unknown-linux-musl
+          # macos-13 is the x64 runner.
+          - os: macos-13
+            triple: darwin-x64
+            artifact: libbffi_native.dylib
           - os: macos-latest
             triple: darwin-aarch64
             artifact: libbffi_native.dylib
@@ -41,7 +57,18 @@ jobs:
         with:
           bun-version: "1.4.0"
 
+      # Cross targets (musl) need an explicit `rustup target add`;
+      # the host target builds come from the pinned toolchain alone.
+      - name: Add the cross-compile Rust target
+        if: matrix.target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build the release cdylib (cross target)
+        if: matrix.target
+        run: cargo build --release -p bffi-native --target ${{ matrix.target }}
+
       - name: Build the release cdylib
+        if: ${{ !matrix.target }}
         run: cargo build --release -p bffi-native
 
       - name: Emit the loader JSON (schema sanity check)
@@ -51,5 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bffi-native-${{ matrix.triple }}
-          path: target/release/${{ matrix.artifact }}
+          # With a rust target the cdylib lands under
+          # target/<target>/release/ instead of target/release/.
+          path: target/${{ matrix.target && format('{0}/', matrix.target) }}release/${{ matrix.artifact }}
           if-no-files-found: error

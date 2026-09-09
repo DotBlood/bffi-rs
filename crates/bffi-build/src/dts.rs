@@ -25,8 +25,8 @@ use bffi_dts::ModuleDef;
 /// Aggregation is the caller's job: this helper renders the
 /// [`ModuleDef`] it is handed and knows nothing about how the
 /// descriptors were collected. The reference use is
-/// `examples/native/tests/dts.rs`; the C ABI surface the declarations
-/// describe is specified in this crate's `CALLING-CONVENTION.md`.
+/// this crate's `tests/loader_json.rs`; the C ABI surface the
+/// declarations describe is specified in this crate's `CALLING-CONVENTION.md`.
 pub fn write_to_file(module: &ModuleDef, path: &Path) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;

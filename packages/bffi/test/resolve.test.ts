@@ -1,5 +1,5 @@
 /**
- * Tests for platform-binary resolution (pattern A): the napi-rs style
+ * Tests for platform-binary resolution: the napi-rs style
  * triple mapping, the artifact-convention file name, and the
  * `<base>-<triple>` -> binary-path resolution (with an injected
  * resolver - no real node_modules involved).
