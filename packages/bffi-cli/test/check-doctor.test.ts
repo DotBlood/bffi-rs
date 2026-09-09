@@ -49,6 +49,12 @@ describe("bffi check / doctor", () => {
   });
 
   test("doctor passes on a complete project (exit 0)", () => {
+    // The cargo probe requires a real toolchain; CI js-jobs may ship
+    // without one (cargo missing -> doctor correctly fails, skip).
+    if (Bun.which("cargo") === null) {
+      console.info("skip: cargo not installed in this environment");
+      return;
+    }
     const { code, stdout } = runCli(["doctor", "--root", ROOT]);
     expect(code).toBe(0);
     expect(stdout).toContain("ok    bun runtime");

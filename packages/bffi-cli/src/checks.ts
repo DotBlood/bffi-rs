@@ -43,14 +43,23 @@ export function checkBunRuntime(): CheckResult {
     : result("bun runtime", false, problem);
 }
 
-/** The configured cargo executable responds to `--version`. */
+/** The configured cargo executable responds to `--version`. Uses
+ * `Bun.which` first (a missing binary must fail fast, not hang) and
+ * caps the spawn with a timeout. */
 export function checkCargo(rust: string): CheckResult {
+  if (Bun.which(rust) === null) {
+    return result(`cargo (${rust})`, false, "not found in PATH");
+  }
   try {
     const proc = Bun.spawnSync([rust, "--version"], {
       stdout: "pipe",
       stderr: "pipe",
+      timeout: 15000,
     });
     const out = proc.stdout.toString().trim();
+    if (proc.exitCode === null) {
+      return result(`cargo (${rust})`, false, "spawn timed out");
+    }
     return proc.exitCode === 0
       ? result(`cargo (${rust})`, true, out)
       : result(`cargo (${rust})`, false, `exit code ${String(proc.exitCode)}`);
