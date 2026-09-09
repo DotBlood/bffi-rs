@@ -6,7 +6,6 @@
  * Run with `bun test packages/bffi-cli`.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { join } from "node:path";
 import { $ } from "bun";
 
 const ROOT = `${import.meta.dir}/tmp`;
@@ -75,7 +74,7 @@ describe("bffi check / doctor", () => {
   test("check fails when the artifact is missing", async () => {
     const ext = process.platform === "win32" ? "dll" : process.platform === "darwin" ? "dylib" : "so";
     const prefix = process.platform === "win32" ? "" : "lib";
-    await $`rm -rf ${join(ROOT, "crate")}`;
+    await $`rm -rf ${ROOT}/crate`;
     const { code, stdout } = runCli(["check", "--root", ROOT]);
     expect(code).toBe(2);
     expect(stdout).toContain("artifact");

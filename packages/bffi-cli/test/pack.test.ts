@@ -5,7 +5,6 @@
  * Run with `bun test packages/bffi-cli`.
  */
 import { afterAll, describe, expect, test } from "bun:test";
-import { join } from "node:path";
 
 import { pack } from "../src/commands/pack.ts";
 
@@ -22,29 +21,47 @@ describe("bffi pack", () => {
       "win32-x64-msvc",
       "--name",
       "@z2net/mylib",
+      "--binary",
+      "bffi_mylib",
       "--out",
       `${ROOT}/platform`,
     ]);
     expect(code).toBe(0);
 
-    const pkgPath = join(
-      ROOT,
-      "platform",
-      "mylib-win32-x64-msvc",
-      "package.json",
-    );
-    const pkg = JSON.parse(await Bun.file(pkgPath).text());
+    const pkgDir = `${ROOT}/platform/mylib-win32-x64-msvc`;
+
+    const pkg = JSON.parse(await Bun.file(`${pkgDir}/package.json`).text());
     expect(pkg.name).toBe("@z2net/mylib-win32-x64-msvc");
     expect(pkg.os).toEqual(["win32"]);
     expect(pkg.cpu).toEqual(["x64"]);
 
-    const shim = await Bun.file(
-      join(ROOT, "platform", "mylib-win32-x64-msvc", "index.js"),
-    ).text();
-    expect(shim).toContain('"native.dll"');
+    const shim = await Bun.file(`${pkgDir}/index.js`).text();
+    // The binary follows the artifact convention
+    // (`[lib]<binary>.<ext>`), which is what `resolvePlatformBinary`
+    // looks up.
+    expect(shim).toContain('"/bffi_mylib.dll"');
+    // The generated shim must stay free of node: imports (bun-only).
+    expect(shim).not.toContain("node:");
 
+    expect(await Bun.file(`${pkgDir}/bffi_mylib.dll`).exists()).toBeTrue();
+  });
+
+  test("the binary base name defaults to the package base", async () => {
+    const code = await pack([
+      "--src",
+      SRC,
+      "--triple",
+      "linux-x64-gnu",
+      "--name",
+      "@z2net/bffi-native",
+      "--out",
+      `${ROOT}/platform-default`,
+    ]);
+    expect(code).toBe(0);
     expect(
-      await Bun.file(join(ROOT, "platform", "mylib-win32-x64-msvc", "native.dll")).exists(),
+      await Bun.file(
+        `${ROOT}/platform-default/bffi-native-linux-x64-gnu/libbffi_native.so`,
+      ).exists(),
     ).toBeTrue();
   });
 

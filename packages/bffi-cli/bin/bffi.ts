@@ -1,7 +1,8 @@
+#!/usr/bin/env bun
 /**
  * The `bffi` CLI - a thin wrapper over `@z2net/bffi` (all pipeline
- * logic lives there). Commands: init, build, codegen, pack, fetch.
- * doctor/check are planned (v2).
+ * logic lives there). Commands: init, build, check, codegen, doctor,
+ * pack, fetch.
  *
  * Exit codes: 0 = ok, 1 = usage error, 2 = input/environment failure.
  */

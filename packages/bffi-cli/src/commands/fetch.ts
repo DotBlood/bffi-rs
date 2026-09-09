@@ -1,7 +1,7 @@
 /** `bffi fetch --repo <owner/repo> --tag <v> --asset <file>
  * [--out <dir>]`: downloads a prebuilt binary (+ its `.sha256`
  * sidecar) from a GitHub Release and verifies the digest. */
-import { join } from "node:path";
+import { joinOut } from "@z2net/bffi";
 import { flagString, parseArgs } from "../args.ts";
 import { EXIT, writeErr, writeOut } from "../output.ts";
 
@@ -15,7 +15,7 @@ export async function fetchCmd(argv: string[]): Promise<number> {
   const repo = flagString(args, "repo");
   const tag = flagString(args, "tag");
   const asset = flagString(args, "asset");
-  const outDir = flagString(args, "out") ?? join("target", "bffi");
+  const outDir = flagString(args, "out") ?? joinOut("target", "bffi");
 
   if (repo === undefined || tag === undefined || asset === undefined) {
     writeErr(usage);
@@ -44,7 +44,7 @@ export async function fetchCmd(argv: string[]): Promise<number> {
     }
   }
 
-  const outPath = join(process.cwd(), outDir, asset);
+  const outPath = joinOut(process.cwd(), outDir, asset);
   await Bun.write(outPath, bytes);
   writeOut(`fetched ${asset} (${String(bytes.length)} bytes) -> ${outPath}`);
   return EXIT.ok;
