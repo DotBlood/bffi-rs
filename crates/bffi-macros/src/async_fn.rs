@@ -290,6 +290,10 @@ pub(crate) fn expand(model: &AsyncFnModel) -> TokenStream {
         #[doc = #shim_doc]
         #[allow(clippy::not_unsafe_ptr_arg_deref)]
         pub extern "C" fn #shim_ident(#(#shim_params,)* __ret: *mut u64) -> ::bffi_core::ErrorCode {
+            // The owned-parameter conversions run BEFORE the spawn:
+            // they copy the cstring/(ptr, len) views into owned data
+            // that outlives the call (and may early-return an error).
+            #conversions
             #future
         }
     };
@@ -299,7 +303,10 @@ pub(crate) fn expand(model: &AsyncFnModel) -> TokenStream {
         #[doc = #shim_doc]
         #[allow(clippy::not_unsafe_ptr_arg_deref)]
         pub extern "C" fn #shim_ident(#(#shim_params,)* __ret: *mut u64) -> ::bffi_core::ErrorCode {
-            ::bffi_core::boundary::run_extern_body(move || { #future })
+            ::bffi_core::boundary::run_extern_body(move || {
+                #conversions
+                #future
+            })
         }
     };
 
