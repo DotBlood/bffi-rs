@@ -40,7 +40,10 @@ bun install
 
 ```bash
 bun run lint          # oxlint
-bun run typecheck     # TypeScript check
+bun run typecheck     # TypeScript 检查
+bun run build         # 构建全部四个示例 crate(release cdylib)
+bun run test:e2e      # 以 e2e 测试套件的方式运行示例(bun test examples)
+bun run ci            # 完整 CI 等价:lint、typecheck、fmt、clippy、测试
 cargo fmt
 cargo clippy
 cargo check
@@ -128,7 +131,7 @@ gitGraph
 
 ### 审查规则
 
-- PR `dev/<feature>` → `dev/main`:至少需要 **1 个批准**(所有者或维护者)以及绿色的 `bun run ci`(在 CI workflow 落地之前,先在本地运行)。
+- PR `dev/<feature>` → `dev/main`:至少需要 **1 个批准**(所有者或维护者)以及绿色 CI(GitHub Actions 的 `ci.yml` workflow;本地为 `bun run ci`)。
 - PR `dev/main` → `main`:仅限所有者,在发布合并时进行(参见下方的标签)。
 - 审查遵循 PR 模板中的检查清单(fmt、clippy、测试、lint、文档)。
 
@@ -145,7 +148,7 @@ gitGraph
 
 1. Fork 仓库,并从 `dev/main` 创建分支。
 2. 做出聚焦的更改(每个 PR 只包含一个逻辑单元)。
-3. 确保 `cargo fmt`、`cargo clippy`、测试以及 `bun run lint` 通过。
+3. 确保 `bun run ci` 通过(lint、typecheck、fmt、clippy、测试)。
 4. 填写拉取请求模板。
 5. 如有相关 issue,请进行关联。
 6. 准备好讨论设计决策 - 我们重视与 `DESIGN.md` 的长期一致性。

@@ -2,185 +2,129 @@
 
 [English](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md)
 
-**Status:** Done  
-**Date:** 2026-09-02  
+**Status:** Accepted  
+**Date:** 2026-09-10  
 **License:** MIT  
 **Repository:** https://github.com/z2net/bffi-rs  
 **Contact:** contact@z2net.com
 
 ---
 
-## 1. Summary
+## 1. Purpose
 
-`bffi-rs` is a native binding framework for writing Rust modules targeting **Bun only**.
+`bffi-rs` is a native-binding framework for **Bun only** - the `napi-rs` equivalent for the Bun runtime.
 
-It is the Bun counterpart of `napi-rs`, with these differences:
+A native module is written in Rust, compiled to a `cdylib`, and consumed from TypeScript through `bun:ffi` and a thin C ABI. The framework does not depend on Node-API and is not compatible with Node.js or Deno; it is native to the Bun ecosystem by design.
 
-- targets **only Bun** (no Node.js / Deno);
-- does **not** depend on Node-API;
-- uses `bun:ffi` and a thin C ABI layer;
-- is built **bottom-up** from small crates.
+## 2. Goals
 
-Goal: a convenient, relatively safe, and idiomatic way to write high-performance native extensions for Bun.
+- **Safety at the FFI boundary** - the boundary is where Rust's guarantees end; the framework puts explicit rules in its place.
+- **Clear ownership** - every value crossing the boundary has one side responsible for it, expressed in the types.
+- **Developer experience** - annotate, build, import typed functions; errors are diagnostics, not mysteries.
+- **Long-term maintainability** - small crates, built bottom-up; deterministic artifacts that can be committed and diffed.
+- **Bun-first** - no compromises for other runtimes.
 
----
+## 3. Architecture overview
 
-## 2. Motivation
-
-Today most native modules for Bun are written with `napi-rs` (Node-API). This causes:
-
-1. Dependency on a foreign API and execution model.
-2. Best-effort Node-API compatibility in Bun (edge-case bugs).
-3. Inability to fully leverage Bun-specific features and optimizations.
-
-We want a layer that is native to the Bun ecosystem and has predictable behavior under Bun.
-
----
-
-## 3. Goals
-
-- Ergonomic Rust → Bun native modules.
-- Safe abstractions over C ABI (as far as practical).
-- Support for functions, classes, buffers, callbacks, lifetime management, errors.
-- Bottom-up development from small, well-tested crates.
-- Stable thin C ABI layer at the end.
-- TypeScript `.d.ts` generation from day one.
-- Fully open source (MIT).
-
----
-
-## 4. Non-Goals
-
-- Compatibility with Node.js or Deno.
-- 100% API compatibility with `napi-rs`.
-- Maximum performance at any cost on day one.
-- Hiding dangerous operations (zero-copy etc.).
-
----
-
-## 5. High-level architecture
+Three planes, connected by one contract:
 
 ```mermaid
-flowchart TB
-    U["User native modules"]
-    F["bffi-rs<br/>public API + macros"]
-    S["Small crates<br/>bffi-types, bffi-object, bffi-callback,<br/>bffi-class, bffi-dts, bffi-error, ..."]
-    C["bffi-core<br/>foundation + safety rules"]
-    A["Thin C ABI layer<br/>called via bun:ffi"]
+flowchart LR
+    R["Rust stack<br/>(14 small crates, facade on top)"]
+    A["thin C ABI<br/>(uniform shape: status + out-param)"]
+    J["JS integration<br/>(pipeline, loader, CLI)"]
 
-    U --> F --> S --> C --> A
+    R --> A --> J
 ```
 
-Development order: foundation → one capability at a time → ergonomic API → stable C ABI.
+**Rust side, bottom-up.** `bffi-core` is the foundation: generational handles, the object registry, and the boundary policy. Above it sit single-purpose crates - `bffi-error`, `bffi-types` (conversions plus the shared wire codec), `bffi-object` (ObjectWrap), `bffi-callback` (two-direction callbacks and the generic callback ABI), `bffi-event-loop` (queue and drains), `bffi-async` (Rust futures as JS Promises), `bffi-dts` (descriptor IR and renderers), `bffi-build` (runtime ABI exports and the loader JSON). The proc-macro crates - `bffi-macros` (`#[bffi]`, `#[bffi_async]`) and `bffi-class` (`#[bffi_class]`) - share their internals in `bffi-macro-support`. `bffi` is the facade: one dependency re-exporting the stack. `bffi-native` is the reference cdylib.
 
----
+**JS side.** `@z2net/bffi` (packages/bffi) is the config-driven pipeline - cargo build, loader JSON, generated TypeScript, dlopen - plus the typed runtime loader. `@z2net/bffi-cli` (packages/bffi-cli) is the `bffi` CLI: init, build, check, doctor, codegen, pack, fetch. `@z2net/bffi-native` (packages/native) is the published reference native module family.
 
-## 6. Safety model
+**How an export travels.** Every annotated item produces two things at compile time: a thin C shim with one uniform ABI shape (status plus out-parameter) and a descriptor. The descriptors aggregate into a single module definition per crate; that aggregation is the complete machine-readable truth about the exports. Because the schema is complete, the JS side drives everything generically - symbol lookup, argument marshalling, result and error decoding - with no hand-written bindings.
 
-Crossing the C ABI drops almost all Rust safety guarantees. Rules:
+## 4. Safety model
 
-### 6.1 FFI boundary
-- Every `extern "C"` function must be as thin as possible.
-- Immediately wrap the body in `catch_unwind`.
-- Panics must never cross the FFI boundary in production builds.
+These are invariants, not implementation details:
 
-### 6.2 Ownership via handles
-We use **Generational Index + type-tag**:
+| Invariant | Rationale |
+| --- | --- |
+| Copy by default across the boundary. | No shared lifetimes between two languages unless explicitly asked for. |
+| Zero-copy only through `bffi::unsafe_zero_copy`. | A dangerous capability must be visible at the call site and never inferred. |
+| Generational handles + type tags. | A stale or mistyped handle can never reach a reused slot or the wrong type. |
+| Every `extern "C"` body runs under the boundary policy: bare in debug (for debuggability), `catch_unwind` in release. | The artifact is a cdylib loaded **into** the Bun process - an abort kills the host. Panics become JS errors in production and never cross as undefined behavior. |
+| UTF-8 is the canonical boundary encoding. | One string contract; `bun:ffi` cstrings stay well-defined. |
+| The public Rust API is 100% safe. | `unsafe` exists only inside the crates, behind reviewed doors. |
+| Errors are values: `BffiError` = code + message + source; domain errors convert losslessly. | The JS side drains them into `Error` with `cause` - failures are structured, never silent. |
+| Stable E-codes for macro diagnostics. | Macros must fail with readable, greppable errors, not token soup. |
 
-```rust
-// u64 = (type_tag << 48) | (generation << 24) | index
-type Handle = u64;
-```
+## 5. Async & event loop model
 
-Inside Rust we keep `Arc<T>` (or equivalent) in a table.  
-Outside only the opaque handle is visible.
+JavaScript runs on exactly one thread. Three roles cooperate around it:
 
-### 6.3 Buffers and strings
-- Default = **copy**.
-- Zero-copy is allowed only through `bffi::unsafe_zero_copy`.
-- Dangerous APIs must be obvious.
+- **JS thread** - the only thread that executes JavaScript; it also drains the event loop.
+- **Executor workers** - poll Rust futures; they never touch JavaScript.
+- **Timer thread** - serves deadlines (sleep, timeouts); it never touches JavaScript either.
 
-### 6.4 Callbacks
-- Explicit registration.
-- Must not be callable after destruction.
-- Wrong-thread calls are either rejected or safely marshalled.
+Task resolution and callback invocations that originate off the JS thread are **delivered, not executed**: they are enqueued and run on the JS thread while it drains. A call made from the wrong thread is rejected (marshalled through the queue), never smuggled onto JavaScript.
 
-### 6.5 Panics
-- **Dev** - may abort (better debugging).
-- **Prod** - always converted to a JS `Error`.
+The drain is an **explicit contract**: the embedding code pumps (or runs the loop) when it chooses - typically on a documented periodic pattern. The framework never installs hidden timers or pumps implicitly. Cancellation is cooperative - a cancelled task is dropped at its next poll - and timeouts are first-class combinators. Tokio is an opt-in executor choice, not a requirement.
 
----
+## 6. TypeScript & codegen model
 
-## 7. Accepted decisions
+**Descriptors are the single source of truth.** One aggregation per crate flows into a canonical, deterministic loader JSON (schema v1), from which a deterministic renderer produces the typed TypeScript module with exact types. Generated files are byte-stable: safe to commit, safe to diff.
 
-| Topic            | Decision                                            |
-|------------------|-----------------------------------------------------|
-| Macro            | `#[bffi]` - shim (debug bare / release catch_unwind) + const `bffi_meta_*` descriptor |
-| `#[bffi]` returns | primitives/bigints via out-param; `String`/`Vec<u8>`/`CopiedBuf` (and `Option` of those) as transient-buffer handles; `Result<T, E>` -> `ErrorCode::DomainError` with `E` as source |
-| Minimum Bun      | 1.4.0                                               |
-| Rust / Cargo     | 1.98.0                                              |
-| Handles          | Generational Index + type-tag                       |
-| Error format     | `BffiError` = code + message + source; domain errors convert losslessly via `From` |
-| Object ownership | `ObjectWrap<T>` over the global `Registry`; one tag = one type per process (range 0x0100-0x01FF); release frees the slot, `Arc` holders keep the value alive |
-| Callbacks | Explicit `register`/`revoke`; dead after revoke; wrong-thread reject (marshal = P2) |
-| Build ABI | Runtime exports (`bffi_error_*`, the `bffi_buffer`/`bffi_buffer_length` pair, `bffi_types_free`) via `bffi_runtime_abi!()` expanded in the user crate; `bffi-build` owns tags 0x0400-0x04FF |
-| Boundary string encoding | UTF-8 canonical (`bun:ffi cstring`)                    |
-| Handle concurrency | Lock-free; hazard-pointer reclamation; pinned two-level cell pages |
-| UTF-8 validation | SIMD (x86 SSSE3, aarch64 NEON); scalar DFA is the reference semantics |
-| Buffers          | Copy by default                                     |
-| Zero-copy        | Only via `bffi::unsafe_zero_copy`                   |
-| Event loop       | `enqueue`/`marshal` queue; `run()` blocks and drains on the runner thread (jobs via `run_extern_body`); `pump()` drains without blocking (no waiting); `stop()` is sticky; marshal without a runner -> WrongThread(12); the Bun tick is loader-side |
-| TypeScript types | IR (ModuleDef/FunctionDef/ClassDef) + deterministic render; export_name = bffi_-prefix |
-| Class macros | `#[bffi_class]`/`#[bffi_impl]` over `ObjectWrap` (tags 0x0100-0x01FF): getters for `pub` primitive fields, `&self` methods, generated release; metadata split `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`; diagnostics E005-E008 |
-| Macro support | `bffi-macro-support`: shared model/mapping/codegen for the proc-macro crates (`bffi-macros`, `bffi-class`); tooling crate - no runtime code, no ABI |
-| Panic (prod)     | Convert to JS Error                                 |
-| Panic (dev)      | May abort                                           |
-| Compatibility    | Bun only                                            |
-| Distribution     | Source in repo; prebuilt binaries later for npm     |
-| Facade           | `bffi`: flat re-exports of the stack; `unsafe_zero_copy` is the only zero-copy door; macro expansions stay on the user's direct deps |
-| Async            | `#[bffi_async]`: spawn shim returns a task handle; N-worker executor (tokio runtime - opt-in feature: mode switch + `spawn_on_tokio`; cancel aborts tokio tasks); cancel (cooperative drop) and timeout combinators; resolution delivered through the event loop on the JS thread; descriptors `Promise<T>` |
-| Descriptor ABI | `FunctionDef`/`MethodDef` carry `AbiSig` (exact C widths + out slot); `FieldDef` carries the getter `export_name` + out; `ClassDef` carries `release_export`; `.d.ts` render ignores all of it |
-| Wire codec | `bffi_types::wire`: one `[tag][payload]` table (LE, exact `i64`) for async task payloads AND callback signatures/arguments/results |
-| Callback ABI | Generic exports via `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) expanded in the user crate; wire-encoded signatures/arguments; results as transient-buffer handles; see CALLING-CONVENTION.md §9 |
-| Loader JSON | `bffi_build::loader_json`: canonical, deterministic schema v1 (`"bffi": 1`) rendered from the aggregated `ModuleDef`; the JS-side codegen consumes it |
-| TS codegen | `bffi codegen <json> -o <ts>` (bin/): deterministic renderer embedding the schema literal; `ApiOf<>` in `bffi-loader` derives exact TS types from the literal |
-| Loader runtime | `packages/bffi-loader` (Bun-only, no deps): wire codec, takeError/readBuffer, `wrapTask` + explicit `pumpUntil` (no hidden pumping), class factory (FinalizationRegistry + explicit `release()` swallowing duplicate-release), callbacks API |
-| License          | MIT                                                 |
+There are no hand-written bindings. When descriptors and generated files disagree, `bffi check` fails - drift is a build error, not a runtime surprise.
 
----
+## 7. Distribution model
 
-## 8. Components
+Distribution is **platform npm packages**, napi-rs style:
 
-| Crate              | Purpose                                              | Priority |
-|--------------------|------------------------------------------------------|----------|
-| `bffi-core`        | Handles, catch_unwind, core utilities, safety rules  | P0       |
-| `bffi-types`       | Type conversion (numbers, strings, buffers, …)       | P0       |
-| `bffi-error`       | Unified error → JS Error mapping                     | P0       |
-| `bffi-object`      | Object ownership / ObjectWrap                        | P1       |
-| `bffi-callback`    | Safe callbacks (both directions)                     | P1       |
-| `bffi-dts`         | TypeScript `.d.ts` generation                        | P1       |
-| `bffi-macros`      | Procedural macros (`#[bffi]`, attributes)            | P1       |
-| `bffi-class`       | Class declaration macros                             | P2       |
-| `bffi-macro-support` | Shared macro internals (kinds, classification, codegen) | P2.5 |
-| `bffi-event-loop`  | `run()` / `pump()` abstraction                       | P2       |
-| `bffi-build`       | Build helpers, C ABI generation, Bun integration     | P2       |
-| `bffi`             | Public facade that re-exports the stack              | P2       |
-| `bffi-async`       | Promise / async support (spawn, cancel, timeout, tokio opt-in) | P3 |
-| `bffi-loader` (JS) | Bun-only runtime loader: typed API from the loader JSON (`packages/bffi-loader`) | P4 |
+- A base package declares one `optionalDependencies` entry per platform, **exact-pinned**; npm/bun installs only the entry matching the host.
+- Every artifact follows one naming convention, and `resolvePlatformBinary` maps platform -> package -> binary path. `bffi pack` assembles a platform package from a built cdylib.
+- Platform packages are published **first** (or together with) the base package; a partial matrix is visible at install time, not discovered at runtime.
 
----
+Supported targets are seven 64-bit triples: `win32-x64-msvc`, `linux-x64-gnu`, `linux-x64-musl`, `linux-arm64-gnu`, `linux-arm64-musl`, `darwin-x64`, `darwin-aarch64`. There are no 32-bit targets.
 
-## 9. API design principles
+## 8. Examples as executable specifications
 
-1. Explicit is better than magical.
-2. Safe by default; dangerous paths are explicit.
-3. Small crates, one responsibility each.
-4. Document ownership contracts on every FFI boundary.
-5. Bun-first - no compromises for other runtimes.
+Each example is a working module and an end-to-end test of one slice of the design:
 
----
+- [examples/sqlite](https://github.com/z2net/bffi-rs/blob/main/examples/sqlite) - the full pipeline on a real workload.
+- [examples/async](https://github.com/z2net/bffi-rs/blob/main/examples/async) - futures as Promises, cancellation, timeouts, the explicit pump.
+- [examples/event-loop](https://github.com/z2net/bffi-rs/blob/main/examples/event-loop) - queue, drains, marshal.
+- [examples/callbacks](https://github.com/z2net/bffi-rs/blob/main/examples/callbacks) - both directions, the JS-thread gate, marshal delivery.
 
-## 10. Contact
+## 9. Decisions log
 
-- GitHub Issues / Discussions  
+Accepted decisions, one line each:
+
+| Topic | Decision |
+| --- | --- |
+| Compatibility | Bun only; no Node.js / Deno layers. |
+| Buffers | Copy by default; zero-copy only via `bffi::unsafe_zero_copy`. |
+| Handles | Generational index + type tag (`u64`). |
+| Panics | Convert to JS `Error` in release; abort allowed in debug only. |
+| Boundary strings | UTF-8 canonical. |
+| C ABI | Uniform shape: status + out-parameter, for every export. |
+| Event loop | Explicit pump/run contract; deliveries execute on the JS thread. |
+| TypeScript | Descriptors are the single source of truth; deterministic generation; schema v1. |
+| Distribution | Platform npm packages over a monolithic binary; exact pins. |
+| Toolchain | Bun >= 1.4.0 (enforced); Rust 1.98.0 (pinned). |
+| Targets | 64-bit only (seven triples); no 32-bit for now. |
+| Diagnostics | Stable E-codes for macro errors. |
+| License | MIT. |
+
+## 10. Non-goals
+
+- Node.js or Deno compatibility.
+- API compatibility with `napi-rs`.
+- Hiding the FFI boundary behind magic - the boundary stays legible and explicit.
+- Zero-copy as a default.
+- 32-bit targets (for now).
+- Maximum performance at any cost on day one.
+
+## 11. Contact
+
+- GitHub Issues / Discussions
 - Email: **contact@z2net.com**

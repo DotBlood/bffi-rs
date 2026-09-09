@@ -11,16 +11,16 @@
 
 ## 1. Назначение проекта
 
-`bffi-rs` - это **Bun-only** фреймворк биндингов, написанный на Rust.
+`bffi-rs` - фреймворк нативных привязок **только для Bun**, написанный на Rust.
 
-Это Bun-эквивалент `napi-rs`, но:
+Это аналог `napi-rs` для Bun, но:
 
 - нацелен **только на Bun** (без совместимости с Node.js / Deno);
 - **не** зависит от Node-API;
 - использует `bun:ffi` и тонкий слой C ABI;
 - строится **снизу вверх** из небольших крейтов.
 
-Основные цели: безопасность на границе FFI, ясная модель владения, хороший DX и долгосрочная сопровождаемость.
+Основные цели: безопасность на границе FFI, ясная модель владения, удобство разработки и долгосрочная сопровождаемость.
 
 Читайте `DESIGN.md` перед внесением архитектурных изменений.
 
@@ -34,21 +34,21 @@
 2. **Безопасность прежде всего**
    - Путь по умолчанию = копирование данных, никогда zero-copy.
    - Zero-copy разрешён только через `bffi::unsafe_zero_copy`.
-   - Все функции `extern "C"` должны быть тонкими и обёрнутыми в `catch_unwind`.
+   - Все функции `extern "C"` должны быть тонкими обёртками и работать под `catch_unwind`.
 
-3. **Хендлы**
-   Используйте Generational Index + type-tag (`u64`).
+3. **Дескрипторы (handles)**
+   Используйте индекс с поколением + тег типа (`u64`).
    Никогда не выставляйте наружу сырые ссылки Rust или сложные типы через C ABI.
 
 4. **Паники**
-   - Dev-сборки могут прерываться (проще отлаживать).
-   - Prod-сборки должны преобразовывать паники в JS `Error`.
+   - Отладочные сборки могут прерывать процесс (так проще отлаживать).
+   - Продакшн-сборки обязаны преобразовывать паники в JS `Error`.
 
 5. **Минимальная версия Bun**
    `1.4.0`
 
 6. **Версия Rust / Cargo**
-   Проект зафиксирован на **Cargo / Rust 1.98.0**.
+   Проект закреплён на **Cargo / Rust 1.98.0**.
    Не поднимайте версию без явного решения и обновления CI.
 
 7. **Никаких секретов в репозитории**
@@ -63,42 +63,43 @@
 
 ```
 bffi-rs/
-├── AGENTS.md                    # this file
+├── AGENTS.md                      # этот файл
 ├── README.md
 ├── LICENSE
 ├── SECURITY.md
 ├── CONTACT.md
-├── Cargo.toml                  # workspace
-├── rust-toolchain.toml         # pinned 1.98.0
-├── package.json                # Bun workspace / scripts
+├── Cargo.toml                     # workspace
+├── rust-toolchain.toml            # закреплён 1.98.0
+├── package.json                   # Bun workspace / скрипты
 ├── tsconfig.json
-├── .oxlintrc.json              # linter config
-├── lefthook.yml                # git hooks (lint, fmt, commit-msg)
+├── .oxlintrc.json                 # конфигурация линтера
+├── lefthook.yml                   # git-хуки (lint, fmt, commit-msg)
 ├── .gitignore
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   ├── PULL_REQUEST_TEMPLATE.md
-│   └── workflows/              # CI (planned; deferred until bffi-core lands)
+│   └── workflows/                 # CI (ci.yml) + релиз нативных пакетов (release-native.yml)
 ├── crates/
-│   ├── bffi-core/               # foundation (handles, catch_unwind, ...)
-│   ├── bffi-types/              # type conversion
+│   ├── bffi-core/                 # фундамент (дескрипторы, catch_unwind, ...)
+│   ├── bffi-types/                # преобразование типов
 │   ├── bffi-error/
 │   ├── bffi-object/
 │   ├── bffi-callback/
 │   ├── bffi-class/
-│   ├── bffi-dts/                # TypeScript .d.ts generation
+│   ├── bffi-dts/                  # генерация TypeScript .d.ts
 │   ├── bffi-macros/
-│   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
+│   ├── bffi-macro-support/        # общие внутренности макросов (kinds, classify, codegen)
 │   ├── bffi-event-loop/
+│   ├── bffi-async/                # фьючерсы как JS Promises
 │   ├── bffi-build/
-│   └── bffi-rs/                 # public facade
+│   ├── bffi-native/               # эталонная cdylib (runtime ABI; -> пакеты @z2net/bffi-native)
+│   └── bffi/                      # публичный фасад
 ├── docs/
-│   ├── DESIGN.md                # architecture & decisions
+│   ├── DESIGN.md                  # архитектура и решения
 │   ├── CONTRIBUTING.md
 │   └── CODE_OF_CONDUCT.md
-├── examples/
-├── packages/                      # JS-пакеты (bffi-loader)
-├── bin/                           # cli-утилита (bffi codegen)
+├── examples/                      # sqlite, async, event-loop, callbacks (каждый - набор e2e-тестов)
+├── packages/                      # JS-сторона: bffi (@z2net/bffi), bffi-cli, native
 └── scripts/
 ```
 
@@ -124,6 +125,9 @@ bun install
 ```bash
 bun run lint          # oxlint
 bun run typecheck     # tsc
+bun run build         # собирает все четыре примера-крейта (release cdylib)
+bun run test:e2e      # прогоняет примеры как наборы e2e-тестов (bun test examples)
+bun run ci            # полный CI-паритет: lint, typecheck, fmt, clippy, тесты
 cargo check
 cargo test
 cargo fmt
@@ -143,14 +147,14 @@ test: cover buffer copy path
 chore: pin rust-toolchain to 1.98.0
 ```
 
-Критические изменения (breaking changes) должны указываться через `BREAKING CHANGE:` в футере или `!` после типа.
+Критические изменения (breaking changes) указываются через `BREAKING CHANGE:` в футере или `!` после типа.
 
 ### Ветвление и релизы
 
 - `main` - продакшн-ветка; пул-реквесты в `main` создаёт только владелец проекта, из `dev/main`.
 - `dev/main` - интеграционная ветка; вся работа над фичами попадает сюда через пул-реквесты.
 - Фичи разрабатываются в ветках `dev/<feature>` (kebab-case), которые отпочковываются от `dev/main` и мержатся обратно в `dev/main`.
-- Пул-реквест `dev/<feature>` → `dev/main` требует 1 одобрения и зелёного `bun run ci`.
+- Пул-реквест `dev/<feature>` → `dev/main` требует 1 одобрения и зелёного CI (`.github/workflows/ci.yml`; локально - `bun run ci`).
 - Релизные теги `v<semver>` (аннотированные) ставятся только на `main` и только владельцем.
 
 Полные правила: [docs/i18n/ru/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) → "Ветвление и релизы".
@@ -169,15 +173,15 @@ chore: pin rust-toolchain to 1.98.0
 Работая над этим репозиторием, агент **обязан**:
 
 1. Прочитать `DESIGN.md` и этот файл перед крупными изменениями.
-2. Предпочитать небольшие, удобные для ревью диффы.
+2. Делать небольшие, удобные для ревью диффы.
 3. Никогда не коммитить секреты, личные AI-конфигурации или файлы `.env`.
 4. Не вводить совместимость с Node/Deno.
 5. Сохранять архитектуру снизу вверх (небольшие крейты → `bffi-rs`).
-6. Сохранять модель безопасности (копирование по умолчанию, явный unsafe zero-copy, generational-хендлы).
+6. Сохранять модель безопасности (копирование по умолчанию, явный unsafe zero-copy, дескрипторы с поколениями).
 7. Запускать `cargo fmt`, `cargo clippy` и тесты, когда это возможно.
 8. Обновлять `DESIGN.md` или документацию, если меняется решение.
 
-Если возникают сомнения насчёт архитектуры, лучше спросить (или открыть черновой PR), чем изобретать новый паттерн.
+Если возникают сомнения насчёт архитектуры, лучше спросить (или открыть черновой PR), чем изобретать новый подход.
 
 ---
 
@@ -190,34 +194,36 @@ chore: pin rust-toolchain to 1.98.0
 
 ## 7. Краткий справочник - принятые решения
 
-| Тема          | Решение                                 |
-| ------------- | --------------------------------------- |
-| Макрос        | `#[bffi]`: шим (debug bare / release catch_unwind) + дескриптор bffi_meta_* |
-| Возвраты `#[bffi]` | примитивы/bigint через out-param; `String`/`Vec<u8>`/`CopiedBuf` (и `Option` от них) как хендлы буферов; `Result<T, E>` -> DomainError(13) |
-| Мин. Bun      | 1.4.0                                   |
-| Rust/Cargo    | 1.98.0                                  |
-| Хендлы        | Generational Index + type-tag           |
+| Тема          | Решение                                  |
+| ------------- | ---------------------------------------- |
+| Макрос        | `#[bffi]`: C-функция-обёртка (debug - без обёртки / release - под `catch_unwind`) + дескриптор `bffi_meta_*` |
+| Возвраты `#[bffi]` | примитивы/bigint через выходной параметр; `String`/`Vec<u8>`/`CopiedBuf` (и `Option` от них) как дескрипторы буферов; `Result<T, E>` -> DomainError(13) |
+| Мин. Bun      | 1.4.0                                    |
+| Rust/Cargo    | 1.98.0                                   |
+| Дескрипторы   | Индекс с поколением + тег типа           |
 | Формат ошибок | `BffiError` = код + сообщение + источник; доменные ошибки конвертируются без потерь через `From` |
-| Строки на границе | UTF-8 каноническая (`bun:ffi cstring`)  |
-| Таблицы       | Lock-free; reclamation через hazard     |
-| UTF-8 проверка| SIMD (x86 SSSE3, aarch64 NEON)          |
-| Буферы        | Копирование по умолчанию                |
-| Zero-copy     | Только через `bffi::unsafe_zero_copy`   |
-| Event loop    | `run()` дренирует блокирующе; `pump()` дренирует без блокировки; `marshal` - путь wrong-thread (код 12) |
-| TS-типы | IR (ModuleDef/FunctionDef/ClassDef) + детерминированный render; export_name = bffi_-префикс |
-| Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх ObjectWrap (теги 0x0100-0x01FF): геттеры полей, `&self`-методы, генерируемый release; метаданные bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; E005-E008 |
-| Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (bffi-macros, bffi-class); tooling-крейт - без runtime-кода и ABI |
-| Паника (prod) | Преобразуется в JS Error                |
-| Паника (dev)  | Может прерываться (abort)               |
-| Совместимость | Только Bun                              |
-| Лицензия      | MIT                                     |
-| Фасад         | `bffi`: плоские ре-экспорты стека; `unsafe_zero_copy` - единственная точка zero-copy; раскрытие макросов - на прямых dep'ах юзера |
-| Async         | `#[bffi_async]`: spawn-шим возвращает хендл задачи; N-воркерный executor; кооперативная отмена + таймауты; резолв через event-loop enqueue; tokio opt-in; теги 0x0500-0x05FF |
+| Строки на границе | Каноничный UTF-8 (`bun:ffi cstring`) |
+| Таблицы       | Lock-free; освобождение слотов через hazard-указатели |
+| Проверка UTF-8| SIMD (x86 SSSE3, aarch64 NEON) + скалярный эталон |
+| Буферы        | Копирование по умолчанию                 |
+| Zero-copy     | Только через `bffi::unsafe_zero_copy`    |
+| Event loop    | `run()` опустошает очередь блокирующе; `pump()` - без блокировки; `marshal` - путь для вызова не из того потока (код 12) |
+| TS-типы       | IR (ModuleDef/FunctionDef/ClassDef) + детерминированная генерация; export_name с префиксом `bffi_` |
+| Макросы классов | `#[bffi_class]`/`#[bffi_impl]` поверх ObjectWrap (теги 0x0100-0x01FF): геттеры полей, методы `&self`, автоматический release; метаданные разделены: bffi_meta_<name> + bffi_meta_<name>_impl::CLASS; диагностика E005-E008 |
+| Macro support | `bffi-macro-support`: общие модель/маппинг/кодогенерация для крейтов-проц-макросов (bffi-macros, bffi-class); служебный крейт - без кода времени выполнения и ABI |
+| Паника (prod) | Преобразуется в JS Error                 |
+| Паника (dev)  | Может прерывать процесс (abort)          |
+| Совместимость | Только Bun                               |
+| Лицензия      | MIT                                      |
+| Фасад         | `bffi`: плоские реэкспорты стека; `unsafe_zero_copy` - единственная точка zero-copy; раскрытия макросов ссылаются на прямые зависимости пользователя |
+| Async         | `#[bffi_async]`: функция запуска возвращает дескриптор задачи; пул потоков-исполнителей; кооперативная отмена + таймауты; разрешение промиса доставляется через event-loop enqueue; tokio подключается опционально; теги 0x0500-0x05FF |
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry` (тег 0x0100-0x01FF); release освобождает слот |
-| Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; wrong-thread - reject |
-| Build ABI | Runtime-экспорты (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в юзер-крейте; теги 0x0400-0x04FF; канонический контракт: bffi-build/CALLING-CONVENTION.md |
-| ABI дескрипторов | `AbiSig` (точные C-ширины + out-слот) в `FunctionDef`/`MethodDef`; `export_name` геттера + out в `FieldDef`; `release_export` в `ClassDef` |
-| Wire-кодек | `bffi_types::wire`: одна таблица `[tag][payload]` для async-пейлоадов и колбэк-сигнатур/аргументов/результатов |
-| Callback ABI | Генерические экспорты через `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) в юзер-крейте; wire-кодирование; CALLING-CONVENTION.md §9 |
+| Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; вызов не из того потока - отказ |
+| Runtime ABI | Экспорты времени выполнения (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в крейте пользователя; теги 0x0400-0x04FF; канонический контракт: bffi-build/CALLING-CONVENTION.md |
+| ABI дескрипторов | `AbiSig` (точные C-ширины + выходной слот) в `FunctionDef`/`MethodDef`; `export_name` геттера + выходной слот в `FieldDef`; `release_export` в `ClassDef` |
+| Формат обмена (wire) | `bffi_types::wire`: одна таблица `[tag][payload]` для async-результатов и сигнатур/аргументов/результатов колбэков |
+| Callback ABI | Универсальные экспорты через `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) в крейте пользователя; wire-кодирование; CALLING-CONVENTION.md §9 |
 | Loader JSON | `bffi_build::loader_json`: канонический детерминированный JSON схемы v1 из агрегированного `ModuleDef` |
-| TS API кодген | `bun bffi codegen <json> -o <ts>`: детерминированный рендер; вмонтирует литерал схемы; `ApiOf<>` выводит точные типы поверх `packages/bffi-loader` |
+| Генерация TS API | `bun bffi codegen <json> -o <ts>`: детерминированная генерация; встраивает литерал схемы; `ApiOf<>` выводит точные типы поверх `packages/bffi` |
+| Платформенная дистрибуция | Платформенные npm-пакеты в стиле napi-rs (точные пины в optionalDependencies, `bffi pack`, resolvePlatformBinary) |
+| Эталонный нативный модуль | `crates/bffi-native` -> семейство платформенных пакетов `@z2net/bffi-native` |

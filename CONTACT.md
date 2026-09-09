@@ -8,7 +8,12 @@
 
 ## Contributors
 
-- **ZCode (GLM, [Z.ai](https://z.ai))** - AI agent: developer infrastructure, docs, i18n
+- **ZCode (GLM)** - AI agent: developer infrastructure, docs, i18n
+
+With thanks to the tools the project is built with:
+
+- **[opencode](https://opencode.ai)** - the coding agent harness the project is developed in
+- **[Z.ai](https://z.ai)** - the GLM model powering the agent
 
 ## Getting in touch
 

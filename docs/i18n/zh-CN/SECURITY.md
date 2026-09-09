@@ -19,7 +19,7 @@
 - FFI 边界中的内存安全缺陷
 - 句柄表损坏 / 类型混淆
 - panic 传播问题
-- `bffi-macros` 中可能隐藏 `unsafe` 的代码生成缺陷
+- 生成的包装函数(`bffi-macros` / `bffi-class`)中可能隐藏 `unsafe` 的代码生成缺陷
 
 不在范围内:
 - Bun 本身的缺陷(请向 oven-sh/bun 报告)

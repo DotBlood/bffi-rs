@@ -22,13 +22,16 @@ See [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) 
 - [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - the C ABI contract (every crossing, callback exports included)
 - [docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) - how to contribute (branching, commits, PRs)
 - [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) - engineering rules for humans and AI agents
-- [packages/bffi-loader](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-loader) - the JS runtime loader (see its README)
+- [packages/bffi](https://github.com/z2net/bffi-rs/blob/main/packages/bffi) - `@z2net/bffi`: the typed loader + build pipeline (see its README)
+- [packages/bffi-cli](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-cli) - `@z2net/bffi-cli`: the `bffi` CLI (init, build, check, doctor, codegen, pack, fetch)
+- [packages/native](https://github.com/z2net/bffi-rs/blob/main/packages/native) - `@z2net/bffi-native`: the reference native module (platform npm package family)
+- [examples/sqlite](https://github.com/z2net/bffi-rs/blob/main/examples/sqlite) - entry example (the full pipeline over rusqlite); `examples/async`, `examples/event-loop`, `examples/callbacks` sit beside it, each doubling as an e2e suite
 - [SECURITY.md](https://github.com/z2net/bffi-rs/blob/main/SECURITY.md) - security policy
 - [CONTACT.md](https://github.com/z2net/bffi-rs/blob/main/CONTACT.md) - contacts
 
 ## Requirements
 
-- [Bun](https://bun.sh) >= 1.4.0 (enforced at runtime by `bffi-loader` and the `bffi` CLI)
+- [Bun](https://bun.sh) >= 1.4.0 (enforced at runtime by `@z2net/bffi` and the `bffi` CLI)
 - Rust 1.98.0 (pinned via `rust-toolchain.toml`; rustup installs it automatically)
 - bash (for the commit-msg hook; preinstalled on macOS/Linux, Git Bash on Windows)
 
@@ -49,16 +52,16 @@ See [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) 
 | `crates/bffi-build` | Runtime ABI exports, transient buffers, `.d.ts`/loader-JSON emitters |
 | `crates/bffi-async` | `#[bffi_async]`: Rust futures as JS Promises (cancel, timeout, tokio opt-in) |
 | `crates/bffi` | The facade: one dependency re-exporting the whole stack |
-| `packages/bffi` | Bun-only JS integration package: config, full pipeline (build → json → api.gen), typed loader (`@z2net/bffi`, publication pending) |
-| `packages/bffi-cli` | The `bffi` CLI: init, build, codegen, pack, fetch, check, doctor (`@z2net/bffi-cli`, publication pending) |
-| `packages/native-template` | COPY-ME template: pattern-A npm packaging of a native module (reference-only) |
+| `crates/bffi-native` | The reference cdylib (`add`/`shout`/`version` + runtime ABI); source of the `@z2net/bffi-native` platform package family |
+| `packages/bffi` | Bun-only JS integration package: config, full pipeline (build → json → api.gen), typed loader (npm: `@z2net/bffi`) |
+| `packages/bffi-cli` | The `bffi` CLI: init, build, codegen, pack, fetch, check, doctor (npm: `@z2net/bffi-cli`) |
 
 ## Getting started
 
 ```sh
 bun install          # installs dependencies + git hooks (lefthook)
-bun run build        # builds the example native module (release cdylib)
-bun run test:native  # builds it and runs the bun:ffi e2e suite
+bun run build        # builds all four example crates (release cdylibs)
+bun run test:e2e     # runs the examples as e2e suites (bun test examples)
 bun run check        # oxlint + tsc + cargo check
 bun run ci           # full CI parity: lint, typecheck, fmt, clippy, tests
 ```
@@ -70,37 +73,37 @@ attribute macros - on the individual `bffi-core`/`bffi-types`/
 
 ## Generated TypeScript API
 
-The `#[bffi]` descriptors are the single source of truth: the same
-aggregated `ModuleDef` renders the committed `.d.ts`, the canonical
-loader JSON and the typed TS module - byte-deterministic, safe to
-commit and diff.
-
-```sh
-# build time (in your crate):
-cargo run --bin emit-json                          # writes js/bffi.api.json
-bun bffi codegen js/bffi.api.json -o js/api.gen.ts # typed TS module
-```
+The `#[bffi]` descriptors are the single source of truth: the crate's
+`emit-json` binary writes `.bffi/bffi.api.json` (schema v1) from the
+aggregated `ModuleDef`, and the `@z2net/bffi` pipeline does the rest -
+validate, generate `.bffi/api.gen.ts`, resolve and `dlopen` the
+library. Deterministic bytes, safe to commit and diff.
 
 ```ts
-import { createApiFromJson } from "./api.gen.ts";
+import { bffi } from "@z2net/bffi";
+import type { Api } from "./.bffi/api.gen.ts";
 
-const api = createApiFromJson("./target/release/libmy.so");
+const api: Api = await bffi();       // one call: build -> json -> gen -> dlopen
 api.add(1, 2);                       // number, typed; errors throw JS Errors
 const counter = new api.counter(10); // classes: FinalizationRegistry + release()
 await api.compute(21);               // `#[bffi_async]` -> Promise
 ```
 
-A full worked example lives in
-[`examples/native`](https://github.com/z2net/bffi-rs/blob/main/examples/native)
-(shims, classes, async and callbacks through real `bun:ffi`, with a
-46-test e2e parity suite).
+The pipeline, its config (`.bffi/bffi.json`) and every subtlety are
+documented in
+[`packages/bffi`](https://github.com/z2net/bffi-rs/blob/main/packages/bffi);
+a full worked example lives in
+[`examples/sqlite`](https://github.com/z2net/bffi-rs/blob/main/examples/sqlite).
+Async, event-loop and callbacks each have a dedicated example
+(`examples/async`, `examples/event-loop`, `examples/callbacks`), and
+every example doubles as an e2e suite (`bun test examples`).
 
 ## Conventions
 
 - Conventional Commits are enforced by a `commit-msg` hook (`scripts/commit-msg.sh`).
 - Pre-commit runs oxlint, `tsc --noEmit`, `cargo fmt --check` and clippy.
 - Pre-push runs the workspace tests.
-- GitHub Actions CI is planned; until it lands, `bun run ci` is the source of truth.
+- GitHub Actions CI (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main` / `dev/main` (Rust matrix: ubuntu / windows / macos, plus a JS job); `bun run ci` remains the local parity command.
 
 ## License
 

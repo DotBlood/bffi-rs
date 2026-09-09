@@ -12,56 +12,58 @@
 
 </div>
 
-Bun 绑定框架 - napi-rs 的 Bun 等价物,基于 `bun:ffi` 与轻量 C ABI 构建。使用 Rust 编写,自底向上由多个小型专用 crate 组成。
+Bun 的绑定框架 - [Bun](https://bun.sh) 的 napi-rs 等价物,构建于 `bun:ffi` 与一层薄 C ABI 之上。用 Rust 编写,自底向上,由多个小而专一的 crate 组成。
 
-架构见 [docs/i18n/zh-CN/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md),工程规则见 [docs/i18n/zh-CN/AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)。
+架构见 [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md),项目工程规则见 [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md)。
 
 ## 文档
 
-- [docs/i18n/zh-CN/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md) - 架构与决策
-- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - C ABI 契约(所有跨界,含回调导出)
-- [docs/i18n/zh-CN/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) - 贡献指南(分支、提交、PR)
-- [docs/i18n/zh-CN/AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md) - 面向人类与 AI 代理的工程规则
-- [packages/bffi-loader](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-loader) - JS 运行时加载器(见其 README)
-- [docs/i18n/zh-CN/SECURITY.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md) - 安全策略
-- [docs/i18n/zh-CN/CONTACT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTACT.md) - 联系方式
+- [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) - 架构与决策
+- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - C ABI 契约(每一次跨界,含回调导出)
+- [docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) - 如何贡献(分支、提交、PR)
+- [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) - 面向人类与 AI 代理的工程规则
+- [packages/bffi](https://github.com/z2net/bffi-rs/blob/main/packages/bffi) - `@z2net/bffi`:类型化加载器 + 构建流水线(见其 README)
+- [packages/bffi-cli](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-cli) - `@z2net/bffi-cli`:`bffi` CLI(init、build、check、doctor、codegen、pack、fetch)
+- [packages/native](https://github.com/z2net/bffi-rs/blob/main/packages/native) - `@z2net/bffi-native`:参考原生模块(平台 npm 包家族)
+- [examples/sqlite](https://github.com/z2net/bffi-rs/blob/main/examples/sqlite) - 入门示例(在 rusqlite 之上跑通完整流水线);`examples/async`、`examples/event-loop`、`examples/callbacks` 与之并列,每一个同时也是一个 e2e 测试套件
+- [SECURITY.md](https://github.com/z2net/bffi-rs/blob/main/SECURITY.md) - 安全策略
+- [CONTACT.md](https://github.com/z2net/bffi-rs/blob/main/CONTACT.md) - 联系方式
 
 ## 环境要求
 
-- [Bun](https://bun.sh) >= 1.4.0(由 `bffi-loader` 与 `bffi` CLI 在运行时强制检查)
-- Rust 1.98.0(通过 `rust-toolchain.toml` 固定;rustup 会自动安装)
-- bash(commit-msg 钩子需要;macOS/Linux 预装,Windows 使用 Git Bash)
+- [Bun](https://bun.sh) >= 1.4.0(运行时由 `@z2net/bffi` 与 `bffi` CLI 强制检查)
+- Rust 1.98.0(经 `rust-toolchain.toml` 锁定;rustup 会自动安装)
+- bash(commit-msg 钩子需要;macOS/Linux 预装,Windows 上为 Git Bash)
 
-## 组成
+## 组件
 
 | 部分 | 用途 |
-| ---- | ---- |
+| ---- | ------- |
 | `crates/bffi-core` | 世代句柄、无锁表、catch_unwind 边界 |
 | `crates/bffi-types` | 数字/字符串/缓冲区转换、SIMD UTF-8、共享 wire 编解码 |
 | `crates/bffi-error` | 统一的 `BffiError` -> JS Error 映射 |
 | `crates/bffi-object` | 基于全局 `Registry` 的 `ObjectWrap<T>` 所有权 |
 | `crates/bffi-callback` | 双向回调 + 泛型回调 ABI |
 | `crates/bffi-dts` | TypeScript IR + 确定性 `.d.ts` 渲染器 |
-| `crates/bffi-macros` | `#[bffi]` / `#[bffi_async]`( shim + 描述符) |
-| `crates/bffi-class` | 基于 `ObjectWrap` 的 `#[bffi_class]` / `#[bffi_impl]` |
-| `crates/bffi-macro-support` | 宏 crate 共享的内部件(kinds、分类、代码生成) |
+| `crates/bffi-macros` | `#[bffi]` / `#[bffi_async]`(shim + 描述符) |
+| `crates/bffi-class` | 建立在 `ObjectWrap` 之上的 `#[bffi_class]` / `#[bffi_impl]` |
+| `crates/bffi-macro-support` | 宏的共享内部件(kinds、分类、代码生成) |
 | `crates/bffi-event-loop` | JS 线程上的 `run()` / `pump()` 任务队列 |
 | `crates/bffi-build` | 运行时 ABI 导出、瞬态缓冲区、`.d.ts`/loader JSON 生成器 |
 | `crates/bffi-async` | `#[bffi_async]`:Rust future 变为 JS Promise(取消、超时、tokio opt-in) |
-| `crates/bffi` | 门面:一个依赖覆盖整个栈 |
-| `packages/bffi` | 仅限 Bun 的 JS 集成包:配置、完整流水线(build → json → api.gen)、类型化加载器(`@z2net/bffi`,发布待定) |
-| `packages/bffi-cli` | `bffi` CLI:init、build、codegen、pack、fetch、check、doctor(`@z2net/bffi-cli`,发布待定) |
-| `packages/native-template` | COPY-ME 模板:原生模块的 pattern-A npm 打包(仅供参考) |
+| `crates/bffi` | 门面:一个依赖再导出整个技术栈 |
+| `crates/bffi-native` | 参考 cdylib(`add`/`shout`/`version` + 运行时 ABI);`@z2net/bffi-native` 平台包家族的源头 |
+| `packages/bffi` | 仅限 Bun 的 JS 集成包:配置、完整流水线(build → json → api.gen)、类型化加载器(npm: `@z2net/bffi`) |
+| `packages/bffi-cli` | `bffi` CLI:init、build、codegen、pack、fetch、check、doctor(npm: `@z2net/bffi-cli`) |
 
 ## 快速开始
 
 ```sh
-bun install             # 安装依赖 + git 钩子(lefthook)
-bun run build           # 构建示例原生模块(release cdylib)
-bun run codegen:native  # 生成示例的 loader JSON 与 api.gen.ts
-bun run test:native     # 构建并运行 bun:ffi e2e 套件
-bun run check           # oxlint + tsc + cargo check
-bun run ci              # 完整 CI 对齐:lint、typecheck、fmt、clippy、测试
+bun install          # 安装依赖 + git 钩子(lefthook)
+bun run build        # 构建全部四个示例 crate(release cdylib)
+bun run test:e2e     # 以 e2e 测试套件的方式运行示例(bun test examples)
+bun run check        # oxlint + tsc + cargo check
+bun run ci           # 完整 CI 对齐:lint、typecheck、fmt、clippy、测试
 ```
 
 编写原生模块时,依赖 [`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
@@ -70,36 +72,35 @@ bun run ci              # 完整 CI 对齐:lint、typecheck、fmt、clippy、测
 
 ## 生成的 TypeScript API
 
-`#[bffi]` 描述符是唯一事实来源:同一个聚合的 `ModuleDef` 渲染出提交
-到仓库的 `.d.ts`、规范的 loader JSON 与类型化的 TS 模块 - 逐字节
-确定,可放心提交与 diff。
-
-```sh
-# 构建期(在你的 crate 中):
-cargo run --bin emit-json                          # 写出 js/bffi.api.json
-bun bffi codegen js/bffi.api.json -o js/api.gen.ts # 类型化 TS 模块
-```
+`#[bffi]` 描述符是唯一事实来源:crate 的 `emit-json` 二进制从聚合的
+`ModuleDef` 写出 `.bffi/bffi.api.json`(schema v1),其余步骤由
+`@z2net/bffi` 流水线完成 - 校验、生成 `.bffi/api.gen.ts`、解析并
+`dlopen` 动态库。逐字节确定,可放心提交与 diff。
 
 ```ts
-import { createApiFromJson } from "./api.gen.ts";
+import { bffi } from "@z2net/bffi";
+import type { Api } from "./.bffi/api.gen.ts";
 
-const api = createApiFromJson("./target/release/libmy.so");
-api.add(1, 2);                       // number,带类型;错误抛出 JS Error
-const counter = new api.counter(10); // 类:FinalizationRegistry + release()
+const api: Api = await bffi();       // one call: build -> json -> gen -> dlopen
+api.add(1, 2);                       // number, typed; errors throw JS Errors
+const counter = new api.counter(10); // classes: FinalizationRegistry + release()
 await api.compute(21);               // `#[bffi_async]` -> Promise
 ```
 
-完整示例见
-[`examples/native`](https://github.com/z2net/bffi-rs/blob/main/examples/native)
-(通过真实 `bun:ffi` 演示 shim、类、异步与回调,含 46 个测试的 e2e
-对齐套件)。
+流水线、它的配置(`.bffi/bffi.json`)以及每一处细节都记录在
+[`packages/bffi`](https://github.com/z2net/bffi-rs/blob/main/packages/bffi);
+完整的实战示例见
+[`examples/sqlite`](https://github.com/z2net/bffi-rs/blob/main/examples/sqlite)。
+异步、事件循环与回调各有专属示例
+(`examples/async`、`examples/event-loop`、`examples/callbacks`),
+且每个示例同时也是一个 e2e 测试套件(`bun test examples`)。
 
 ## 约定
 
-- Conventional Commits 由 commit-msg 钩子(`scripts/commit-msg.sh`)强制执行。
+- Conventional Commits 由 `commit-msg` 钩子(`scripts/commit-msg.sh`)强制执行。
 - pre-commit 运行 oxlint、`tsc --noEmit`、`cargo fmt --check` 和 clippy。
 - pre-push 运行 workspace 测试。
-- CI(GitHub Actions)已列入计划;落地之前,`bun run ci` 是唯一标准。
+- GitHub Actions CI(`.github/workflows/ci.yml`)在每个 pull request 以及向 `main` / `dev/main` 的推送上运行(Rust 矩阵:ubuntu / windows / macos,外加一个 JS 作业);`bun run ci` 仍是本地的对齐命令。
 
 ## 许可证
 

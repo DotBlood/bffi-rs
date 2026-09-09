@@ -1,6 +1,6 @@
-# AGENT.md - Rules for AI agents and contributors
+# AGENTS.md - Rules for AI agents and contributors
 
-[English](https://github.com/z2net/bffi-rs/blob/main/AGENT.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENTS.md)
 
 This file defines how humans and AI agents must work on **bffi-rs**.
 
@@ -78,7 +78,7 @@ bffi-rs/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   ├── PULL_REQUEST_TEMPLATE.md
-│   └── workflows/              # CI (planned; deferred until bffi-core lands)
+│   └── workflows/              # CI (ci.yml) + native release (release-native.yml)
 ├── crates/
 │   ├── bffi-core/               # foundation (handles, catch_unwind, ...)
 │   ├── bffi-types/              # type conversion
@@ -90,15 +90,16 @@ bffi-rs/
 │   ├── bffi-macros/
 │   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
 │   ├── bffi-event-loop/
+│   ├── bffi-async/              # futures as JS Promises
 │   ├── bffi-build/
-│   └── bffi-rs/                 # public facade
+│   ├── bffi-native/             # reference cdylib (runtime ABI; -> @z2net/bffi-native packages)
+│   └── bffi/                    # public facade
 ├── docs/
 │   ├── DESIGN.md                # architecture & decisions
 │   ├── CONTRIBUTING.md
 │   └── CODE_OF_CONDUCT.md
-├── examples/
-├── packages/                      # JS-side packages (bffi-loader)
-├── bin/                           # cli utility (bffi codegen)
+├── examples/                      # sqlite, async, event-loop, callbacks (each an e2e suite)
+├── packages/                      # JS-side: bffi (@z2net/bffi), bffi-cli, native
 └── scripts/
 ```
 
@@ -124,6 +125,9 @@ bun install
 ```bash
 bun run lint          # oxlint
 bun run typecheck     # tsc
+bun run build         # builds all four example crates (release cdylibs)
+bun run test:e2e      # runs the examples as e2e suites (bun test examples)
+bun run ci            # full CI parity: lint, typecheck, fmt, clippy, tests
 cargo check
 cargo test
 cargo fmt
@@ -150,7 +154,7 @@ Breaking changes must use `BREAKING CHANGE:` in the footer or `!` after the type
 - `main` - production branch; PRs into `main` are created only by the project owner, from `dev/main`.
 - `dev/main` - integration branch; all feature work lands here via PRs.
 - Features are developed in `dev/<feature>` branches (kebab-case), cut from and merged back into `dev/main`.
-- PR `dev/<feature>` → `dev/main` requires 1 approval and a green `bun run ci`.
+- PR `dev/<feature>` → `dev/main` requires 1 approval and green CI (`.github/workflows/ci.yml`; `bun run ci` locally).
 - Release tags `v<semver>` (annotated) are placed only on `main`, only by the owner.
 
 Full rules: [docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) → "Branching and releases".
@@ -220,4 +224,6 @@ When unsure about architecture, prefer asking (or opening a draft PR) instead of
 | Wire codec | `bffi_types::wire`: one `[tag][payload]` table for async payloads and callback sigs/args/results |
 | Callback ABI | Generic exports via `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) in the user crate; wire-encoded; CALLING-CONVENTION.md §9 |
 | Loader JSON | `bffi_build::loader_json`: canonical deterministic schema v1 from the aggregated `ModuleDef` |
-| TS API codegen | `bun bffi codegen <json> -o <ts>`: deterministic renderer; embeds the schema literal; `ApiOf<>` derives exact types over `packages/bffi-loader` |
+| TS API codegen | `bun bffi codegen <json> -o <ts>`: deterministic renderer; embeds the schema literal; `ApiOf<>` derives exact types over `packages/bffi` |
+| Platform distribution | napi-rs-style platform npm packages (optionalDependencies exact pins, `bffi pack`, resolvePlatformBinary) |
+| Reference native module | `crates/bffi-native` -> `@z2net/bffi-native` platform package family |

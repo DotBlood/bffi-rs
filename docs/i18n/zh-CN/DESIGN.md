@@ -1,186 +1,130 @@
 # bffi-rs - 设计文档
 
-[English](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) | **[简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md)**
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) | **简体中文**
 
-**状态:** Done  
-**日期:** 2026-09-02  
+**状态:** 已接受  
+**日期:** 2026-09-10  
 **许可证:** MIT  
 **仓库:** https://github.com/z2net/bffi-rs  
 **联系方式:** contact@z2net.com
 
 ---
 
-## 1. 概述
+## 1. 目的
 
-`bffi-rs` 是一个用于编写 Rust 模块的原生绑定框架,仅面向 **Bun**。
+`bffi-rs` 是一个**仅面向 Bun** 的原生绑定框架 - 即 Bun 运行时的 `napi-rs` 等价物。
 
-它是 `napi-rs` 在 Bun 上的对应物,区别如下:
+原生模块用 Rust 编写,编译为 `cdylib`,再由 TypeScript 通过 `bun:ffi` 与一层薄 C ABI 调用。本框架不依赖 Node-API,也不兼容 Node.js 或 Deno;它在设计上就原生属于 Bun 生态。
 
-- 仅面向 **Bun**(无 Node.js / Deno);
-- **不**依赖 Node-API;
-- 使用 `bun:ffi` 和一层薄的 C ABI 层;
-- 自**底向上**由小型 crate 构建而成。
+## 2. 目标
 
-目标:提供一种便捷、相对安全且符合习惯用法的方式,为 Bun 编写高性能原生扩展。
+- **FFI 边界的安全** - 边界是 Rust 保证终结之处;框架以明确的规则取而代之。
+- **清晰的所有权** - 每个跨越边界的值都有一方对其负责,并体现在类型之中。
+- **开发者体验** - 加注解、构建、导入带类型的函数;错误是诊断信息,而非谜团。
+- **长期可维护性** - 小型 crate、自底向上构建;产物具有确定性,可提交、可 diff。
+- **Bun 优先** - 不为其他运行时妥协。
 
----
+## 3. 架构总览
 
-## 2. 动机
-
-如今,大多数针对 Bun 的原生模块都是用 `napi-rs`(Node-API)编写的。这会导致:
-
-1. 依赖外部的 API 与执行模型。
-2. Bun 中尽力而为的 Node-API 兼容(存在边界情况 bug)。
-3. 无法充分利用 Bun 特有的功能与优化。
-
-我们希望有一个原生属于 Bun 生态、并且在 Bun 下行为可预期的层。
-
----
-
-## 3. 目标
-
-- 符合人体工程学的 Rust → Bun 原生模块。
-- 在 C ABI 之上提供安全抽象(在切实可行的范围内)。
-- 支持函数、类、缓冲区、回调、生命周期管理与错误。
-- 自底向上,由小型且经过充分测试的 crate 进行开发。
-- 最终形成稳定的薄 C ABI 层。
-- 从第一天起生成 TypeScript `.d.ts`。
-- 完全开源(MIT)。
-
----
-
-## 4. 非目标
-
-- 与 Node.js 或 Deno 的兼容性。
-- 与 `napi-rs` 100% 的 API 兼容。
-- 在第一天就不惜一切代价追求极限性能。
-- 隐藏危险操作(零拷贝等)。
-
----
-
-## 5. 高层架构
+三个层面,由同一份契约连接:
 
 ```mermaid
-flowchart TB
-    U["用户原生模块"]
-    F["bffi-rs<br/>公共 API + 宏"]
-    S["小型 crate<br/>bffi-types, bffi-object, bffi-callback,<br/>bffi-class, bffi-dts, bffi-error, ..."]
-    C["bffi-core<br/>基础设施 + 安全规则"]
-    A["薄 C ABI 层<br/>通过 bun:ffi 调用"]
+flowchart LR
+    R["Rust stack<br/>(14 small crates, facade on top)"]
+    A["thin C ABI<br/>(uniform shape: status + out-param)"]
+    J["JS integration<br/>(pipeline, loader, CLI)"]
 
-    U --> F --> S --> C --> A
+    R --> A --> J
 ```
 
-开发顺序:基础设施 → 一次实现一个能力 → 符合人体工程学的 API → 稳定的 C ABI。
+**Rust 侧,自底向上。** `bffi-core` 是地基:世代句柄、对象注册表与边界策略。其上是各司其职的 crate - `bffi-error`、`bffi-types`(类型转换,外加共享的 wire 编解码)、`bffi-object`(ObjectWrap)、`bffi-callback`(双向回调与泛型回调 ABI)、`bffi-event-loop`(队列与排空)、`bffi-async`(把 Rust future 变成 JS Promise)、`bffi-dts`(描述符 IR 与渲染器)、`bffi-build`(运行时 ABI 导出与 loader JSON)。过程宏 crate - `bffi-macros`(`#[bffi]`、`#[bffi_async]`)与 `bffi-class`(`#[bffi_class]`) - 的内部实现放在 `bffi-macro-support` 中共享。`bffi` 是门面:一个依赖,再导出整个技术栈。`bffi-native` 是参考 cdylib。
 
----
+**JS 侧。** `@z2net/bffi`(packages/bffi)是配置驱动的流水线 - cargo build、loader JSON、生成 TypeScript、dlopen - 外加类型化的运行时加载器。`@z2net/bffi-cli`(packages/bffi-cli)是 `bffi` CLI:init、build、check、doctor、codegen、pack、fetch。`@z2net/bffi-native`(packages/native)是已发布的参考原生模块家族。
 
-## 6. 安全模型
+**一个导出是如何流转的。** 每个被注解的条目在编译期产出两样东西:一个 ABI 形状统一(状态码 + out 参数)的薄 C 包装函数(shim),以及一个描述符。描述符按 crate 聚合成单一的模块定义;这份聚合就是关于导出的完整、机器可读的事实。正因为这份模式是完整的,JS 侧才能泛型地驱动一切 - 符号查找、参数编组、结果与错误解码 - 无需任何手写绑定。
 
-跨越 C ABI 几乎会失去所有 Rust 安全保证。规则如下:
+## 4. 安全模型
 
-### 6.1 FFI 边界
-- 每个 `extern "C"` 函数必须尽可能精简。
-- 立即用 `catch_unwind` 包裹函数体。
-- 在生产构建中,panic 绝不能跨越 FFI 边界。
+以下是不变量,而非实现细节:
 
-### 6.2 通过句柄管理所有权
-我们使用 **Generational Index + type-tag**:
+| 不变量 | 理由 |
+| --- | --- |
+| 跨边界默认复制。 | 除非明确要求,两种语言之间不共享生命周期。 |
+| 零拷贝只能通过 `bffi::unsafe_zero_copy`。 | 危险能力必须在调用点一目了然,绝不能靠推断。 |
+| 世代句柄 + 类型标签。 | 过期或类型不符的句柄,永远触达不了被复用的槽位或错误的类型。 |
+| 每个 `extern "C"` 函数体都在边界策略下运行:debug 直接执行(便于调试),release 包上 `catch_unwind`。 | 构建产物是加载**进** Bun 进程的 cdylib - 一旦中止,宿主随之死亡。生产环境中 panic 转换为 JS 错误,绝不以未定义行为的形式跨界。 |
+| UTF-8 是规范的边界编码。 | 一份字符串契约;`bun:ffi` 的 cstring 语义始终良定义。 |
+| 公共 Rust API 100% 安全。 | `unsafe` 只存在于 crate 内部,藏在经过审查的门后。 |
+| 错误即值:`BffiError` = 代码 + 消息 + 来源;领域错误可无损转换。 | JS 侧将其排空为带 `cause` 的 `Error` - 失败是结构化的,绝无静默。 |
+| 宏诊断使用稳定的 E 编码。 | 宏必须以可读、可 grep 的错误失败,而不是一锅 token 浆糊。 |
 
-```rust
-// u64 = (type_tag << 48) | (generation << 24) | index
-type Handle = u64;
-```
+## 5. 异步与事件循环模型
 
-在 Rust 内部,我们将 `Arc<T>`(或等价物)保存在一张表中。  
-外部只能看到不透明的句柄。
+JavaScript 只运行在一个线程上。三个角色围绕它协作:
 
-### 6.3 缓冲区与字符串
-- 默认 = **复制**。
-- 仅允许通过 `bffi::unsafe_zero_copy` 进行零拷贝。
-- 危险的 API 必须显而易见。
+- **JS 线程** - 唯一执行 JavaScript 的线程;它同时负责排空事件循环。
+- **执行器 worker** - 轮询 Rust future;它们绝不触碰 JavaScript。
+- **定时器线程** - 负责各类截止时间(sleep、超时);它同样绝不触碰 JavaScript。
 
-### 6.4 回调
-- 显式注册。
-- 销毁之后不得再被调用。
-- 来自错误线程的调用会被拒绝,或被安全地编组。
+在 JS 线程之外产生的任务完成与回调调用,都是**被投递,而非被执行**:它们先入队,等 JS 线程排空时再在它上面运行。从错误线程发起的调用会被拒绝(经队列编组),绝不会被偷渡到 JavaScript 上。
 
-### 6.5 Panic
-- **开发** - 可以中止(更便于调试)。
-- **生产** - 始终转换为 JS `Error`。
+排空是一份**显式契约**:嵌入方代码自行选择时机泵送(或运行循环)- 通常遵循文档写明的周期性模式。框架从不安装隐藏的定时器,也从不隐式泵送。取消是协作式的 - 被取消的任务在下一次 poll 时被 drop - 超时则是一等公民的组合器。Tokio 是可选的执行器选择,并非必需。
 
----
+## 6. TypeScript 与代码生成模型
 
-## 7. 已接受的决策
+**描述符是唯一事实来源。** 每个 crate 的聚合结果汇入一份规范、确定性的 loader JSON(schema v1),确定性渲染器再从中产出带精确类型的 TypeScript 模块。生成文件逐字节稳定:可放心提交,可放心 diff。
 
-| 主题             | 决策                                                |
-|------------------|-----------------------------------------------------|
-| 宏               | `#[bffi]` - shim（debug 直接执行 / release catch_unwind）+ const `bffi_meta_*` 描述符 |
-| `#[bffi]` 返回值 | 原型/bigint 经 out-param;`String`/`Vec<u8>`/`CopiedBuf`(及其 `Option`)作为瞬态缓冲区句柄;`Result<T, E>` -> `ErrorCode::DomainError`,`E` 保留为 source |
-| 最低 Bun 版本    | 1.4.0                                               |
-| Rust / Cargo     | 1.98.0                                              |
-| 句柄             | Generational Index + type-tag                       |
-| 错误格式         | `BffiError` = 代码 + 消息 + 来源;领域错误通过 `From` 无损转换 |
-| 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`;一个标签对应一个类型(范围 0x0100-0x01FF);release 释放槽位,`Arc` 持有者保持对象存活 |
-| 回调 | 显式 `register`/`revoke`；revoke 后即失效；跨线程调用 - 拒绝（转发 = P2）|
-| 构建 ABI | 运行时导出（`bffi_error_*`、`bffi_buffer`/`bffi_buffer_length` 对、`bffi_types_free`）通过在用户 crate 中展开的 `bffi_runtime_abi!()` 生成；`bffi-build` 拥有标签 0x0400-0x04FF |
-| 边界字符串编码   | UTF-8 为规范编码(`bun:ffi cstring`)                         |
-| 句柄并发         | 无锁;危险指针回收;固定的两层单元页                     |
-| UTF-8 校验       | SIMD(x86 SSSE3,aarch64 NEON);标量 DFA 为参考语义      |
-| 缓冲区           | 默认复制                                            |
-| 零拷贝           | 仅通过 `bffi::unsafe_zero_copy`                     |
-| 事件循环         | `enqueue`/`marshal` 队列;`run()` 在运行线程上阻塞并排空（任务经 `run_extern_body`）;`pump()` 非阻塞排空（不等待）;`stop()` 是粘性的;无运行线程时 marshal -> WrongThread(12);Bun tick 在加载器侧 |
-| TypeScript 类型 | IR（ModuleDef/FunctionDef/ClassDef）+ 确定性 render；export_name = bffi_ 前缀 |
-| 类宏 | 基于,ObjectWrap（标签 0x0100-0x01FF）的 `#[bffi_class]`/`#[bffi_impl]`:pub 原始字段的 getter、`&self` 方法、自动生成 release;元数据拆分为 `bffi_meta_<name>` + `bffi_meta_<name>_impl::CLASS`;诊断 E005-E008 |
-| 宏支持 | `bffi-macro-support`:为 proc-macro crate(`bffi-macros`、`bffi-class`)提供共享的模型/映射/代码生成;工具 crate - 无运行时代码、无 ABI |
-| Panic(生产)    | 转换为 JS Error                                     |
-| Panic(开发)    | 可以中止                                            |
-| 兼容性           | 仅支持 Bun                                          |
-| 分发             | 源码存放于仓库;预编译二进制文件稍后提供 npm 版      |
-| 门面             | `bffi`:扁平化再导出整个栈;`unsafe_zero_copy` 是唯一的零拷贝入口;宏展开依赖用户的直接依赖 |
-| 异步             | `#[bffi_async]`:spawn-шим返回任务句柄;N-воркерный执行器(tokio 为 opt-in 特性:模式切换 + `spawn_on_tokio`;cancel 中止 токио任务);取消(协作式 drop)与超时;通过 event-loop 在 JS 线程上交付解析;描述符 `Promise<T>` |
-| 描述符 ABI | `FunctionDef`/`MethodDef` 携带 `AbiSig`(精确 C 宽度 + out 槽);`FieldDef` 携带 getter 的 `export_name` + out;`ClassDef` 携带 `release_export`;`.d.ts` 渲染忽略这些字段 |
-| Wire 编解码 | `bffi_types::wire`:统一的 `[tag][payload]` 表(LE,精确 `i64`),同时服务异步任务负载与回调签名/参数/结果 |
-| 回调 ABI | 通过 `bffi_callback_abi!()` 生成的泛型导出(`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`),在用户 crate 展开;签名/参数以 wire 编码;结果为瞬态缓冲区句柄;见 CALLING-CONVENTION.md §9 |
-| Loader JSON | `bffi_build::loader_json`:由聚合的 `ModuleDef` 渲染的规范、确定性 JSON 模式 v1(`"bffi": 1`);消费方为 JS 代码生成 |
-| TS 代码生成 | `bffi codegen <json> -o <ts>`(bin/):确定性渲染器,内嵌模式字面量;`bffi-loader` 中的 `ApiOf<>` 从字面量推导精确 TS 类型 |
-| Loader 运行时 | `packages/bffi-loader`(仅限 Bun,零依赖):wire 编解码、takeError/readBuffer、`wrapTask` + 显式 `pumpUntil`(无隐藏泵送)、类工厂(FinalizationRegistry + 显式 `release()`,静默吞掉重复释放)、callbacks API |
-| 许可证           | MIT                                                 |
+这里没有任何手写绑定。当描述符与生成文件不一致时,`bffi check` 直接失败 - 漂移是构建错误,而不是运行时的意外。
 
----
+## 7. 分发模型
 
-## 8. 组件
+分发采用**平台 npm 包**,napi-rs 风格:
 
-| crate              | 用途                                                 | 优先级   |
-|--------------------|------------------------------------------------------|----------|
-| `bffi-core`        | 句柄、catch_unwind、核心工具、安全规则               | P0       |
-| `bffi-types`       | 类型转换(数字、字符串、缓冲区等)                   | P0       |
-| `bffi-error`       | 统一的 error → JS Error 映射                         | P0       |
-| `bffi-object`      | 对象所有权 / ObjectWrap                              | P1       |
-| `bffi-callback`    | 安全回调(双向)                                     | P1       |
-| `bffi-dts`         | 生成 TypeScript `.d.ts`                              | P1       |
-| `bffi-macros`      | 过程宏(`#[bffi]`、属性)                             | P1       |
-| `bffi-class`       | 类声明宏                                             | P2       |
-| `bffi-macro-support` | 宏内部共享逻辑(类型种类、分类、代码生成)           | P3       |
-| `bffi-event-loop`  | `run()` / `pump()` 抽象                              | P2       |
-| `bffi-build`       | 构建辅助、C ABI 生成、Bun 集成                       | P2       |
-| `bffi-rs`          | 重新导出整个技术栈的公共门面                         | P2       |
-| `bffi-async`       | Promise / async 支持                                 | P3       |
-| `bffi-loader` (JS) | 仅限 Bun 的运行时加载器:从 loader JSON 构建类型化 API(`packages/bffi-loader`) | P4       |
+- 基础包为每个平台声明一条 `optionalDependencies` 条目,**精确锁版本**;npm/bun 只安装与主机匹配的那一条。
+- 所有产物遵循同一套命名约定,`resolvePlatformBinary` 完成平台 -> 包 -> 二进制路径的映射。`bffi pack` 从构建好的 cdylib 组装出平台包。
+- 平台包**先于**基础包发布(或与之同时);残缺的平台矩阵在安装时即可见,而不是到运行时才被发现。
 
----
+支持的目标是七个 64 位三元组:`win32-x64-msvc`、`linux-x64-gnu`、`linux-x64-musl`、`linux-arm64-gnu`、`linux-arm64-musl`、`darwin-x64`、`darwin-aarch64`。没有 32 位目标。
 
-## 9. API 设计原则
+## 8. 作为可执行规范的示例
 
-1. 显式优于魔法。
-2. 默认安全;危险路径必须是显式的。
-3. 小型 crate,各自只承担一个职责。
-4. 在每个 FFI 边界上记录所有权契约。
-5. Bun 优先 - 不为其他运行时妥协。
+每个示例既是一个可运行的模块,也是对设计中一个切片的端到端测试:
 
----
+- [examples/sqlite](https://github.com/z2net/bffi-rs/blob/main/examples/sqlite) - 在真实负载上跑通完整流水线。
+- [examples/async](https://github.com/z2net/bffi-rs/blob/main/examples/async) - future 变 Promise、取消、超时、显式泵送。
+- [examples/event-loop](https://github.com/z2net/bffi-rs/blob/main/examples/event-loop) - 队列、排空、marshal。
+- [examples/callbacks](https://github.com/z2net/bffi-rs/blob/main/examples/callbacks) - 双向回调、JS 线程闸门、经编组投递。
 
-## 10. 联系方式
+## 9. 决策日志
 
-- GitHub Issues / Discussions  
+已接受的决策,每条一行:
+
+| 主题 | 决策 |
+| --- | --- |
+| 兼容性 | 仅 Bun;没有 Node.js / Deno 层。 |
+| 缓冲区 | 默认复制;零拷贝仅经 `bffi::unsafe_zero_copy`。 |
+| 句柄 | 世代索引 + 类型标签(`u64`)。 |
+| Panic | release 中转换为 JS `Error`;仅 debug 允许中止。 |
+| 边界字符串 | UTF-8 为规范编码。 |
+| C ABI | 形状统一:状态码 + out 参数,适用于每一个导出。 |
+| 事件循环 | 显式 pump/run 契约;投递在 JS 线程上执行。 |
+| TypeScript | 描述符是唯一事实来源;确定性生成;schema v1。 |
+| 分发 | 平台 npm 包,而非单体二进制;精确锁版本。 |
+| 工具链 | Bun >= 1.4.0(强制);Rust 1.98.0(锁定)。 |
+| 目标平台 | 仅 64 位(七个三元组);暂无 32 位。 |
+| 诊断 | 宏错误使用稳定的 E 编码。 |
+| 许可证 | MIT。 |
+
+## 10. 非目标
+
+- 与 Node.js 或 Deno 的兼容性。
+- 与 `napi-rs` 的 API 兼容。
+- 用魔法掩盖 FFI 边界 - 边界保持清晰、显式。
+- 把零拷贝当作默认。
+- 32 位目标(暂时)。
+- 第一天就不惜一切代价追求极致性能。
+
+## 11. 联系方式
+
+- GitHub Issues / Discussions
 - 邮箱:**contact@z2net.com**

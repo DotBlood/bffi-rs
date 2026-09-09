@@ -19,7 +19,7 @@ We aim to respond within 72 hours. Please do not disclose publicly until a fix i
 - Memory safety bugs in the FFI boundary
 - Handle table corruption / type confusion
 - Panic propagation issues
-- Codegen bugs in `bffi-macros` that could hide `unsafe`
+- Codegen bugs in the generated shims (`bffi-macros` / `bffi-class`) that could hide `unsafe`
 
 Out of scope:
 - Bugs in Bun itself (report to oven-sh/bun)

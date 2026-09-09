@@ -41,6 +41,9 @@ bun install
 ```bash
 bun run lint          # oxlint
 bun run typecheck     # TypeScript check
+bun run build         # builds all four example crates (release cdylibs)
+bun run test:e2e      # runs the examples as e2e suites (bun test examples)
+bun run ci            # full CI parity: lint, typecheck, fmt, clippy, tests
 cargo fmt
 cargo clippy
 cargo check
@@ -128,7 +131,7 @@ gitGraph
 
 ### Review rules
 
-- PR `dev/<feature>` → `dev/main`: at least **1 approval** (owner or maintainer) and a green `bun run ci` (locally until CI workflows land).
+- PR `dev/<feature>` → `dev/main`: at least **1 approval** (owner or maintainer) and green CI (the `ci.yml` GitHub Actions workflow; `bun run ci` locally).
 - PR `dev/main` → `main`: owner only, on a release merge (see tags below).
 - Reviews follow the PR template checklist (fmt, clippy, tests, lint, docs).
 
@@ -145,7 +148,7 @@ gitGraph
 
 1. Fork the repository and create a branch from `dev/main`.
 2. Make a focused change (one logical unit per PR).
-3. Ensure `cargo fmt`, `cargo clippy`, tests, and `bun run lint` pass.
+3. Ensure `bun run ci` passes (lint, typecheck, fmt, clippy, tests).
 4. Fill in the pull request template.
 5. Link related issues if any.
 6. Be ready to discuss design decisions - we care about long-term consistency with `DESIGN.md`.

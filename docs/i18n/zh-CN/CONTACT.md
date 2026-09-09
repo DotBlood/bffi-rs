@@ -8,7 +8,12 @@
 
 ## 贡献者
 
-- **ZCode (GLM, [Z.ai](https://z.ai))** - AI 代理:开发基础设施、文档、i18n
+- **ZCode (GLM)** - AI 代理:开发基础设施、文档、i18n
+
+感谢项目所依托的工具:
+
+- **[opencode](https://opencode.ai)** - 项目开发所用的编码代理框架(harness)
+- **[Z.ai](https://z.ai)** - 驱动该代理的 GLM 模型
 
 ## 取得联系
 

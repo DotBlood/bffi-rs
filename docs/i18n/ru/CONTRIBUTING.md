@@ -24,15 +24,15 @@
 - Git
 
 ```bash
-# Install / select Rust toolchain
+# Установка / выбор тулчейна Rust
 rustup toolchain install 1.98.0
 rustup default 1.98.0
 
-# Clone
+# Клонирование
 git clone https://github.com/z2net/bffi-rs.git
 cd bffi-rs
 
-# JS tooling
+# JS-инструментарий
 bun install
 ```
 
@@ -40,7 +40,10 @@ bun install
 
 ```bash
 bun run lint          # oxlint
-bun run typecheck     # TypeScript check
+bun run typecheck     # проверка TypeScript
+bun run build         # собирает все четыре примера-крейта (release cdylib)
+bun run test:e2e      # прогоняет примеры как наборы e2e-тестов (bun test examples)
+bun run ci            # полный CI-паритет: lint, typecheck, fmt, clippy, тесты
 cargo fmt
 cargo clippy
 cargo check
@@ -128,7 +131,7 @@ gitGraph
 
 ### Правила ревью
 
-- Пул-реквест `dev/<feature>` → `dev/main`: как минимум **1 одобрение** (владелец или мейнтейнер) и зелёный `bun run ci` (локально, пока не появятся CI-workflows).
+- Пул-реквест `dev/<feature>` → `dev/main`: как минимум **1 одобрение** (владелец или мейнтейнер) и зелёный CI (workflow `ci.yml` в GitHub Actions; локально - `bun run ci`).
 - Пул-реквест `dev/main` → `main`: только владелец, при релизном мерже (см. теги ниже).
 - Ревью следует чек-листу из шаблона пул-реквеста (fmt, clippy, тесты, lint, документация).
 
@@ -145,7 +148,7 @@ gitGraph
 
 1. Сделайте форк репозитория и создайте ветку от `dev/main`.
 2. Внесите сфокусированное изменение (одна логическая единица на пул-реквест).
-3. Убедитесь, что проходят `cargo fmt`, `cargo clippy`, тесты и `bun run lint`.
+3. Убедитесь, что проходит `bun run ci` (lint, typecheck, fmt, clippy, тесты).
 4. Заполните шаблон пул-реквеста.
 5. Укажите связанные issues, если они есть.
 6. Будьте готовы обсуждать проектные решения - нам важна долгосрочная согласованность с `DESIGN.md`.
@@ -177,7 +180,7 @@ gitGraph
 
 - Путь данных по умолчанию - **копирование**, а не zero-copy.
 - Zero-copy только через `bffi::unsafe_zero_copy`.
-- Хендлы - это Generational Index + type-tag.
+- Дескрипторы (handles) - это индекс с поколением + тег типа.
 - Никакого кода совместимости с Node.js / Deno.
 - Не коммитьте секреты, папки личных AI-конфигураций (`.grok`, `.claude`, `.codex`, …) или файлы `.env`.
 
