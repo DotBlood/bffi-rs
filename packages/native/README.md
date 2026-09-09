@@ -6,13 +6,48 @@ package is pure TypeScript; every platform ships as its own npm
 package carrying the prebuilt cdylib. npm/Bun installs only the one
 matching the running platform through `optionalDependencies`.
 
-| Package | Platform | Binary |
+**Bun only** (>= 1.4.0).
+
+## The package family
+
+| Package | Platform | Binary inside (artifact convention) |
 | --- | --- | --- |
+| `@z2net/bffi-native` | - (this package, pure TS) | - |
 | `@z2net/bffi-native-win32-x64-msvc` | Windows x64 | `bffi_native.dll` |
 | `@z2net/bffi-native-linux-x64-gnu` | Linux x64 (glibc) | `libbffi_native.so` |
 | `@z2net/bffi-native-darwin-aarch64` | macOS arm64 | `libbffi_native.dylib` |
 
-**Bun only** (>= 1.4.0).
+This package pins all three platform packages in
+`optionalDependencies` with EXACT versions (no caret - a loose pin
+would let npm pair a JS update with a stale binary). npm/Bun installs
+only the entry matching the running `os`/`cpu`; the others are
+skipped, which is expected and harmless.
+
+## Where the binary comes from
+
+The Rust source is `crates/bffi-native` in the repository - a
+minimal cdylib expanding the runtime ABI
+(`bffi_build::bffi_runtime_abi!()`) with a deliberately tiny surface
+(one function per boundary path):
+
+| Export | Rust | Boundary path |
+| --- | --- | --- |
+| `add(a, b) -> u32` | primitives | the `__ret` out-parameter |
+| `shout(name) -> string` | `&str` -> `String` | cstring parameter in; string return through the transient-buffer pair |
+| `version() -> string` | static string | buffer return |
+
+The build matrix
+([.github/workflows/release-native.yml](https://github.com/z2net/bffi-rs/blob/main/.github/workflows/release-native.yml),
+manual trigger) compiles the crate on `windows-latest`,
+`ubuntu-latest` and `macos-latest` and uploads the cdylibs; each is
+then assembled with `bffi pack` from
+[@z2net/bffi-cli](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-cli)
+- which renames the binary to the artifact convention, writes the
+`os`/`cpu`/`libc` package.json and the `{ path }` entry shim.
+
+Publish order matters: **platform packages first, then this main
+package** - a main release with missing platform pins is the classic
+pattern-A breakage.
 
 ## Usage
 
@@ -26,31 +61,34 @@ native.shout("bffi");    // => "HELLO bffi!"
 native.version();        // => "0.1.0"
 ```
 
-An explicit library path overrides platform resolution (tests,
-locally built artifacts):
+What `createNative()` does:
+
+1. `resolvePlatformBinary("@z2net/bffi-native", { binary: "bffi_native" })`
+   (from `@z2net/bffi`) resolves the installed platform package and
+   returns the absolute binary path - the artifact convention makes
+   this a pure lookup, no package code has to execute;
+2. `createApiFromJson(path)` (the generated
+   [api.gen.ts](https://github.com/z2net/bffi-rs/blob/main/packages/native/src/api.gen.ts))
+   dlopens the library and builds the typed API object.
+
+An explicit library path overrides resolution (tests, locally built
+artifacts):
 
 ```ts
 const native = createNative("D:/path/to/bffi_native.dll");
 ```
 
-## The surface
-
-The Rust side (`crates/bffi-native` in the repository) is
-deliberately minimal - a REAL bffi surface crossing the FFI
-boundary, exercising the loader's type matrix:
-
-- `add(a: u32, b: u32) -> u32` - primitives and the out-parameter;
-- `shout(name: string) -> string` - cstring parameter, string return
-  through the transient-buffer pair;
-- `version() -> string` - static string return.
-
-## Rebuilding
+## Rebuilding locally
 
 ```sh
 cargo build --release -p bffi-native
 bunx @z2net/bffi-cli pack --src target/release/bffi_native.dll \
   --triple win32-x64-msvc --name @z2net/bffi-native
 ```
+
+The loader JSON (`crates/bffi-native/.bffi/bffi.api.json`) is emitted
+by the crate's `emit-json` binary from the single `ModuleDef`
+aggregation; `packages/native/src/api.gen.ts` is generated from it.
 
 ## License
 
