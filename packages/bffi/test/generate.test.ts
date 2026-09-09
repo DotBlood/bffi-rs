@@ -8,8 +8,8 @@
  */
 import { describe, expect, test } from "bun:test";
 
-import { renderModule } from "../src/generate.ts";
-import { SchemaValidationError } from "../src/schema.ts";
+import { renderModule } from "../src/codegen/generate.ts";
+import { SchemaValidationError } from "../src/codegen/schema.ts";
 const FIXTURE = {
   bffi: 1,
   module: "api",

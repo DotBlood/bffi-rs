@@ -13,14 +13,14 @@
  * so no package code has to execute - resolution is pure lookup.
  *
  * Bun-only: module resolution goes through `Bun.resolveSync`
- * (a runtime built-in).
+ * (a runtime built-in); path handling is pure string logic - no
+ * `node:` module imports.
  */
-import { dirname, join } from "node:path";
 
 /** The napi-rs style triple of the RUNNING platform. Throws for
  * platforms bffi does not ship. */
 export function platformTriple(
-  platform: NodeJS.Platform = process.platform,
+  platform: string = process.platform,
   arch: string = process.arch,
 ): string {
   const key = `${platform}-${arch}`;
@@ -82,6 +82,18 @@ export function tripleWithLibc(
     : triple;
 }
 
+/** The directory part of a resolved module path: everything before
+ * the last separator (both `/` and `\` are accepted; the result uses
+ * `/`, which every Bun file API accepts on all platforms). */
+function dirnameOf(path: string): string {
+  const normalized = path.replaceAll("\\", "/");
+  const cut = normalized.lastIndexOf("/");
+  if (cut <= 0) {
+    return normalized;
+  }
+  return normalized.slice(0, cut);
+}
+
 /**
  * Resolves the absolute path of the native binary inside the
  * platform package `<base>-<triple>` of `base` (e.g.
@@ -116,5 +128,5 @@ export function resolvePlatformBinary(
     );
   }
   const { ext, prefix } = artifactExt(triple);
-  return join(dirname(entry), `${prefix}${options.binary}.${ext}`);
+  return `${dirnameOf(entry)}/${prefix}${options.binary}.${ext}`;
 }

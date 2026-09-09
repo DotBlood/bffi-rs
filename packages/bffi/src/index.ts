@@ -2,9 +2,13 @@
  * The public surface of `@z2net/bffi`: schema types, declaration
  * builder, wire codec, and the runtime primitives the generated
  * modules (and hand-rolled loaders) compose.
+ *
+ * The surface is re-exported 1:1 from the domain barrels
+ * (runtime / loader / pipeline / codegen); see package.json
+ * `exports` for the subpath entries.
  */
-export { ErrorCode, makeTakeError, type FfiLib, type FfiSymbol } from "./error.ts";
-export { makeReadBuffer, makeFreeBuffer } from "./buffer.ts";
+export { ErrorCode, makeTakeError, type FfiLib, type FfiSymbol } from "./runtime/index.ts";
+export { makeReadBuffer, makeFreeBuffer } from "./runtime/index.ts";
 export {
   TAG_UNIT,
   TAG_I32,
@@ -17,7 +21,7 @@ export {
   encodeArgs,
   encodeValue,
   type WireValue,
-} from "./wire.ts";
+} from "./runtime/index.ts";
 export {
   SCHEMA_VERSION,
   assertSchema,
@@ -32,9 +36,9 @@ export {
   type RetAbiName,
   type RetJson,
   type TsName,
-} from "./loader.ts";
-export { pumpUntil, wrapTask } from "./async.ts";
-export { createApi, createApiFromLib, type ApiOf, type ClassOf, type FnOf, type ParamsOf, type TsOf } from "./api.ts";
+} from "./loader/index.ts";
+export { pumpUntil, wrapTask } from "./runtime/index.ts";
+export { createApi, createApiFromLib, type ApiOf, type ClassOf, type FnOf, type ParamsOf, type TsOf } from "./loader/index.ts";
 export {
   bindJsCallback,
   invokeCallback,
@@ -43,33 +47,33 @@ export {
   type CallbackSig,
   type CbType,
   type CbValue,
-} from "./callbacks.ts";
-import { assertBunVersion } from "./version.ts";
+} from "./runtime/index.ts";
+import { assertBunVersion } from "./runtime/index.ts";
 export {
   assertBunVersion,
   bunVersionProblem,
   bunVersionSatisfies,
   MIN_BUN_VERSION,
-} from "./version.ts";
+} from "./runtime/index.ts";
 export {
   platformTriple,
   resolvePlatformBinary,
   tripleWithLibc,
   type ResolveOptions,
-} from "./resolve.ts";
+} from "./loader/index.ts";
 export {
   joinOut,
   fileUrl,
   BFFI_DIR,
   CONFIG_FILE,
-} from "./paths.ts";
-export { DEFAULT_RUNTIME, renderModule } from "./generate.ts";
+} from "./pipeline/index.ts";
+export { DEFAULT_RUNTIME, renderModule } from "./codegen/index.ts";
 export {
   validateModule,
   SchemaValidationError,
   type ModuleJsonLike,
   type SchemaIssue,
-} from "./schema.ts";
+} from "./codegen/index.ts";
 export {
   defineConfig,
   loadConfigFile,
@@ -80,13 +84,13 @@ export {
   type BffiConfig,
   type CrateConfig,
   type ConfigIssue,
-} from "./config.ts";
+} from "./pipeline/index.ts";
 export {
   applyDebug,
   debugLog,
   isDebug,
-} from "./debug.ts";
-export { buildCrate, type BuildOptions } from "./build.ts";
+} from "./pipeline/index.ts";
+export { buildCrate, type BuildOptions } from "./pipeline/index.ts";
 export {
   bffi,
   bffiBuild,
@@ -94,7 +98,7 @@ export {
   localArtifactPath,
   type BffiOptions,
   type GenerateOptions,
-} from "./pipeline.ts";
+} from "./pipeline/index.ts";
 
 // Fail fast on unsupported runtimes: every public consumer (the
 // generated modules included) imports this entry.

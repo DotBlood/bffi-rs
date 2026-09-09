@@ -21,10 +21,10 @@ import {
   type BffiConfig,
 } from "./config.ts";
 import { buildCrate } from "./build.ts";
-import { generateApiGen } from "./generate.ts";
-import { join as joinPath } from "node:path";
-import { validateModule } from "./schema.ts";
-import { createApi } from "./api.ts";
+import { generateApiGen } from "../codegen/generate.ts";
+import { BFFI_DIR, joinOut } from "./paths.ts";
+import { validateModule } from "../codegen/schema.ts";
+import { createApi } from "../loader/api.ts";
 
 /** Options of [`bffi`] (the full pipeline). */
 export interface BffiOptions {
@@ -66,7 +66,7 @@ async function readLoaderJson(
   config: BffiConfig,
 ): Promise<unknown> {
   const inputName = config.files[0] ?? "bffi.api.json";
-  const path = joinPath(root, ".bffi", inputName);
+  const path = joinOut(root, BFFI_DIR, inputName);
   const file = Bun.file(path);
   if (!(await file.exists())) {
     throw new Error(
@@ -120,8 +120,8 @@ export function localArtifactPath(config: BffiConfig, root: string): string {
       : os === "darwin"
         ? { ext: "dylib", prefix: "lib" }
         : { ext: "so", prefix: "lib" };
-  const targetDir = config.crate.targetDir ?? joinPath(config.crate.dir, "target");
-  return joinPath(root, targetDir, "release", `${prefix}${config.crate.binary}.${ext}`);
+  const targetDir = config.crate.targetDir ?? joinOut(config.crate.dir, "target");
+  return joinOut(root, targetDir, "release", `${prefix}${config.crate.binary}.${ext}`);
 }
 
 /** Options of [`bffiGenerate`]. */

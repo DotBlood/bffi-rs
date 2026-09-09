@@ -7,13 +7,20 @@
  * Run with `bun test packages/bffi`.
  */
 import { describe, expect, test } from "bun:test";
-import { dirname, join } from "node:path";
 
 import {
   platformTriple,
   resolvePlatformBinary,
   tripleWithLibc,
 } from "../src/index.ts";
+
+/** The expected binary path, built with the SAME join the
+ * implementation uses (dirname + "/" + file), so the assertions are
+ * platform-separator agnostic. */
+function expectedBinary(entry: string, file: string): string {
+  const normalized = entry.replaceAll("\\", "/");
+  return `${normalized.slice(0, normalized.lastIndexOf("/"))}/${file}`;
+}
 
 describe("platformTriple", () => {
   test("maps the shipped platforms onto napi-rs triples", () => {
@@ -61,7 +68,7 @@ describe("resolvePlatformBinary", () => {
     });
     expect(seenSpec).toBe("@z2net/mylib-win32-x64-msvc");
     expect(seenFrom).toBe("C:/proj");
-    expect(path).toBe(join(dirname(entry), "bffi_mylib.dll"));
+    expect(path).toBe(expectedBinary(entry, "bffi_mylib.dll"));
   });
 
   test("unix triples carry the lib prefix", () => {
@@ -71,7 +78,7 @@ describe("resolvePlatformBinary", () => {
       binary: "bffi_mylib",
       resolveSync: () => entry,
     });
-    expect(path).toBe(join(dirname(entry), "libbffi_mylib.so"));
+    expect(path).toBe(expectedBinary(entry, "libbffi_mylib.so"));
   });
 
   test("darwin triples use the dylib extension with the lib prefix", () => {
@@ -81,7 +88,7 @@ describe("resolvePlatformBinary", () => {
       binary: "bffi_mylib",
       resolveSync: () => entry,
     });
-    expect(path).toBe(join(dirname(entry), "libbffi_mylib.dylib"));
+    expect(path).toBe(expectedBinary(entry, "libbffi_mylib.dylib"));
   });
 
   test("a missing platform package produces an actionable error", () => {

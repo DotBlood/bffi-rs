@@ -5,7 +5,7 @@
 //!
 //! ONE tag table serves the whole framework: `bffi-async` and
 //! `bffi-callback` quote these constants, and the JS-side decoder
-//! (`packages/bffi/src/wire.ts`) mirrors them. Little-endian
+//! (`packages/bffi/src/runtime/wire.ts`) mirrors them. Little-endian
 //! everywhere; `i64`/`u64` payloads are exact (no `f64` narrowing);
 //! `Str`/`Bytes` payloads carry a `u32` LE length prefix.
 //!
