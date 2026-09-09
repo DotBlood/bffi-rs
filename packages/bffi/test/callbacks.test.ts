@@ -24,7 +24,7 @@ import {
   TAG_I64,
   type WireValue,
 } from "../src/index.ts";
-import type { FfiLib } from "../src/error.ts";
+import type { FfiLib } from "../src/runtime/error.ts";
 
 /** Builds the mock native side: a JS re-implementation of the four
  * callback exports with the same status contract. */

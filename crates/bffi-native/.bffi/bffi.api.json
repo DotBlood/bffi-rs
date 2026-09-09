@@ -1,0 +1,64 @@
+{
+  "bffi": 1,
+  "module": "native",
+  "functions": [
+    {
+      "name": "add",
+      "export": "bffi_add",
+      "docs": [
+        "Adds two numbers."
+      ],
+      "params": [
+        {
+          "name": "a",
+          "ts": "number",
+          "abi": "u32"
+        },
+        {
+          "name": "b",
+          "ts": "number",
+          "abi": "u32"
+        }
+      ],
+      "ret": {
+        "ts": "number",
+        "abi": "u32"
+      },
+      "out": "u32"
+    },
+    {
+      "name": "shout",
+      "export": "bffi_shout",
+      "docs": [
+        "Returns an uppercased greeting (string return through the",
+        "transient-buffer pair)."
+      ],
+      "params": [
+        {
+          "name": "name",
+          "ts": "string",
+          "abi": "cstring"
+        }
+      ],
+      "ret": {
+        "ts": "string",
+        "abi": "buffer"
+      },
+      "out": "handle"
+    },
+    {
+      "name": "version",
+      "export": "bffi_version",
+      "docs": [
+        "The version of this library (static string return)."
+      ],
+      "params": [],
+      "ret": {
+        "ts": "string",
+        "abi": "buffer"
+      },
+      "out": "handle"
+    }
+  ],
+  "classes": []
+}

@@ -8,12 +8,12 @@
  */
 import {
   bunVersionProblem,
+  joinOut,
   localArtifactPath,
   loadConfigFile,
   validateModule,
   type BffiConfig,
 } from "@z2net/bffi";
-import { join } from "node:path";
 
 /** The outcome of one diagnostic. */
 export interface CheckResult {
@@ -93,7 +93,7 @@ export async function checkLoaderJson(
   root: string,
   config: BffiConfig,
 ): Promise<CheckResult> {
-  const path = join(root, ".bffi", config.files[0] ?? "bffi.api.json");
+  const path = joinOut(root, ".bffi", config.files[0] ?? "bffi.api.json");
   const file = Bun.file(path);
   if (!(await file.exists())) {
     return result("loader JSON", false, `missing: ${path}`);
@@ -114,7 +114,7 @@ export async function checkGenerated(
   if (config.generate.apiGen === false) {
     return result("api.gen.ts", true, "generation disabled in config");
   }
-  const path = join(root, ".bffi", config.generate.outFile);
+  const path = joinOut(root, ".bffi", config.generate.outFile);
   return (await Bun.file(path).exists())
     ? result("api.gen.ts", true, path)
     : result("api.gen.ts", false, `missing: ${path} (run bffi build or bffiGenerate)`);

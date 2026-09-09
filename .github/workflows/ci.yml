@@ -71,13 +71,13 @@ jobs:
       - name: tsc
         run: bun run typecheck
 
-      - name: bun unit tests (packages, bin)
-        run: bun test packages bin
+      - name: bun unit tests (packages)
+        run: bun test packages
 
-      # prewarm the cargo cache (the sqlite pipeline reuses it: an
+      # prewarm the cargo cache (the example pipelines reuse it: an
       # unchanged crate makes the in-pipeline build nearly free)
-      - name: cargo build (release, example)
+      - name: cargo build (release, examples)
         run: bun run build
 
-      - name: bun test (sqlite e2e, full pipeline)
-        run: bun test examples/sqlite
+      - name: bun test (example e2e, full pipeline)
+        run: bun test examples

@@ -5,10 +5,10 @@
  * object literal) ships exact signatures without hand-written types.
  */
 import { dlopen, ptr } from "bun:ffi";
-import { ErrorCode, type FfiLib, makeTakeError, sym } from "./error.ts";
-import { makeReadBuffer } from "./buffer.ts";
+import { ErrorCode, type FfiLib, makeTakeError, sym } from "../runtime/error.ts";
+import { makeReadBuffer } from "../runtime/buffer.ts";
 import { assertSchema, buildDeclarations, type BuiltinFeatures, type FunctionJson, type ModuleJson, type TsName } from "./loader.ts";
-import { wrapTask } from "./async.ts";
+import { wrapTask } from "../runtime/async.ts";
 
 const decoder = new TextDecoder();
 

@@ -2,10 +2,10 @@
  * [--crate-name <n>] [--binary <b>]`: scaffolds `.bffi/bffi.json`
  * plus a minimal Rust crate (cdylib + emit-json). Refuses to
  * overwrite an existing config. */
-import { join } from "node:path";
 import {
   CONFIG_VERSION,
   defineConfig,
+  joinOut,
 } from "@z2net/bffi";
 import { flagString, parseArgs } from "../args.ts";
 import { EXIT, writeErr, writeOut } from "../output.ts";
@@ -21,8 +21,8 @@ export async function init(argv: string[]): Promise<number> {
   const crateName = flagString(args, "crate-name") ?? `bffi-${module}`;
   const binary = flagString(args, "binary") ?? crateName.replaceAll("-", "_");
 
-  const bffiDir = join(root, ".bffi");
-  const configPath = join(bffiDir, "bffi.json");
+  const bffiDir = joinOut(root, ".bffi");
+  const configPath = joinOut(bffiDir, "bffi.json");
   const configFile = Bun.file(configPath);
   if (await configFile.exists()) {
     writeErr(`init: config already exists: ${configPath} (not overwritten)`);
@@ -60,7 +60,7 @@ async function scaffoldCrate(
   crateName: string,
   binary: string,
 ): Promise<void> {
-  const crateRoot = join(root, crateDir);
+  const crateRoot = joinOut(root, crateDir);
   const emitJsonName = `${binary}_emit_json`;
   const libIdent = crateName.replaceAll("-", "_");
 
@@ -83,7 +83,7 @@ bffi-core = { path = "CHANGE_ME/path/to/bffi-core" }
 bffi-dts = { path = "CHANGE_ME/path/to/bffi-dts" }
 bffi-build = { path = "CHANGE_ME/path/to/bffi-build" }
 `;
-  await Bun.write(join(crateRoot, "Cargo.toml"), cargoToml);
+  await Bun.write(joinOut(crateRoot, "Cargo.toml"), cargoToml);
 
   const libRs = `//! Sample crate scaffolded by \`bffi init\`. Replace the sample
 //! function with your real surface, aggregate it in \`module_def\`,
@@ -99,7 +99,7 @@ pub fn hello() -> String {
     "hello from bffi".to_owned()
 }
 `;
-  await Bun.write(join(crateRoot, "src", "lib.rs"), libRs);
+  await Bun.write(joinOut(crateRoot, "src", "lib.rs"), libRs);
 
   const moduleDef = `use bffi_dts::{FunctionDef, ModuleDef};
 
@@ -111,7 +111,7 @@ pub const MODULE: ModuleDef = ModuleDef {
     classes: &[],
 };
 `;
-  await Bun.write(join(crateRoot, "src", "module_def.rs"), moduleDef);
+  await Bun.write(joinOut(crateRoot, "src", "module_def.rs"), moduleDef);
 
   const emitJson = `fn main() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(".bffi/bffi.api.json");
@@ -123,7 +123,7 @@ pub const MODULE: ModuleDef = ModuleDef {
     println!("written {}", path.display());
 }
 `;
-  await Bun.write(join(crateRoot, "src", "bin", "emit_json.rs"), emitJson);
+  await Bun.write(joinOut(crateRoot, "src", "bin", "emit_json.rs"), emitJson);
 
   // .gitignore for the crate: generated working files stay out of
   // git if the project chooses; the config itself is committed.
@@ -131,7 +131,7 @@ pub const MODULE: ModuleDef = ModuleDef {
 .bffi/api.gen.ts
 target/
 `;
-  await Bun.write(join(crateRoot, ".gitignore"), crateIgnore);
+  await Bun.write(joinOut(crateRoot, ".gitignore"), crateIgnore);
 }
 
 /** Derives the module name from the crate name (dashes stripped). */

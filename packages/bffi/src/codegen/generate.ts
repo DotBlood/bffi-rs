@@ -12,8 +12,8 @@
  * order render identically.
  */
 import { validateModule } from "./schema.ts";
-import { BFFI_DIR } from "./paths.ts";
-import type { BffiConfig } from "./config.ts";
+import { BFFI_DIR } from "../pipeline/paths.ts";
+import type { BffiConfig } from "../pipeline/config.ts";
 
 /** The default module specifier the generated file imports the
  * runtime from: the package ITSELF (generation happens inside

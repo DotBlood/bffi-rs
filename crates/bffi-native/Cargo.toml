@@ -1,0 +1,30 @@
+[package]
+name = "bffi-native"
+description = "The bffi-rs reference native library: a minimal cdylib expanding the runtime ABI, distributed as pattern-A platform npm packages (@z2net/bffi-native-<triple>)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+# Writes .bffi/bffi.api.json from module_def::MODULE (the loader JSON
+# artifact consumed by the @z2net/bffi pipeline and by the
+# packages/native main package).
+name = "emit-json"
+path = "src/bin/emit_json.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+bffi = { path = "../../crates/bffi" }
+bffi-core = { path = "../../crates/bffi-core" }
+bffi-types = { path = "../../crates/bffi-types" }
+bffi-dts = { path = "../../crates/bffi-dts" }
+bffi-macros = { path = "../../crates/bffi-macros" }
+bffi-build = { path = "../../crates/bffi-build" }

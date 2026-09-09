@@ -268,7 +268,7 @@ function mockLib() {
 describe("createApiFromLib", () => {
   // The concrete mock meets the FfiLib boundary through one explicit
   // cast (bun:ffi symbol tables are untyped at this seam).
-  const lib = mockLib() as unknown as import("../src/error.ts").FfiLib;
+  const lib = mockLib() as unknown as import("../src/runtime/error.ts").FfiLib;
   const api = createApiFromLib(FIXTURE, lib);
 
   test("decodes primitive outs into JS values", () => {

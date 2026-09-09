@@ -1,55 +1,84 @@
 # @z2net/bffi
 
-Bun-only runtime loader for [bffi-rs](https://github.com/DotBlood/bffi-rs)
-native modules: the typed JS API is built from the loader schema the
-Rust side emits (`bffi_build::loader_json`, schema version 1), so no
-per-function binding is ever written by hand. Includes
-`resolvePlatformBinary` for pattern-A distribution (platform packages
-carrying prebuilt binaries).
+Bun-only typed loader and build pipeline for
+[bffi-rs](https://github.com/DotBlood/bffi-rs) native modules: the
+typed JS API is built from the loader schema the Rust side emits
+(`bffi_build::loader_json`, schema version 1), so no per-function
+binding is ever written by hand.
 
-## Layout
+**Bun only** (>= 1.4.0) - no Node.js or Deno support, no runtime
+dependencies.
 
-- `src/wire.ts` - the `[tag][payload]` value codec shared with the
-  Rust side (`bffi_types::wire`): async task payloads and callback
-  arguments use the same table.
-- `src/error.ts` - ErrorCode table and the `takeError` drain over the
-  runtime ABI (`bffi_error_*`).
-- `src/buffer.ts` - transient-buffer reading (`bffi_buffer`,
-  `bffi_buffer_length`, `bffi_types_free`); bytes are copied BEFORE
-  the free.
-- `src/loader.ts` - schema types, `assertSchema`, and
-  `buildDeclarations` turning the ABI view into `bun:ffi` dlopen
-  declarations (`bool` crosses as `"u8"`, `ptr_len` expands into the
-  `("ptr", "u64")` pair).
-- `src/async.ts` - `wrapTask` (task handle to `Promise` through the
-  resolve/reject JSCallbacks) and `pumpUntil` (explicit event-loop
-  pumping; the loader never starts a hidden interval).
-- `src/classes.ts` / `src/api.ts` - the typed factory:
-  `createApi(schema, libraryPath)` opens the library and builds the
-  object; `ApiOf<Schema>` derives the TypeScript types from the
-  schema literal itself, so the generated module ships exact
-  signatures with zero hand-written types.
-- `src/callbacks.ts` - callback surface types (implementation lands
-  together with the generic callback ABI exports).
-
-## Rules carried over from the reference loader
-
-- an empty `Uint8Array` parameter crosses as a null data pointer with
-  `len == 0` (bun:ffi rejects empty TypedArrays as pointers);
-- buffer reads copy the bytes before `bffi_types_free`;
-- JSCallback `returns` is `"void"` (bun:ffi does not know
-  `"undefined"`);
-- an empty buffer payload is indistinguishable from `Option::None` -
-  nullable returns surface `null` for both (same limitation as the
-  reference loader).
-
-## Tests
+## Install
 
 ```sh
-bun test packages/bffi
+bun add @z2net/bffi
 ```
 
-The suite covers the codec round-trips against the Rust-side vectors,
-declaration building, argument encoding, and the API factory over a
-mock symbol table. The real-dlopen end-to-end pass lives in
-`examples/native/js` (stage T6).
+## The one-call pipeline
+
+`bffi()` runs the whole chain - `cargo build` -> loader JSON ->
+`api.gen` generation -> binary resolution -> `dlopen` - and returns
+the typed API:
+
+```ts
+import { bffi } from "@z2net/bffi";
+import type { Api } from "./.bffi/api.gen.ts";
+
+const api: Api = await bffi(); // annotate with the generated type
+
+const handle = api.open(":memory:");
+api.exec(handle, "CREATE TABLE t (id INTEGER)");
+```
+
+The project is described by ONE config file, `.bffi/bffi.json`
+(`defineConfig` / `bffi init` scaffolds it). Everything else - build,
+generation, binary path - is derived from it.
+
+## Subpath exports
+
+| Specifier | Contents |
+| --- | --- |
+| `@z2net/bffi` | the whole public surface (re-exported 1:1 below) |
+| `@z2net/bffi/runtime` | wire codec, error drain, buffer pair, `wrapTask`/`pumpUntil`, callback surface |
+| `@z2net/bffi/loader` | schema types, `buildDeclarations`, `createApi`, platform-binary resolution |
+| `@z2net/bffi/pipeline` | config v1, cargo build step, the `bffi()` orchestrator |
+| `@z2net/bffi/codegen` | the deterministic `api.gen.ts` renderer + schema validation |
+
+## Async, callbacks and the event loop
+
+- `wrapTask(lib, taskHandle)` wraps a native task handle into a
+  `Promise` (resolve/reject travel through bun:ffi JSCallbacks).
+- `pumpUntil(promise, pump)` awaits a task promise while draining the
+  native event loop - promise resolutions are delivered BY the pump;
+  the loader never starts a hidden interval.
+- `bindJsCallback` / `invokeCallback` / `revokeCallback` /
+  `setJsThread` drive the generic callback ABI in both directions
+  (wire-encoded signatures and arguments).
+
+## Platform packages (pattern A)
+
+Prebuilt binaries ship as per-platform npm packages (napi-rs style):
+`@scope/mylib` + `@scope/mylib-win32-x64-msvc`,
+`@scope/mylib-linux-x64-gnu`, `@scope/mylib-darwin-aarch64`, ... The
+main package declares every platform package in `optionalDependencies`
+(exact pins); npm/Bun installs only the matching one.
+`resolvePlatformBinary("@scope/mylib")` turns that into the dlopen
+path. `@z2net/bffi-cli` (`bffi pack`) assembles platform packages
+from a built cdylib.
+
+## Rules the loader lives by
+
+- buffers are COPIED by default; bytes are read before
+  `bffi_types_free`;
+- an empty `Uint8Array` argument crosses as a null data pointer with
+  `len == 0` (bun:ffi rejects empty TypedArrays as pointers);
+- an empty buffer payload is indistinguishable from `Option::None` -
+  nullable returns surface `null` for both;
+- JSCallback `returns` is `"void"` (bun:ffi does not know
+  `"undefined"`);
+- strings cross the boundary as UTF-8 (`cstring`).
+
+## License
+
+MIT - see [LICENSE](./LICENSE).
