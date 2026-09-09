@@ -12,7 +12,7 @@ assignees: ""
 
 <!-- Why are you asking? What are you trying to build? -->
 
-## Relevant parts of DESIGN.md / AGENT.md
+## Relevant parts of DESIGN.md / AGENTS.md
 
 <!-- Quote or link sections if possible -->
 

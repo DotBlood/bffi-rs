@@ -1,0 +1,7 @@
+error: bffi[E001]: unsupported function shape: generic function
+         = help: plain `fn`s only in P1
+         = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
+ --> tests/ui/generic_fn.rs:5:6
+  |
+5 | fn f<T>(x: T) {}
+  |      ^

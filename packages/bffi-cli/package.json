@@ -1,0 +1,50 @@
+{
+  "name": "@z2net/bffi-cli",
+  "version": "0.1.0",
+  "description": "Bun-only CLI for bffi-rs: init, build, check, doctor, codegen, pack, fetch. A thin wrapper over @z2net/bffi (all pipeline logic lives there).",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/z2net/bffi-rs.git",
+    "directory": "packages/bffi-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/z2net/bffi-rs/issues",
+    "email": "contact@z2net.com"
+  },
+  "author": {
+    "name": "z2net",
+    "email": "contact@z2net.com"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "packageManager": "bun@1.4.0",
+  "type": "module",
+  "bin": {
+    "bffi": "./bin/bffi.ts"
+  },
+  "files": [
+    "bin",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "bffi",
+    "bun",
+    "ffi",
+    "native",
+    "rust",
+    "cli",
+    "codegen",
+    "npm"
+  ],
+  "dependencies": {
+    "@z2net/bffi": "^0.1.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

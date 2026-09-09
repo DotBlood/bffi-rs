@@ -98,11 +98,11 @@
 
   // Experimental
   "rust-analyzer.experimental.procMacroMacros": false,
-  "rust-analyzer.files.watcher": [
-    "**/*.rs",
-    "**/Cargo.toml",
-    "**/rust-toolchain.toml",
-  ],
+
+  // NOTE: rust-analyzer.files.watcher is deliberately not set here: it
+  // selects the change-detection mechanism ("client" | "notify-poll" |
+  // "server"), it does not accept glob lists. What gets watched is
+  // controlled by "files.watcherExclude" above.
 
   // ============================================================
   // TypeScript / JavaScript / Bun

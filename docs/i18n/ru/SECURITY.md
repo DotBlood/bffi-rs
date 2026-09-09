@@ -1,6 +1,6 @@
 # Политика безопасности
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/SECURITY.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/SECURITY.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/SECURITY.md) | **[Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/SECURITY.md)** | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md)
 
 ## Сообщение об уязвимости
 
@@ -17,9 +17,9 @@ Email: **contact@z2net.com**
 ## Область действия
 
 - Баги безопасности памяти на границе FFI
-- Повреждение таблицы хендлов / путаница типов
+- Повреждение таблицы дескрипторов / путаница типов
 - Проблемы распространения паник
-- Баги кодогенерации в `bffi-macros`, которые могут скрыть `unsafe`
+- Баги кодогенерации в сгенерированных обёртках (`bffi-macros` / `bffi-class`), которые могут скрыть `unsafe`
 
 Вне области действия:
 - Баги в самом Bun (сообщайте в oven-sh/bun)

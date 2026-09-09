@@ -1,17 +1,17 @@
 # Contributing to bffi-rs
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
 
 Thank you for your interest in contributing.
 
-Repository: https://github.com/DotBlood/bffi-rs
+Repository: https://github.com/z2net/bffi-rs
 Contact: contact@z2net.com
 
 Please also read:
 
-- [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) - architecture and decisions
-- [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) - rules for humans and AI agents
-- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
+- [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) - architecture and decisions
+- [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) - rules for humans and AI agents
+- [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -29,7 +29,7 @@ rustup toolchain install 1.98.0
 rustup default 1.98.0
 
 # Clone
-git clone https://github.com/DotBlood/bffi-rs.git
+git clone https://github.com/z2net/bffi-rs.git
 cd bffi-rs
 
 # JS tooling
@@ -41,6 +41,9 @@ bun install
 ```bash
 bun run lint          # oxlint
 bun run typecheck     # TypeScript check
+bun run build         # builds all four example crates (release cdylibs)
+bun run test:e2e      # runs the examples as e2e suites (bun test examples)
+bun run ci            # full CI parity: lint, typecheck, fmt, clippy, tests
 cargo fmt
 cargo clippy
 cargo check
@@ -128,7 +131,7 @@ gitGraph
 
 ### Review rules
 
-- PR `dev/<feature>` → `dev/main`: at least **1 approval** (owner or maintainer) and a green `bun run ci` (locally until CI workflows land).
+- PR `dev/<feature>` → `dev/main`: at least **1 approval** (owner or maintainer) and green CI (the `ci.yml` GitHub Actions workflow; `bun run ci` locally).
 - PR `dev/main` → `main`: owner only, on a release merge (see tags below).
 - Reviews follow the PR template checklist (fmt, clippy, tests, lint, docs).
 
@@ -145,7 +148,7 @@ gitGraph
 
 1. Fork the repository and create a branch from `dev/main`.
 2. Make a focused change (one logical unit per PR).
-3. Ensure `cargo fmt`, `cargo clippy`, tests, and `bun run lint` pass.
+3. Ensure `bun run ci` passes (lint, typecheck, fmt, clippy, tests).
 4. Fill in the pull request template.
 5. Link related issues if any.
 6. Be ready to discuss design decisions - we care about long-term consistency with `DESIGN.md`.
@@ -185,7 +188,7 @@ When reporting a bug, include:
 
 ## Code of conduct
 
-Be respectful. See [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md).
+Be respectful. See [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/CODE_OF_CONDUCT.md).
 
 Harassment, toxic behavior, or bad-faith contributions will not be tolerated.
 

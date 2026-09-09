@@ -1,10 +1,10 @@
-# AGENT.md - AI 代理与贡献者规则
+# AGENTS.md - AI 代理与贡献者规则
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) | **[简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)**
+[English](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) | **简体中文**
 
 本文件定义了人类与 AI 代理在 **bffi-rs** 上工作时必须遵循的规则。
 
-仓库:https://github.com/DotBlood/bffi-rs  
+仓库:https://github.com/z2net/bffi-rs  
 联系方式:contact@z2net.com
 
 ---
@@ -28,7 +28,7 @@
 
 ## 2. 硬性规则
 
-1. **仅支持 Bun**  
+1. **仅支持 Bun**
    不要添加 Node.js 或 Deno 兼容层。
 
 2. **安全第一**
@@ -36,25 +36,25 @@
    - 仅允许通过 `bffi::unsafe_zero_copy` 进行零拷贝。
    - 所有 `extern "C"` 函数必须保持精简,并用 `catch_unwind` 包裹。
 
-3. **句柄**  
-   使用 Generational Index + type-tag(`u64`)。  
+3. **句柄**
+   使用 Generational Index + type-tag(`u64`)。
    绝不通过 C ABI 暴露原始 Rust 引用或复杂类型。
 
 4. **Panic**
    - 开发构建可以中止(更易于调试)。
    - 生产构建必须将 panic 转换为 JS `Error`。
 
-5. **最低 Bun 版本**  
+5. **最低 Bun 版本**
    `1.4.0`
 
-6. **Rust / Cargo 版本**  
-   项目锁定为 **Cargo / Rust 1.98.0**。  
+6. **Rust / Cargo 版本**
+   项目锁定为 **Cargo / Rust 1.98.0**。
    未经明确决策和 CI 更新,不得提升版本。
 
-7. **仓库中不得包含机密信息**  
+7. **仓库中不得包含机密信息**
    任何位于 `.grok`、`.claude`、`.codex`、`.opencode`、`.hermes`、`.mcp`、`.env` 下的内容,以及密钥、令牌等,都必须排除在 git 之外(参见 `.gitignore`)。
 
-8. **许可证**  
+8. **许可证**
    MIT。在适当之处保留 SPDX 头部声明。
 
 ---
@@ -78,7 +78,7 @@ bffi-rs/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   ├── PULL_REQUEST_TEMPLATE.md
-│   └── workflows/              # CI (planned; deferred until bffi-core lands)
+│   └── workflows/              # CI (ci.yml) + native release (release-native.yml)
 ├── crates/
 │   ├── bffi-core/               # foundation (handles, catch_unwind, ...)
 │   ├── bffi-types/              # type conversion
@@ -88,15 +88,18 @@ bffi-rs/
 │   ├── bffi-class/
 │   ├── bffi-dts/                # TypeScript .d.ts generation
 │   ├── bffi-macros/
+│   ├── bffi-macro-support/      # shared macro internals (kinds, classify, codegen)
 │   ├── bffi-event-loop/
+│   ├── bffi-async/              # futures as JS Promises
 │   ├── bffi-build/
-│   └── bffi-rs/                 # public facade
+│   ├── bffi-native/             # reference cdylib (runtime ABI; -> @z2net/bffi-native packages)
+│   └── bffi/                    # public facade
 ├── docs/
 │   ├── DESIGN.md                # architecture & decisions
 │   ├── CONTRIBUTING.md
 │   └── CODE_OF_CONDUCT.md
-├── examples/
-├── bin/                         # cli utility for bffi-rs
+├── examples/                      # sqlite, async, event-loop, callbacks (each an e2e suite)
+├── packages/                      # JS-side: bffi (@z2net/bffi), bffi-cli, native
 └── scripts/
 ```
 
@@ -122,6 +125,9 @@ bun install
 ```bash
 bun run lint          # oxlint
 bun run typecheck     # tsc
+bun run build         # builds all four example crates (release cdylibs)
+bun run test:e2e      # runs the examples as e2e suites (bun test examples)
+bun run ci            # full CI parity: lint, typecheck, fmt, clippy, tests
 cargo check
 cargo test
 cargo fmt
@@ -148,10 +154,10 @@ chore: pin rust-toolchain to 1.98.0
 - `main` - 生产分支;进入 `main` 的 PR 仅能由项目所有者从 `dev/main` 创建。
 - `dev/main` - 集成分支;所有功能工作都通过 PR 汇入此处。
 - 功能在 `dev/<feature>` 分支(kebab-case)中开发,从 `dev/main` 切出并合并回 `dev/main`。
-- PR `dev/<feature>` → `dev/main` 需要 1 个批准以及绿色的 `bun run ci`。
+- PR `dev/<feature>` → `dev/main` 需要 1 个批准以及绿色的 CI(`.github/workflows/ci.yml`;本地为 `bun run ci`)。
 - 发布标签 `v<semver>`(附注标签)仅放置在 `main` 上,且仅由所有者创建。
 
-完整规则:[docs/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) → “分支与发布”。
+完整规则:[docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md) → “分支与发布”。
 
 ### 拉取请求
 
@@ -188,17 +194,36 @@ chore: pin rust-toolchain to 1.98.0
 
 ## 7. 快速参考 - 已接受的决策
 
-| 主题          | 决策                                          |
-| ------------- | -------------------------------------------- |
-| 宏            | `#[bffi]`                                    |
-| 最低 Bun      | 1.4.0                                        | 
-| Rust/Cargo    | 1.98.0                                       |
-| 句柄          | Generational Index + type-tag                |
-| 缓冲区        | 默认复制                                     |
-| 零拷贝        | 仅通过 `bffi::unsafe_zero_copy`              |
-| 事件循环      | 以 `run()` 启动,`pump()` 目前为 mock 实现   |
-| TS 类型       | 从第一天起生成(`bffi-dts`)                  |
-| Panic(生产)  | 转换为 JS Error                              |
-| Panic(开发)  | 可以中止                                     |
-| 兼容性        | 仅支持 Bun                                   |
-| 许可证        | MIT                                          |
+| 主题        | 决策                                      |
+| ----------- | ----------------------------------------- |
+| 宏          | `#[bffi]`：shim（debug 直接 / release catch_unwind）+ bffi_meta_* 描述符 |
+| `#[bffi]` 返回值 | 原始类型/bigint 经 out-param;`String`/`Vec<u8>`/`CopiedBuf`(及 `Option`)作为缓冲区句柄;`Result<T, E>` -> DomainError(13) |
+| 最低 Bun    | 1.4.0                                     |
+| Rust/Cargo  | 1.98.0                                    |
+| 句柄        | Generational Index + type-tag             |
+| 错误格式    | `BffiError` = 代码 + 消息 + 来源;领域错误通过 `From` 无损转换 |
+| 边界字符串  | UTF-8 为规范编码(`bun:ffi cstring`)       |
+| 表格并发    | 无锁;危险指针回收                          |
+| UTF-8 校验  | SIMD(x86 SSSE3,aarch64 NEON);标量版作为参考 |
+| 缓冲区      | 默认复制                                  |
+| 零拷贝      | 仅通过 `bffi::unsafe_zero_copy`           |
+| 事件循环    | `run()` 阻塞式排空;`pump()` 非阻塞排空;`marshal` - 错误线程路径(代码 12) |
+| TS 类型 | IR（ModuleDef/FunctionDef/ClassDef）+ 确定性 render；export_name = bffi_ 前缀 |
+| 类宏 | 基于 ObjectWrap（标签 0x0100-0x01FF）的 `#[bffi_class]`/`#[bffi_impl]`:pub 原始字段的 getter、`&self` 方法、自动生成 release;元数据拆分为 bffi_meta_<name> + bffi_meta_<name>_impl::CLASS;E005-E008 |
+| 宏支持 | `bffi-macro-support`:为 proc-macro crate(bffi-macros、bffi-class)提供共享的模型/映射/代码生成;工具 crate - 无运行时代码、无 ABI |
+| Panic(生产) | 转换为 JS Error                           |
+| Panic(开发) | 可以中止                                  |
+| 兼容性      | 仅支持 Bun                                |
+| 许可证      | MIT                                       |
+| 门面         | `bffi`:扁平化再导出整个栈;`unsafe_zero_copy` 是唯一的零拷贝入口;宏展开依赖用户的直接依赖 |
+| 异步         | `#[bffi_async]`:spawn 包装函数(shim)返回任务句柄;N-worker 执行器;协作式取消 + 超时;经 event-loop 入队交付;tokio opt-in;标签 0x0500-0x05FF |
+| 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`(标签 0x0100-0x01FF);release 释放槽位 |
+| 回调 | `register`/`revoke` + `bind_js_callback`;标签 0x0200-0x0201;错误线程 - 拒绝 |
+| 构建 ABI | 运行时导出（`bffi_error_*`、`bffi_buffer` 对、`bffi_types_free`）通过在用户 crate 中展开的 `bffi_runtime_abi!()` 生成；标签 0x0400-0x04FF；规范契约：bffi-build/CALLING-CONVENTION.md |
+| 描述符 ABI | `FunctionDef`/`MethodDef` 携带 `AbiSig`（精确 C 宽度 + out 槽）；`FieldDef` 携带 getter 的 `export_name` + out；`ClassDef` 携带 `release_export` |
+| Wire 编解码 | `bffi_types::wire`:统一的 `[tag][payload]` 表,服务异步负载与回调签名/参数/结果 |
+| 回调 ABI | 通过 `bffi_callback_abi!()`（`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`）在用户 crate 生成的泛型导出；wire 编码；CALLING-CONVENTION.md §9 |
+| Loader JSON | `bffi_build::loader_json`:由聚合的 `ModuleDef` 渲染的规范、确定性 JSON 模式 v1 |
+| TS API 代码生成 | `bun bffi codegen <json> -o <ts>`:确定性渲染器;内嵌模式字面量;`ApiOf<>` 基于 `packages/bffi` 推导精确类型 |
+| 平台分发 | napi-rs 风格的平台 npm 包(optionalDependencies 精确锁版本、`bffi pack`、resolvePlatformBinary) |
+| 参考原生模块 | `crates/bffi-native` -> `@z2net/bffi-native` 平台包家族 |

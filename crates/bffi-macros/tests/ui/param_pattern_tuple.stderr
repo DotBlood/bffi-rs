@@ -1,0 +1,7 @@
+error: bffi[E001]: unsupported function shape: non-identifier parameter pattern
+         = help: use `name: Type` or `_`: Type
+         = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
+ --> tests/ui/param_pattern_tuple.rs:5:6
+  |
+5 | fn f((x): u32) {}
+  |      ^^^

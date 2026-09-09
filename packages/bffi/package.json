@@ -1,0 +1,53 @@
+{
+  "name": "@z2net/bffi",
+  "version": "0.1.0",
+  "description": "Bun-only bffi integration for TypeScript: config-driven pipeline (cargo build, api.gen generation, platform binary resolution) and a typed loader for bffi-rs native modules.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/z2net/bffi-rs.git",
+    "directory": "packages/bffi"
+  },
+  "bugs": {
+    "url": "https://github.com/z2net/bffi-rs/issues",
+    "email": "contact@z2net.com"
+  },
+  "author": {
+    "name": "z2net",
+    "email": "contact@z2net.com"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "packageManager": "bun@1.4.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./runtime": "./src/runtime/index.ts",
+    "./loader": "./src/loader/index.ts",
+    "./pipeline": "./src/pipeline/index.ts",
+    "./codegen": "./src/codegen/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "bffi",
+    "bun",
+    "ffi",
+    "native",
+    "rust",
+    "loader",
+    "typed",
+    "codegen"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

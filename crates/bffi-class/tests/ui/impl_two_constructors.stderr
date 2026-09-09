@@ -1,0 +1,8 @@
+error: bffi[E008]: invalid impl binding: multiple `#[bffi_constructor]` fns (exactly one is allowed)
+         = help: exactly one `#[bffi_constructor] pub fn new(...) -> Self` per `#[bffi_impl]`
+         = note: an `#[bffi_impl]` without a matching `#[bffi_class]` surfaces as a missing `__bffi_<name>_wrap` function
+         = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
+  --> tests/ui/impl_two_constructors.rs:17:12
+   |
+17 |     pub fn with(value: u32) -> Self {
+   |            ^^^^

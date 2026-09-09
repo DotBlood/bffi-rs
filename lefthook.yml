@@ -6,6 +6,8 @@ pre-commit:
     oxlint:
       tags: js lint
       glob: "*.{ts,tsx,js,mjs,cjs}"
+      exclude:
+        - "*.d.ts"
       run: bunx oxlint {staged_files}
     typecheck:
       tags: js types

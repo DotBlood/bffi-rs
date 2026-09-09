@@ -1,17 +1,17 @@
 # Как внести вклад в bffi-rs
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) | **[Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CONTRIBUTING.md)** | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/CONTRIBUTING.md)
 
 Спасибо за ваш интерес к внесению вклада.
 
-Репозиторий: https://github.com/DotBlood/bffi-rs
+Репозиторий: https://github.com/z2net/bffi-rs
 Контакт: contact@z2net.com
 
 Пожалуйста, прочитайте также:
 
-- [DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) - архитектура и решения
-- [AGENT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) - правила для людей и AI-агентов
-- [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md)
+- [DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) - архитектура и решения
+- [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENTS.md) - правила для людей и AI-агентов
+- [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md)
 
 ---
 
@@ -24,15 +24,15 @@
 - Git
 
 ```bash
-# Install / select Rust toolchain
+# Установка / выбор тулчейна Rust
 rustup toolchain install 1.98.0
 rustup default 1.98.0
 
-# Clone
-git clone https://github.com/DotBlood/bffi-rs.git
+# Клонирование
+git clone https://github.com/z2net/bffi-rs.git
 cd bffi-rs
 
-# JS tooling
+# JS-инструментарий
 bun install
 ```
 
@@ -40,7 +40,10 @@ bun install
 
 ```bash
 bun run lint          # oxlint
-bun run typecheck     # TypeScript check
+bun run typecheck     # проверка TypeScript
+bun run build         # собирает все четыре примера-крейта (release cdylib)
+bun run test:e2e      # прогоняет примеры как наборы e2e-тестов (bun test examples)
+bun run ci            # полный CI-паритет: lint, typecheck, fmt, clippy, тесты
 cargo fmt
 cargo clippy
 cargo check
@@ -65,19 +68,19 @@ cargo test
 
 ### Допустимые типы
 
-| Тип        | Значение                                            |
-| ---------- | --------------------------------------------------- |
-| `feat`     | Новая функциональность                              |
-| `fix`      | Исправление бага                                    |
-| `docs`     | Только документация                                 |
-| `style`    | Форматирование, без изменения логики                |
-| `refactor` | Изменение кода, не являющееся фиксом или фичей      |
-| `perf`     | Улучшение производительности                        |
-| `test`     | Добавление или исправление тестов                   |
-| `build`    | Система сборки или зависимости                      |
-| `ci`       | Конфигурация CI                                     |
-| `chore`    | Задачи сопровождения                                |
-| `revert`   | Отмена предыдущего коммита                          |
+| Тип        | Значение                                       |
+| ---------- | ---------------------------------------------- |
+| `feat`     | Новая функциональность                         |
+| `fix`      | Исправление бага                               |
+| `docs`     | Только документация                            |
+| `style`    | Форматирование, без изменения логики           |
+| `refactor` | Изменение кода, не являющееся фиксом или фичей |
+| `perf`     | Улучшение производительности                   |
+| `test`     | Добавление или исправление тестов              |
+| `build`    | Система сборки или зависимости                 |
+| `ci`       | Конфигурация CI                                |
+| `chore`    | Задачи сопровождения                           |
+| `revert`   | Отмена предыдущего коммита                     |
 
 ### Примеры
 
@@ -103,11 +106,11 @@ BREAKING CHANGE: the public type `Handle` was renamed to `BffiHandle`.
 
 ### Модель веток
 
-| Ветка           | Назначение                                                                      |
-| --------------- | ------------------------------------------------------------------------------- |
-| `main`          | Продакшн-ветка. Только стабильный, готовый к релизу код.                        |
-| `dev/main`      | Интеграционная ветка. Вся работа над фичами попадает сюда через пул-реквесты.   |
-| `dev/<feature>` | Ветки фич (`dev/ffi-handles`, `dev/error-mapping`, ...).                        |
+| Ветка           | Назначение                                                                    |
+| --------------- | ----------------------------------------------------------------------------- |
+| `main`          | Продакшн-ветка. Только стабильный, готовый к релизу код.                      |
+| `dev/main`      | Интеграционная ветка. Вся работа над фичами попадает сюда через пул-реквесты. |
+| `dev/<feature>` | Ветки фич (`dev/ffi-handles`, `dev/error-mapping`, ...).                      |
 
 - Пул-реквесты в `main` создаются **только владельцем проекта**, из `dev/main`.
 - Вся разработка ведётся в ветках `dev/<feature>`, которые отпочковываются от `dev/main` и мержатся обратно в `dev/main`.
@@ -128,7 +131,7 @@ gitGraph
 
 ### Правила ревью
 
-- Пул-реквест `dev/<feature>` → `dev/main`: как минимум **1 одобрение** (владелец или мейнтейнер) и зелёный `bun run ci` (локально, пока не появятся CI-workflows).
+- Пул-реквест `dev/<feature>` → `dev/main`: как минимум **1 одобрение** (владелец или мейнтейнер) и зелёный CI (workflow `ci.yml` в GitHub Actions; локально - `bun run ci`).
 - Пул-реквест `dev/main` → `main`: только владелец, при релизном мерже (см. теги ниже).
 - Ревью следует чек-листу из шаблона пул-реквеста (fmt, clippy, тесты, lint, документация).
 
@@ -145,7 +148,7 @@ gitGraph
 
 1. Сделайте форк репозитория и создайте ветку от `dev/main`.
 2. Внесите сфокусированное изменение (одна логическая единица на пул-реквест).
-3. Убедитесь, что проходят `cargo fmt`, `cargo clippy`, тесты и `bun run lint`.
+3. Убедитесь, что проходит `bun run ci` (lint, typecheck, fmt, clippy, тесты).
 4. Заполните шаблон пул-реквеста.
 5. Укажите связанные issues, если они есть.
 6. Будьте готовы обсуждать проектные решения - нам важна долгосрочная согласованность с `DESIGN.md`.
@@ -177,7 +180,7 @@ gitGraph
 
 - Путь данных по умолчанию - **копирование**, а не zero-copy.
 - Zero-copy только через `bffi::unsafe_zero_copy`.
-- Хендлы - это Generational Index + type-tag.
+- Дескрипторы (handles) - это индекс с поколением + тег типа.
 - Никакого кода совместимости с Node.js / Deno.
 - Не коммитьте секреты, папки личных AI-конфигураций (`.grok`, `.claude`, `.codex`, …) или файлы `.env`.
 
@@ -185,7 +188,7 @@ gitGraph
 
 ## Кодекс поведения
 
-Будьте уважительны. См. [CODE_OF_CONDUCT.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md).
+Будьте уважительны. См. [CODE_OF_CONDUCT.md](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/CODE_OF_CONDUCT.md).
 
 Травля, токсичное поведение или недобросовестные вклады не допускаются.
 

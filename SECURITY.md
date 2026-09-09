@@ -1,6 +1,6 @@
 # Security Policy
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/SECURITY.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/SECURITY.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/SECURITY.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/SECURITY.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/SECURITY.md)
 
 ## Reporting a Vulnerability
 
@@ -19,7 +19,7 @@ We aim to respond within 72 hours. Please do not disclose publicly until a fix i
 - Memory safety bugs in the FFI boundary
 - Handle table corruption / type confusion
 - Panic propagation issues
-- Codegen bugs in `bffi-macros` that could hide `unsafe`
+- Codegen bugs in the generated shims (`bffi-macros` / `bffi-class`) that could hide `unsafe`
 
 Out of scope:
 - Bugs in Bun itself (report to oven-sh/bun)
