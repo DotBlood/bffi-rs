@@ -11,10 +11,14 @@ members = [
     "crates/bffi-macro-support",
     "crates/bffi-build",
     "examples/sqlite",
+    "examples/async",
+    "examples/event-loop",
+    "examples/callbacks",
     "crates/bffi-event-loop",
     "crates/bffi-class",
     "crates/bffi",
     "crates/bffi-async",
+    "crates/bffi-native",
 ]
 
 [workspace.package]
