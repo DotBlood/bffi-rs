@@ -49,8 +49,8 @@
 | `crates/bffi-build` | Runtime ABI-экспорты, транзитные буферы, эмиттеры `.d.ts`/loader JSON |
 | `crates/bffi-async` | `#[bffi_async]`: Rust-фьючерсы как JS Promises (отмена, таймауты, tokio opt-in) |
 | `crates/bffi` | Фасад: одна зависимость на весь стек |
-| `packages/bffi-loader` | Bun-only JS-рантайм: типизированные API из loader JSON (`@z2net/bffi-loader`, публикация pending) |
-| `bin/` | CLI `bffi codegen` |
+| `packages/bffi` | Bun-only JS-интеграция: конфиг, полный пайплайн (build → json → api.gen), типизированный лоадер (`@z2net/bffi`, публикация pending) |
+| `packages/bffi-cli` | CLI `bffi`: init, build, codegen, pack, fetch, check, doctor (`@z2net/bffi-cli`, публикация pending) |
 | `packages/native-template` | Шаблон COPY-ME: pattern-A npm-упаковка нативного модуля (reference-only) |
 
 ## Начало работы

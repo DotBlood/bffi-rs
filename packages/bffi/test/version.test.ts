@@ -4,7 +4,7 @@
  * comparison would fail), prerelease suffixes, the no-runtime case,
  * and the assert/problem-message shapes.
  *
- * Run with `bun test packages/bffi-loader`.
+ * Run with `bun test packages/bffi`.
  */
 import { describe, expect, test } from "bun:test";
 
@@ -67,7 +67,7 @@ describe("bunVersionProblem / assertBunVersion", () => {
       "requires Bun >= 1.4.0; found 1.3.2. Upgrade Bun: https://bun.sh",
     );
     expect(() => assertBunVersion("1.3.2")).toThrow(
-      /bffi-loader requires Bun >= 1\.4\.0; found 1\.3\.2/,
+      /@z2net\/bffi requires Bun >= 1\.4\.0; found 1\.3\.2/,
     );
   });
 

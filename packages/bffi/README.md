@@ -1,4 +1,4 @@
-# @z2net/bffi-loader
+# @z2net/bffi
 
 Bun-only runtime loader for [bffi-rs](https://github.com/DotBlood/bffi-rs)
 native modules: the typed JS API is built from the loader schema the
@@ -46,7 +46,7 @@ carrying prebuilt binaries).
 ## Tests
 
 ```sh
-bun test packages/bffi-loader
+bun test packages/bffi
 ```
 
 The suite covers the codec round-trips against the Rust-side vectors,

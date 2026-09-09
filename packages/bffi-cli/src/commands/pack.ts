@@ -21,6 +21,8 @@ const PLATFORMS: Record<
   "win32-x64-msvc": { os: "win32", cpu: "x64", file: "native.dll" },
   "linux-x64-gnu": { os: "linux", cpu: "x64", libc: "glibc", file: "libnative.so" },
   "linux-arm64-gnu": { os: "linux", cpu: "arm64", libc: "glibc", file: "libnative.so" },
+  "linux-x64-musl": { os: "linux", cpu: "x64", libc: "musl", file: "libnative.so" },
+  "linux-arm64-musl": { os: "linux", cpu: "arm64", libc: "musl", file: "libnative.so" },
   "darwin-aarch64": { os: "darwin", cpu: "arm64", file: "libnative.dylib" },
   "darwin-x64": { os: "darwin", cpu: "x64", file: "libnative.dylib" },
 };

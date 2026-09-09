@@ -65,7 +65,6 @@ export function bunVersionProblem(
   }
   return `requires Bun >= ${min}; found ${version}. Upgrade Bun: https://bun.sh`;
 }
-
 /**
  * Throws when the running Bun is older than [`MIN_BUN_VERSION`].
  * Called at the public module entry so consumers fail fast with a
@@ -74,6 +73,6 @@ export function bunVersionProblem(
 export function assertBunVersion(version: string = Bun.version): void {
   const problem = bunVersionProblem(version);
   if (problem !== undefined) {
-    throw new Error(`bffi-loader ${problem}`);
+    throw new Error(`@z2net/bffi ${problem}`);
   }
 }

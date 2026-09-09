@@ -4,7 +4,7 @@
  * argument encoding rules (null for empty buffers, bool coercion)
  * and the API factory over a mock symbol table.
  *
- * Run with `bun test packages/bffi-loader`.
+ * Run with `bun test packages/bffi`.
  */
 import { describe, expect, test } from "bun:test";
 

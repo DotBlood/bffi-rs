@@ -2,7 +2,7 @@
  * The deterministic codegen renderer: a validated loader-schema JSON
  * in, one typed TS module out. The output embeds the schema as a
  * `const ... as const satisfies ModuleJson` literal - the `ApiOf<>`
- * mapping in `bffi-loader` derives the exact TypeScript signatures
+ * mapping in `@z2net/bffi` derives the exact TypeScript signatures
  * from that literal, so the renderer emits NO hand-written types.
  *
  * Format contract (mirrors `bffi-dts::render`): a fixed header, LF

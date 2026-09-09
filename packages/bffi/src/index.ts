@@ -1,5 +1,5 @@
 /**
- * The public surface of `bffi-loader`: schema types, declaration
+ * The public surface of `@z2net/bffi`: schema types, declaration
  * builder, wire codec, and the runtime primitives the generated
  * modules (and hand-rolled loaders) compose.
  */
@@ -54,6 +54,7 @@ export {
 export {
   platformTriple,
   resolvePlatformBinary,
+  tripleWithLibc,
   type ResolveOptions,
 } from "./resolve.ts";
 export {

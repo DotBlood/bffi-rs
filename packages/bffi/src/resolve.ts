@@ -58,6 +58,9 @@ function artifactExt(triple: string): { ext: string; prefix: string } {
 export interface ResolveOptions {
   /** Override the detected platform triple. */
   triple?: string;
+  /** Linux libc override: `"musl"` turns the default `linux-*-gnu`
+   * triple into `linux-*-musl` (Alpine). Default: gnu. */
+  libc?: "auto" | "glibc" | "musl";
   /** The cdylib base name (`bffi_mylib` - WITHOUT extension/lib
    * prefix). Required. */
   binary: string;
@@ -66,6 +69,17 @@ export interface ResolveOptions {
   /** Module resolver; defaults to `Bun.resolveSync`. Injectable for
    * tests. */
   resolveSync?: (specifier: string, from: string) => string;
+}
+
+/** Applies the libc override to a base triple: `"musl"` swaps the
+ * gnu suffix for musl on linux triples. */
+export function tripleWithLibc(
+  triple: string,
+  libc: "auto" | "glibc" | "musl",
+): string {
+  return libc === "musl" && triple.startsWith("linux-")
+    ? triple.replace("-gnu", "-musl")
+    : triple;
 }
 
 /**
@@ -80,7 +94,7 @@ export function resolvePlatformBinary(
   base: string,
   options: ResolveOptions,
 ): string {
-  const triple = options.triple ?? platformTriple();
+  const triple = options.triple ?? tripleWithLibc(platformTriple(), options.libc ?? "auto");
   if (options.binary === undefined || options.binary.length === 0) {
     throw new Error(
       `resolvePlatformBinary(${base}): options.binary is required ` +

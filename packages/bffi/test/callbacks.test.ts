@@ -7,7 +7,7 @@
  * side channel (`queueArgs`) - the byte format itself is covered by
  * the Rust-side `bffi-callback` tests.
  *
- * Run with `bun test packages/bffi-loader`.
+ * Run with `bun test packages/bffi`.
  */
 import { describe, expect, test } from "bun:test";
 import { ptr } from "bun:ffi";

@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import {
   platformTriple,
   resolvePlatformBinary,
+  tripleWithLibc,
 } from "../src/index.ts";
 
 describe("platformTriple", () => {
@@ -26,6 +27,18 @@ describe("platformTriple", () => {
   test("rejects platforms bffi does not ship", () => {
     expect(() => platformTriple("freebsd", "x64")).toThrow(/unsupported platform/);
     expect(() => platformTriple("win32", "arm64")).toThrow(/unsupported platform/);
+  });
+});
+
+describe("tripleWithLibc", () => {
+  test("musl swaps the gnu suffix on linux triples only", () => {
+    expect(tripleWithLibc("linux-x64-gnu", "musl")).toBe("linux-x64-musl");
+    expect(tripleWithLibc("linux-arm64-gnu", "musl")).toBe("linux-arm64-musl");
+    expect(tripleWithLibc("linux-x64-gnu", "auto")).toBe("linux-x64-gnu");
+    expect(tripleWithLibc("linux-x64-gnu", "glibc")).toBe("linux-x64-gnu");
+    // Non-linux triples are untouched.
+    expect(tripleWithLibc("win32-x64-msvc", "musl")).toBe("win32-x64-msvc");
+    expect(tripleWithLibc("darwin-aarch64", "musl")).toBe("darwin-aarch64");
   });
 });
 

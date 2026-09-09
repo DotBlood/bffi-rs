@@ -35,6 +35,9 @@ export interface BffiConfig {
   module: string;
   /** Target OS override; `"auto"` = the running platform. */
   os: "auto" | "win32" | "linux" | "darwin";
+  /** Linux libc override for platform-package resolution; `"auto"`
+   * assumes glibc. Matters for musl (Alpine) consumers. */
+  libc?: "auto" | "glibc" | "musl";
   /** Debug mode: sets `BFFI_DEBUG` + verbose logs. */
   debug: boolean;
   /** The bun executable (spawned subprocesses). */
@@ -110,6 +113,14 @@ function validate(raw: unknown, issues: ConfigIssue[], path: string): void {
       });
     }
   }
+  if (raw.libc !== undefined && raw.libc !== "auto") {
+    if (raw.libc !== "glibc" && raw.libc !== "musl") {
+      issues.push({
+        path: `${path}.libc`,
+        message: 'expected "auto", "glibc" or "musl"',
+      });
+    }
+  }
   if (raw.debug !== undefined && typeof raw.debug !== "boolean") {
     issues.push({ path: `${path}.debug`, message: "expected a boolean" });
   }
@@ -167,6 +178,7 @@ export function validateConfig(raw: unknown): BffiConfig {
   return {
     ...cfg,
     os: cfg.os ?? "auto",
+    libc: cfg.libc ?? "auto",
     debug: cfg.debug ?? false,
     bun: cfg.bun ?? "bun",
     rust: cfg.rust ?? "cargo",
