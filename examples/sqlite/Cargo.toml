@@ -1,0 +1,30 @@
+[package]
+name = "bffi-example-sqlite"
+description = "Example bffi-rs native module: a small functional SQLite surface (open/exec/query/close) verifying the .bffi pipeline end-to-end."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+# Writes .bffi/bffi.api.json from module_def::MODULE (the loader JSON
+# artifact consumed by the @z2net/bffi pipeline).
+name = "emit-json"
+path = "src/bin/emit_json.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+bffi = { path = "../../crates/bffi" }
+bffi-core = { path = "../../crates/bffi-core" }
+bffi-types = { path = "../../crates/bffi-types" }
+bffi-dts = { path = "../../crates/bffi-dts" }
+bffi-macros = { path = "../../crates/bffi-macros" }
+bffi-build = { path = "../../crates/bffi-build" }
+rusqlite = { version = "0.32", features = ["bundled"] }

@@ -1,5 +1,6 @@
 /**
- * The `bffi` CLI. Product form (v1):
+ * The `bffi` CLI - a thin wrapper over `@z2net/bffi` until the CLI
+ * moves to its own project. Product form:
  *
  *   bun bffi codegen <input.json> -o <out.ts> [--runtime <module>]
  *
@@ -10,10 +11,12 @@
  * byte-identical module, which makes the generated file safe to
  * commit and diff.
  */
-import { parseArgs } from "node:util";
-import { renderModule, DEFAULT_RUNTIME } from "./codegen.ts";
-import { SchemaValidationError } from "./schema.ts";
-import { bunVersionProblem } from "../packages/bffi-loader/src/version.ts";
+import {
+  bunVersionProblem,
+  DEFAULT_RUNTIME,
+  renderModule,
+  SchemaValidationError,
+} from "@z2net/bffi";
 
 const USAGE = `bffi - codegen for bffi-rs native modules
 
@@ -46,30 +49,42 @@ class UsageError extends Error {
 
 /** Parses argv; throws a [`UsageError`] on anything unexpected. */
 function parseOptions(argv: string[]): Options {
-  const { values, positionals } = parseArgs({
-    args: argv,
-    options: {
-      out: { type: "string", short: "o" },
-      runtime: { type: "string" },
-      help: { type: "boolean", short: "h" },
-    },
-    allowPositionals: true,
-  });
-  if (values.help) {
+  let command: string | undefined;
+  let input: string | undefined;
+  let out: string | undefined;
+  let runtime: string | undefined;
+  let help = false;
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--help" || arg === "-h") {
+      help = true;
+    } else if (arg === "--out" || arg === "-o") {
+      out = argv[i + 1];
+      i++;
+    } else if (arg === "--runtime") {
+      runtime = argv[i + 1];
+      i++;
+    } else if (arg !== undefined && !arg.startsWith("-")) {
+      if (command === undefined) {
+        command = arg;
+      } else if (input === undefined) {
+        input = arg;
+      } else {
+        throw new UsageError(USAGE, false);
+      }
+    } else {
+      throw new UsageError(USAGE, false);
+    }
+  }
+
+  if (help) {
     throw new UsageError(USAGE, true);
   }
-  const [command, input] = positionals;
-  if (command !== "codegen" || input === undefined || positionals.length !== 2) {
+  if (command !== "codegen" || input === undefined || out === undefined) {
     throw new UsageError(USAGE, false);
   }
-  if (values.out === undefined) {
-    throw new UsageError(USAGE, false);
-  }
-  return {
-    input,
-    out: values.out,
-    runtime: values.runtime ?? DEFAULT_RUNTIME,
-  };
+  return { input, out, runtime: runtime ?? DEFAULT_RUNTIME };
 }
 
 /** The process entry point; resolves to the exit code. */

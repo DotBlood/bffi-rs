@@ -1,0 +1,106 @@
+/**
+ * Platform-binary resolution for pattern-A distribution (napi-rs
+ * style): the main package declares every platform package in
+ * `optionalDependencies`; npm/bun installs ONLY the one matching the
+ * running platform (`os`/`cpu`/`libc` fields), and this module turns
+ * that package into the dlopen path.
+ *
+ * Triple naming follows the napi-rs convention
+ * (`<base>-win32-x64-msvc`, `<base>-linux-x64-gnu`,
+ * `<base>-darwin-aarch64`, ...). The binary inside the platform
+ * package follows the artifact convention
+ * `[lib]<binary>.<ext>` (`bffi_mylib.dll`, `libbffi_mylib.so`, ...),
+ * so no package code has to execute - resolution is pure lookup.
+ *
+ * Bun-only: module resolution goes through `Bun.resolveSync`
+ * (a runtime built-in).
+ */
+import { dirname, join } from "node:path";
+
+/** The napi-rs style triple of the RUNNING platform. Throws for
+ * platforms bffi does not ship. */
+export function platformTriple(
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch,
+): string {
+  const key = `${platform}-${arch}`;
+  switch (key) {
+    case "win32-x64":
+      return "win32-x64-msvc";
+    case "linux-x64":
+      return "linux-x64-gnu";
+    case "linux-arm64":
+      return "linux-arm64-gnu";
+    case "darwin-arm64":
+      return "darwin-aarch64";
+    case "darwin-x64":
+      return "darwin-x64";
+    default:
+      throw new Error(
+        `unsupported platform for bffi native packages: ${key} ` +
+          `(shipped: win32-x64, linux-x64, linux-arm64, darwin-x64, darwin-arm64)`,
+      );
+  }
+}
+
+/** The dlopen artifact extension of a triple. */
+function artifactExt(triple: string): { ext: string; prefix: string } {
+  if (triple.startsWith("win32")) {
+    return { ext: "dll", prefix: "" };
+  }
+  if (triple.startsWith("darwin")) {
+    return { ext: "dylib", prefix: "lib" };
+  }
+  return { ext: "so", prefix: "lib" };
+}
+
+/** Options of [`resolvePlatformBinary`]. */
+export interface ResolveOptions {
+  /** Override the detected platform triple. */
+  triple?: string;
+  /** The cdylib base name (`bffi_mylib` - WITHOUT extension/lib
+   * prefix). Required. */
+  binary: string;
+  /** Resolution base directory (default: `process.cwd()`). */
+  from?: string;
+  /** Module resolver; defaults to `Bun.resolveSync`. Injectable for
+   * tests. */
+  resolveSync?: (specifier: string, from: string) => string;
+}
+
+/**
+ * Resolves the absolute path of the native binary inside the
+ * platform package `<base>-<triple>` of `base` (e.g.
+ * `@z2net/mylib` -> `@z2net/mylib-win32-x64-msvc`).
+ *
+ * Throws a clear error when the platform package is not installed
+ * (optional dependencies can be skipped by package managers).
+ */
+export function resolvePlatformBinary(
+  base: string,
+  options: ResolveOptions,
+): string {
+  const triple = options.triple ?? platformTriple();
+  if (options.binary === undefined || options.binary.length === 0) {
+    throw new Error(
+      `resolvePlatformBinary(${base}): options.binary is required ` +
+        `(the cdylib base name, e.g. "bffi_mylib")`,
+    );
+  }
+  const packageName = `${base}-${triple}`;
+  const from = options.from ?? process.cwd();
+  const resolveSync =
+    options.resolveSync ?? ((specifier: string, fromDir: string) => Bun.resolveSync(specifier, fromDir));
+  let entry: string;
+  try {
+    entry = resolveSync(packageName, from);
+  } catch (error) {
+    throw new Error(
+      `native package ${packageName} is not installed or failed to resolve ` +
+        `(${String(error)}). Install it explicitly or pass an absolute ` +
+        `library path instead.`,
+    );
+  }
+  const { ext, prefix } = artifactExt(triple);
+  return join(dirname(entry), `${prefix}${options.binary}.${ext}`);
+}

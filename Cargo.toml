@@ -10,7 +10,7 @@ members = [
     "crates/bffi-macros",
     "crates/bffi-macro-support",
     "crates/bffi-build",
-    "examples/native",
+    "examples/sqlite",
     "crates/bffi-event-loop",
     "crates/bffi-class",
     "crates/bffi",

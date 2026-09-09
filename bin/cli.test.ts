@@ -1,14 +1,14 @@
 /**
  * Process-level exit-code contract of the CLI (`bun bin/index.ts`):
  * 0 on success, 1 on usage errors, 2 on input failures.
+ *
+ * Bun-only: file scaffolding via `Bun.write` (creates parent dirs),
+ * cleanup via the cross-platform Bun Shell.
  */
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { $ } from "bun";
 
-const ENTRY = fileURLToPath(new URL("./index.ts", import.meta.url));
+const ENTRY = `${import.meta.dir}/index.ts`;
 
 const GOOD_SCHEMA = JSON.stringify({
   bffi: 1,
@@ -26,16 +26,20 @@ function run(args: string[]): { code: number; stderr: string } {
 }
 
 describe("bffi CLI exit codes", () => {
-  const dir = mkdtempSync(join(tmpdir(), "bffi-cli-"));
+  const dir = `${import.meta.dir}/tmp`;
 
-  test("codegen succeeds and writes the module (exit 0)", () => {
-    const input = join(dir, "schema.json");
-    const out = join(dir, "out.gen.ts");
-    writeFileSync(input, GOOD_SCHEMA);
+  afterAll(async () => {
+    await $`rm -rf ${dir}`;
+  });
+
+  test("codegen succeeds and writes the module (exit 0)", async () => {
+    const input = `${dir}/schema.json`;
+    const out = `${dir}/out.gen.ts`;
+    await Bun.write(input, GOOD_SCHEMA);
     const { code } = run(["codegen", input, "-o", out]);
     expect(code).toBe(0);
-    expect(existsSync(out)).toBeTrue();
-    expect(readFileSync(out, "utf8")).toContain("Source module: probe");
+    expect(await Bun.file(out).exists()).toBeTrue();
+    expect(await Bun.file(out).text()).toContain("Source module: probe");
   });
 
   test("a missing positional is a usage error (exit 1)", () => {
@@ -48,23 +52,19 @@ describe("bffi CLI exit codes", () => {
     expect(code).toBe(0);
   });
 
-  test("unparsable JSON is an input failure (exit 2)", () => {
-    const input = join(dir, "bad.json");
-    writeFileSync(input, "{ not json");
-    const { code, stderr } = run(["codegen", input, "-o", join(dir, "out.gen.ts")]);
+  test("unparsable JSON is an input failure (exit 2)", async () => {
+    const input = `${dir}/bad.json`;
+    await Bun.write(input, "{ not json");
+    const { code, stderr } = run(["codegen", input, "-o", `${dir}/out.gen.ts`]);
     expect(code).toBe(2);
     expect(stderr).toContain("cannot read or parse JSON");
   });
 
-  test("schema validation failures exit 2 with diagnostics", () => {
-    const input = join(dir, "schema.json");
-    writeFileSync(input, JSON.stringify({ bffi: 2, module: "x", functions: [], classes: [] }));
-    const { code, stderr } = run(["codegen", input, "-o", join(dir, "out.gen.ts")]);
+  test("schema validation failures exit 2 with diagnostics", async () => {
+    const input = `${dir}/schema.json`;
+    await Bun.write(input, JSON.stringify({ bffi: 2, module: "x", functions: [], classes: [] }));
+    const { code, stderr } = run(["codegen", input, "-o", `${dir}/out.gen.ts`]);
     expect(code).toBe(2);
     expect(stderr).toContain("$.bffi");
-  });
-
-  afterAll(() => {
-    rmSync(dir, { recursive: true, force: true });
   });
 });

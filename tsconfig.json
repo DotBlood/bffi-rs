@@ -25,6 +25,13 @@
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Monorepo resolution: generated files import "@z2net/bffi" by
+    // package name; until publication the name maps onto the local
+    // sources (Bun's runtime honors tsconfig paths too).
+    "paths": {
+      "@z2net/bffi": ["./packages/bffi/src/index.ts"]
+    }
   }
 }
