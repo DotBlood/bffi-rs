@@ -56,7 +56,12 @@ export {
   resolvePlatformBinary,
   type ResolveOptions,
 } from "./resolve.ts";
-export { fileUrl, BFFI_DIR, CONFIG_FILE } from "./paths.ts";
+export {
+  joinOut,
+  fileUrl,
+  BFFI_DIR,
+  CONFIG_FILE,
+} from "./paths.ts";
 export { DEFAULT_RUNTIME, renderModule } from "./generate.ts";
 export {
   validateModule,
@@ -84,6 +89,7 @@ export {
   bffi,
   bffiBuild,
   bffiGenerate,
+  localArtifactPath,
   type BffiOptions,
   type GenerateOptions,
 } from "./pipeline.ts";

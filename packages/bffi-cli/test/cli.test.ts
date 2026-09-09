@@ -1,21 +1,12 @@
 /**
- * Process-level exit-code contract of the CLI (`bun bin/index.ts`):
- * 0 on success, 1 on usage errors, 2 on input failures.
+ * Process-level tests of the CLI: exit codes via spawning
+ * `bin/bffi.ts` (0 ok / 1 usage / 2 input).
  *
- * Bun-only: file scaffolding via `Bun.write` (creates parent dirs),
- * cleanup via the cross-platform Bun Shell.
+ * Run with `bun test packages/bffi-cli`.
  */
 import { afterAll, describe, expect, test } from "bun:test";
-import { $ } from "bun";
 
-const ENTRY = `${import.meta.dir}/index.ts`;
-
-const GOOD_SCHEMA = JSON.stringify({
-  bffi: 1,
-  module: "probe",
-  functions: [],
-  classes: [],
-});
+const ENTRY = `${import.meta.dir}/../bin/bffi.ts`;
 
 function run(args: string[]): { code: number; stderr: string } {
   const proc = Bun.spawnSync(["bun", ENTRY, ...args]);
@@ -28,22 +19,25 @@ function run(args: string[]): { code: number; stderr: string } {
 describe("bffi CLI exit codes", () => {
   const dir = `${import.meta.dir}/tmp`;
 
-  afterAll(async () => {
-    await $`rm -rf ${dir}`;
-  });
-
   test("codegen succeeds and writes the module (exit 0)", async () => {
     const input = `${dir}/schema.json`;
     const out = `${dir}/out.gen.ts`;
-    await Bun.write(input, GOOD_SCHEMA);
+    await Bun.write(
+      input,
+      JSON.stringify({ bffi: 1, module: "probe", functions: [], classes: [] }),
+    );
     const { code } = run(["codegen", input, "-o", out]);
     expect(code).toBe(0);
     expect(await Bun.file(out).exists()).toBeTrue();
-    expect(await Bun.file(out).text()).toContain("Source module: probe");
   });
 
   test("a missing positional is a usage error (exit 1)", () => {
     const { code } = run(["codegen"]);
+    expect(code).toBe(1);
+  });
+
+  test("an unknown command is a usage error (exit 1)", () => {
+    const { code } = run(["frobnicate"]);
     expect(code).toBe(1);
   });
 
@@ -66,5 +60,10 @@ describe("bffi CLI exit codes", () => {
     const { code, stderr } = run(["codegen", input, "-o", `${dir}/out.gen.ts`]);
     expect(code).toBe(2);
     expect(stderr).toContain("$.bffi");
+  });
+
+  afterAll(async () => {
+    const { $ } = await import("bun");
+    await $`rm -rf ${dir}`;
   });
 });

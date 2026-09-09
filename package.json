@@ -20,7 +20,7 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
     "typecheck": "tsc --noEmit",
-    "codegen": "bun bin/index.ts codegen",
+    "codegen": "bun packages/bffi-cli/bin/bffi.ts codegen",
     "fmt": "cargo fmt",
     "fmt:check": "cargo fmt --check",
     "clippy": "cargo clippy --workspace --all-targets -- -D warnings",

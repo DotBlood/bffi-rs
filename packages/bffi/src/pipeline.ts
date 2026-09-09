@@ -112,7 +112,7 @@ export async function bffi<T = unknown>(options: BffiOptions = {}): Promise<T> {
 /** The LOCAL artifact of the configured crate:
  * `<crate.dir>/<crate.targetDir|target>/release/[lib]<binary>.<ext>`
  * (the os config field overrides the running platform). */
-function localArtifactPath(config: BffiConfig, root: string): string {
+export function localArtifactPath(config: BffiConfig, root: string): string {
   const os = config.os === "auto" || config.os === undefined ? process.platform : config.os;
   const { ext, prefix } =
     os === "win32"

@@ -19,3 +19,14 @@ export const CONFIG_FILE = "bffi.json";
 export function fileUrl(path: string): string {
   return pathToFileURL(path).href;
 }
+
+/** Joins `root` with `next` unless `next` is already absolute
+ * (`/x` or `C:/x`), in which case `next` wins - resolve-style. */
+export function joinOut(root: string, next: string): string {
+  const normalized = next.replaceAll("\\", "/");
+  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+    return normalized;
+  }
+  const base = root.replace(/\/+$/, "");
+  return `${base}/${normalized.replace(/^\/+/, "")}`;
+}
