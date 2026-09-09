@@ -73,6 +73,7 @@ export {
   defineConfig,
   loadConfigFile,
   validateConfig,
+  findProjectRoot,
   CONFIG_VERSION,
   ConfigValidationError,
   type BffiConfig,

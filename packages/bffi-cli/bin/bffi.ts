@@ -7,7 +7,9 @@
  */
 import { bunVersionProblem } from "@z2net/bffi";
 import { build } from "../src/commands/build.ts";
+import { check } from "../src/commands/check.ts";
 import { codegen } from "../src/commands/codegen.ts";
+import { doctor } from "../src/commands/doctor.ts";
 import { fetchCmd } from "../src/commands/fetch.ts";
 import { init } from "../src/commands/init.ts";
 import { pack } from "../src/commands/pack.ts";
@@ -19,7 +21,9 @@ type Command = (argv: string[]) => Promise<number>;
 const COMMANDS: Record<string, Command> = {
   init,
   build,
+  check,
   codegen,
+  doctor,
   pack,
   fetch: fetchCmd,
 };
