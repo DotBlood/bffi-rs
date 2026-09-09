@@ -1,12 +1,12 @@
 # bffi
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
-The public facade of [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the Bun-only native
+The public facade of [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the Bun-only native
 binding framework. One dependency re-exporting the whole stack
 (DESIGN.md §5), with
-[`bffi::unsafe_zero_copy`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi/src/lib.rs)
+[`bffi::unsafe_zero_copy`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi/src/lib.rs)
 as the single zero-copy door (DESIGN.md §6.3).
 
 **Status:** P2 complete - flat re-exports of core/types/error/object/
@@ -99,7 +99,7 @@ both proc macros in use, and the zero-copy door.
 ## The JS side
 
 JavaScript consumes this stack through
-[`packages/bffi`](https://github.com/DotBlood/bffi-rs/blob/main/packages/bffi)
+[`packages/bffi`](https://github.com/z2net/bffi-rs/blob/main/packages/bffi)
 (`@z2net/bffi`): the `bffi codegen` CLI (packages/bffi-cli) turns the
 aggregated `ModuleDef` (canonical loader JSON from
 `bffi_build::loader_json`) into a typed TS module whose `ApiOf<>`
@@ -113,4 +113,4 @@ derives exact signatures from the descriptors - see the root README,
 
 ## License
 
-[MIT](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
+[MIT](https://github.com/z2net/bffi-rs/blob/main/LICENSE)

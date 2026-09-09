@@ -1,6 +1,6 @@
 //! # bffi-callback
 //!
-//! Callback plumbing for the [bffi-rs](https://github.com/DotBlood/bffi-rs)
+//! Callback plumbing for the [bffi-rs](https://github.com/z2net/bffi-rs)
 //! framework: explicit registration and revocation of thread-safe callbacks
 //! in both directions (Rust -> JavaScript and JavaScript -> Rust).
 //!

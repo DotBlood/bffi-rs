@@ -1,6 +1,6 @@
 # @z2net/bffi-cli
 
-Bun-only CLI for [bffi-rs](https://github.com/DotBlood/bffi-rs):
+Bun-only CLI for [bffi-rs](https://github.com/z2net/bffi-rs):
 scaffold, build, validate, generate and publish native modules
 through the [`@z2net/bffi`](https://www.npmjs.com/package/@z2net/bffi)
 pipeline. A thin wrapper - all pipeline logic lives in the library.

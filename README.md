@@ -4,27 +4,27 @@
 
 [![Bun](https://img.shields.io/badge/Bun-%3E%3D1.4.0-F472B6?logo=bun&logoColor=white)](https://bun.sh)
 [![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639?logo=opensourceinitiative&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![GitHub Issues](https://img.shields.io/github/issues/DotBlood/bffi-rs)](https://github.com/DotBlood/bffi-rs/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/DotBlood/bffi-rs)](https://github.com/DotBlood/bffi-rs/pulls)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639?logo=opensourceinitiative&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/z2net/bffi-rs)](https://github.com/z2net/bffi-rs/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/z2net/bffi-rs)](https://github.com/z2net/bffi-rs/pulls)
 
-**English** | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/README.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/README.md)
+**English** | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/README.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/README.md)
 
 </div>
 
 Binding framework for Bun - a napi-rs-equivalent for [Bun](https://bun.sh), built on `bun:ffi` and a thin C ABI. Written in Rust, bottom-up from small focused crates.
 
-See [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) for architecture and [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) for the project's engineering rules.
+See [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) for architecture and [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) for the project's engineering rules.
 
 ## Documentation
 
-- [docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) - architecture & decisions
-- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - the C ABI contract (every crossing, callback exports included)
-- [docs/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) - how to contribute (branching, commits, PRs)
-- [AGENTS.md](https://github.com/DotBlood/bffi-rs/blob/main/AGENTS.md) - engineering rules for humans and AI agents
-- [packages/bffi-loader](https://github.com/DotBlood/bffi-rs/blob/main/packages/bffi-loader) - the JS runtime loader (see its README)
-- [SECURITY.md](https://github.com/DotBlood/bffi-rs/blob/main/SECURITY.md) - security policy
-- [CONTACT.md](https://github.com/DotBlood/bffi-rs/blob/main/CONTACT.md) - contacts
+- [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) - architecture & decisions
+- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - the C ABI contract (every crossing, callback exports included)
+- [docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) - how to contribute (branching, commits, PRs)
+- [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) - engineering rules for humans and AI agents
+- [packages/bffi-loader](https://github.com/z2net/bffi-rs/blob/main/packages/bffi-loader) - the JS runtime loader (see its README)
+- [SECURITY.md](https://github.com/z2net/bffi-rs/blob/main/SECURITY.md) - security policy
+- [CONTACT.md](https://github.com/z2net/bffi-rs/blob/main/CONTACT.md) - contacts
 
 ## Requirements
 
@@ -63,7 +63,7 @@ bun run check        # oxlint + tsc + cargo check
 bun run ci           # full CI parity: lint, typecheck, fmt, clippy, tests
 ```
 
-For a native module, depend on [`bffi`](https://github.com/DotBlood/bffi-rs/blob/main/crates/bffi)
+For a native module, depend on [`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
 (the facade: one dependency for the whole stack) and - when using the
 attribute macros - on the individual `bffi-core`/`bffi-types`/
 `bffi-dts` crates their expansions name.
@@ -91,7 +91,7 @@ await api.compute(21);               // `#[bffi_async]` -> Promise
 ```
 
 A full worked example lives in
-[`examples/native`](https://github.com/DotBlood/bffi-rs/blob/main/examples/native)
+[`examples/native`](https://github.com/z2net/bffi-rs/blob/main/examples/native)
 (shims, classes, async and callbacks through real `bun:ffi`, with a
 46-test e2e parity suite).
 
@@ -104,4 +104,4 @@ A full worked example lives in
 
 ## License
 
-[MIT](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
+[MIT](https://github.com/z2net/bffi-rs/blob/main/LICENSE)

@@ -1,6 +1,6 @@
 error: bffi[E007]: unsupported type `Option < i32 >` for the return type
          = help: supported returns: parameters|String|Vec<u8>|CopiedBuf|Option<buffer>|Result<T, E: Error + Send + Sync>
-         = note: boundary rules: DESIGN.md (https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+         = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
   --> tests/ui/method_option_primitive.rs:16:28
    |
 16 |     pub fn maybe(&self) -> Option<i32> {

@@ -1,9 +1,9 @@
 # bffi-event-loop
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
-Event-loop crate of [bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the Bun-only
+Event-loop crate of [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the Bun-only
 native binding framework. Native code cannot hook Bun's real loop, so
 this is the honest next thing: a thread-safe job queue with two drains -
 a blocking one ([`run`]) and a non-blocking one ([`pump`]), per
@@ -105,4 +105,4 @@ wrong-thread reject -> `ErrorCode::WrongThread` mapping.
 
 ## License
 
-[MIT](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
+[MIT](https://github.com/z2net/bffi-rs/blob/main/LICENSE)

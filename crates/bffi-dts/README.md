@@ -1,13 +1,13 @@
 # bffi-dts
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
 TypeScript declaration (`.d.ts`) generation crate of
-[bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the
+[bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the
 Bun-only native binding framework. Every exported native symbol ships with an
 accurate declaration file from day one, per the "TS types" decision in
-[docs/DESIGN.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md)
+[docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
 §7.
 
 **Status:** P1 complete - a static IR (`ModuleDef` / `FunctionDef`) and a
@@ -151,4 +151,4 @@ test proves re-rendering each module is byte-identical.
 
 ## License
 
-MIT - see [LICENSE](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/z2net/bffi-rs/blob/main/LICENSE).

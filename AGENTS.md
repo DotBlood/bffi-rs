@@ -1,10 +1,10 @@
 # AGENT.md - Rules for AI agents and contributors
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/AGENT.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/AGENT.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/AGENT.md) | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/AGENT.md)
 
 This file defines how humans and AI agents must work on **bffi-rs**.
 
-Repository: https://github.com/DotBlood/bffi-rs  
+Repository: https://github.com/z2net/bffi-rs  
 Contact: contact@z2net.com
 
 ---
@@ -153,7 +153,7 @@ Breaking changes must use `BREAKING CHANGE:` in the footer or `!` after the type
 - PR `dev/<feature>` → `dev/main` requires 1 approval and a green `bun run ci`.
 - Release tags `v<semver>` (annotated) are placed only on `main`, only by the owner.
 
-Full rules: [docs/CONTRIBUTING.md](https://github.com/DotBlood/bffi-rs/blob/main/docs/CONTRIBUTING.md) → "Branching and releases".
+Full rules: [docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) → "Branching and releases".
 
 ### Pull requests
 

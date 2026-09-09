@@ -1,10 +1,10 @@
 # bffi-types
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
 Type conversion between JavaScript values and Rust for
-[bffi-rs](https://github.com/DotBlood/bffi-rs) - the Bun-only native binding
+[bffi-rs](https://github.com/z2net/bffi-rs) - the Bun-only native binding
 framework. Built on [`bffi-core`](../bffi-core) primitives.
 
 This is the **policy** layer: it defines what a conversion _means_ (copy vs
@@ -91,4 +91,4 @@ independence (`tests/string.rs`), buffer aliasing guarantees
 
 ## License
 
-MIT - see [LICENSE](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/z2net/bffi-rs/blob/main/LICENSE).

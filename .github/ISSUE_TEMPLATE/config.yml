@@ -4,5 +4,5 @@ contact_links:
     url: mailto:contact@z2net.com
     about: For private or security-related questions
   - name: Design document
-    url: https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md
+    url: https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md
     about: Read the architecture and decisions before opening design issues

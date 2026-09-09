@@ -1,10 +1,10 @@
 # bffi-macro-support
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/DotBlood/bffi-rs/blob/main/rust-toolchain.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
 
 The shared macro-internals crate of
-[bffi-rs](https://github.com/DotBlood/bffi-rs/blob/main/README.md) - the
+[bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the
 Bun-only native binding framework. It removes the duplication between the two
 proc-macro crates, `bffi-macros` (`#[bffi]`) and `bffi-class`
 (`#[bffi_class]`/`#[bffi_impl]`), so the boundary mapping cannot drift between
@@ -71,4 +71,4 @@ crate.
 
 ## License
 
-MIT - see [LICENSE](https://github.com/DotBlood/bffi-rs/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/z2net/bffi-rs/blob/main/LICENSE).

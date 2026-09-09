@@ -1,11 +1,11 @@
 # bffi-rs - 设计文档
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) | [Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) | **[简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md)**
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) | [Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md) | **[简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md)**
 
 **状态:** Done  
 **日期:** 2026-09-02  
 **许可证:** MIT  
-**仓库:** https://github.com/DotBlood/bffi-rs  
+**仓库:** https://github.com/z2net/bffi-rs  
 **联系方式:** contact@z2net.com
 
 ---

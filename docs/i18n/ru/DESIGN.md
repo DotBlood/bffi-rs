@@ -1,11 +1,11 @@
 # bffi-rs - Дизайн-документ
 
-[English](https://github.com/DotBlood/bffi-rs/blob/main/docs/DESIGN.md) | **[Русский](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md)** | [简体中文](https://github.com/DotBlood/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md)
+[English](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) | **[Русский](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/ru/DESIGN.md)** | [简体中文](https://github.com/z2net/bffi-rs/blob/main/docs/i18n/zh-CN/DESIGN.md)
 
 **Статус:** Готово  
 **Дата:** 2026-09-02  
 **Лицензия:** MIT  
-**Репозиторий:** https://github.com/DotBlood/bffi-rs  
+**Репозиторий:** https://github.com/z2net/bffi-rs  
 **Контакт:** contact@z2net.com
 
 ---
