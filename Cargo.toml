@@ -1,22 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/bffi-core",
-    "crates/bffi-error",
-    "crates/bffi-types",
-    "crates/bffi-object",
-    "crates/bffi-callback",
-    "crates/bffi-dts",
+    "crates/bffi",
     "crates/bffi-macros",
-    "crates/bffi-build",
+    "crates/bffi-native",
     "examples/sqlite",
     "examples/async",
     "examples/event-loop",
     "examples/callbacks",
-    "crates/bffi-event-loop",
-    "crates/bffi",
-    "crates/bffi-async",
-    "crates/bffi-native",
 ]
 
 [workspace.package]

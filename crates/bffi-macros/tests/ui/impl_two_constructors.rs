@@ -1,7 +1,7 @@
 #![allow(unused)]
 use bffi_macros::{bffi_class, bffi_impl};
 
-#[bffi_class(tag = 0x0156)]
+#[bffi_class(tag = 0x0156, crate = "bffi")]
 struct TwoCtors {
     value: u32,
 }

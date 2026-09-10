@@ -9,9 +9,9 @@
 // generated shims carry the docs.
 #![allow(missing_docs)]
 
-use bffi_core::{ErrorCode, Handle, take_last_error};
+use bffi::{ErrorCode, Handle, take_last_error};
 
-#[bffi_macros::bffi_class(tag = 0x0150)]
+#[bffi_macros::bffi_class(tag = 0x0150, crate = "bffi")]
 /// A counter.
 pub struct Counter {
     /// The current value.
@@ -21,7 +21,7 @@ pub struct Counter {
     secret: u8,
 }
 
-#[bffi_macros::bffi_impl]
+#[bffi_macros::bffi_impl(crate = "bffi")]
 impl Counter {
     #[bffi_macros::bffi_constructor]
     /// Creates a counter.
@@ -73,14 +73,14 @@ impl std::fmt::Display for DivError {
 impl std::error::Error for DivError {}
 
 /// A second class for wrong-tag tests (its own tag, own table).
-#[bffi_macros::bffi_class(tag = 0x0151)]
+#[bffi_macros::bffi_class(tag = 0x0151, crate = "bffi")]
 /// A gate.
 pub struct Gate {
     /// Open or closed.
     pub open: bool,
 }
 
-#[bffi_macros::bffi_impl]
+#[bffi_macros::bffi_impl(crate = "bffi")]
 impl Gate {
     #[bffi_macros::bffi_constructor]
     /// Creates a gate.
@@ -98,19 +98,19 @@ impl Gate {
 extern crate self as bffi_class_probe;
 
 pub mod core {
-    pub use bffi_core::*;
+    pub use bffi::core::*;
 }
 pub mod types {
-    pub use bffi_types::*;
+    pub use bffi::types::*;
 }
 pub mod dts {
-    pub use bffi_dts::*;
+    pub use bffi::dts::*;
 }
 pub mod object {
-    pub use bffi_object::*;
+    pub use bffi::object::*;
 }
 pub mod build {
-    pub use bffi_build::*;
+    pub use bffi::build::*;
 }
 
 #[bffi_macros::bffi_class(tag = 0x0152, crate = "bffi_class_probe")]
@@ -188,14 +188,14 @@ fn string_and_result_method_returns_travel_the_p2_channels() {
     // `buffer_len(handle)` owned bytes; the handle is still live.
     let bytes = unsafe {
         std::slice::from_raw_parts(
-            bffi_build::runtime::buffer_ptr(bffi_core::Handle::from_raw(out_handle)),
-            bffi_build::runtime::buffer_len(bffi_core::Handle::from_raw(out_handle)) as usize,
+            bffi::build::runtime::buffer_ptr(bffi::Handle::from_raw(out_handle)),
+            bffi::build::runtime::buffer_len(bffi::Handle::from_raw(out_handle)) as usize,
         )
     };
     assert_eq!(bytes, b"val-7");
-    assert!(bffi_build::runtime::free_buffer(
-        bffi_core::Handle::from_raw(out_handle)
-    ));
+    assert!(bffi::build::runtime::free_buffer(bffi::Handle::from_raw(
+        out_handle
+    )));
 
     let mut out = 0_u32;
     assert_eq!(bffi_counter_divided(handle, 3, &mut out), ErrorCode::Ok);
@@ -288,14 +288,14 @@ fn crate_option_class_lifecycle_runs_through_the_probe_namespaces() {
     // `buffer_len(label)` owned bytes; the handle is still live.
     let bytes = unsafe {
         std::slice::from_raw_parts(
-            bffi_build::runtime::buffer_ptr(bffi_core::Handle::from_raw(label)),
-            bffi_build::runtime::buffer_len(bffi_core::Handle::from_raw(label)) as usize,
+            bffi::build::runtime::buffer_ptr(bffi::Handle::from_raw(label)),
+            bffi::build::runtime::buffer_len(bffi::Handle::from_raw(label)) as usize,
         )
     };
     assert_eq!(bytes, b"level 8");
-    assert!(bffi_build::runtime::free_buffer(
-        bffi_core::Handle::from_raw(label)
-    ));
+    assert!(bffi::build::runtime::free_buffer(bffi::Handle::from_raw(
+        label
+    )));
 
     assert_eq!(bffi_meter_release(handle), ErrorCode::Ok);
 }

@@ -5,18 +5,16 @@
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
-use bffi_dts::{
-    AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, MethodDef, ModuleDef, ParamDef, TsType,
-};
+use bffi::{AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, MethodDef, ModuleDef, ParamDef, TsType};
 
-#[bffi_macros::bffi_class(tag = 0x0160)]
+#[bffi_macros::bffi_class(tag = 0x0160, crate = "bffi")]
 /// A wallet.
 pub struct Wallet {
     /// The balance.
     pub balance: u64,
 }
 
-#[bffi_macros::bffi_impl]
+#[bffi_macros::bffi_impl(crate = "bffi")]
 impl Wallet {
     #[bffi_macros::bffi_constructor]
     /// Creates a wallet.
@@ -45,7 +43,7 @@ fn class_descriptor_matches_the_expected_literal() {
     assert_eq!(bffi_meta_wallet::FIELDS.len(), 1);
     assert_eq!(
         bffi_meta_wallet::FIELDS[0],
-        bffi_dts::FieldDef {
+        bffi::FieldDef {
             js_name: "balance",
             export_name: "bffi_wallet_balance_get",
             docs: &[],
@@ -73,7 +71,7 @@ fn class_descriptor_matches_the_expected_literal() {
                     out: Some(AbiOut::Handle),
                 },
             },
-            fields: &[bffi_dts::FieldDef {
+            fields: &[bffi::FieldDef {
                 js_name: "balance",
                 export_name: "bffi_wallet_balance_get",
                 docs: &[],
@@ -126,7 +124,7 @@ fn class_descriptor_renders_through_bffi_dts() {
         fns: &[],
         classes: CLASSES,
     };
-    let rendered = bffi_dts::render(&module);
+    let rendered = bffi::render(&module);
     assert!(rendered.contains("/** A wallet. */"));
     assert!(rendered.contains("export class wallet {"));
     assert!(rendered.contains("  constructor(start: bigint);"));

@@ -12,53 +12,52 @@
 // generated shims carry the docs.
 #![allow(missing_docs)]
 
-use bffi_core::{ErrorCode, take_last_error};
-use bffi_types::CopiedBuf;
+use bffi::{CopiedBuf, ErrorCode, take_last_error};
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Adds two numbers.
 fn add(a: u32, b: u32) -> u32 {
     a + b
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn widen(x: i32) -> i64 {
     x as i64
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn flip(x: u64) -> bool {
     x == 0
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn shout(phrase: &str) -> u32 {
     phrase.len() as u32
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Touches nothing.
 fn touch(x: u32) {
     let _ = x;
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Echoes the word with an exclamations mark.
 fn echo_word(word: &str) -> String {
     format!("{word}!")
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn raw_bytes() -> Vec<u8> {
     vec![1, 2, 3]
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn copied() -> CopiedBuf {
     CopiedBuf::from_slice(b"owned")
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn maybe_word(flag: bool) -> Option<String> {
     if flag { Some("yes".to_owned()) } else { None }
 }
@@ -77,27 +76,27 @@ impl std::fmt::Display for DivError {
 
 impl std::error::Error for DivError {}
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn checked_div(a: u32, b: u32) -> Result<u32, DivError> {
     a.checked_div(b).ok_or(DivError { divisor: b })
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn unit_result(flag: bool) -> Result<(), DivError> {
     flag.then_some(()).ok_or(DivError { divisor: 1 })
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn wild(_: u32) -> u32 {
     7
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn slice_len(data: &[u8]) -> u32 {
     data.len() as u32
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn echo_bytes(data: &[u8]) -> CopiedBuf {
     CopiedBuf::from_slice(data)
 }
@@ -110,16 +109,16 @@ fn echo_bytes(data: &[u8]) -> CopiedBuf {
 extern crate self as bffi_macros_probe;
 
 pub mod core {
-    pub use bffi_core::*;
+    pub use bffi::core::*;
 }
 pub mod types {
-    pub use bffi_types::*;
+    pub use bffi::types::*;
 }
 pub mod dts {
-    pub use bffi_dts::*;
+    pub use bffi::dts::*;
 }
 pub mod build {
-    pub use bffi_build::*;
+    pub use bffi::build::*;
 }
 
 #[bffi_macros::bffi(crate = "bffi_macros_probe")]
@@ -146,17 +145,17 @@ fn cstring(bytes: &[u8]) -> *const std::os::raw::c_char {
 
 /// Reads and frees a transient buffer through the `bffi-build`
 /// runtime API (the same surface the JS pair reads).
-fn read_buffer(handle: bffi_core::Handle) -> Vec<u8> {
+fn read_buffer(handle: bffi::Handle) -> Vec<u8> {
     // SAFETY: `buffer_ptr` handed out the pointer to exactly
     // `buffer_len(handle)` owned bytes; the handle is still live.
     let bytes = unsafe {
         std::slice::from_raw_parts(
-            bffi_build::runtime::buffer_ptr(handle),
-            bffi_build::runtime::buffer_len(handle) as usize,
+            bffi::build::runtime::buffer_ptr(handle),
+            bffi::build::runtime::buffer_len(handle) as usize,
         )
     };
     let copy = bytes.to_vec();
-    assert!(bffi_build::runtime::free_buffer(handle));
+    assert!(bffi::build::runtime::free_buffer(handle));
     copy
 }
 
@@ -217,7 +216,7 @@ fn string_return_yields_a_buffer_handle_with_the_utf8_bytes() {
     let code = bffi_echo_word(cstring(b"hey"), &mut handle);
     assert_eq!(code, ErrorCode::Ok);
     assert_ne!(handle, 0, "a stored string must produce a non-null handle");
-    let bytes = read_buffer(bffi_core::Handle::from_raw(handle));
+    let bytes = read_buffer(bffi::Handle::from_raw(handle));
     assert_eq!(bytes, b"hey!");
 }
 
@@ -225,17 +224,11 @@ fn string_return_yields_a_buffer_handle_with_the_utf8_bytes() {
 fn vec_and_copiedbuf_returns_yield_raw_byte_handles() {
     let mut vec_handle = 0_u64;
     assert_eq!(bffi_raw_bytes(&mut vec_handle), ErrorCode::Ok);
-    assert_eq!(
-        read_buffer(bffi_core::Handle::from_raw(vec_handle)),
-        [1, 2, 3]
-    );
+    assert_eq!(read_buffer(bffi::Handle::from_raw(vec_handle)), [1, 2, 3]);
 
     let mut copied_handle = 0_u64;
     assert_eq!(bffi_copied(&mut copied_handle), ErrorCode::Ok);
-    assert_eq!(
-        read_buffer(bffi_core::Handle::from_raw(copied_handle)),
-        b"owned"
-    );
+    assert_eq!(read_buffer(bffi::Handle::from_raw(copied_handle)), b"owned");
 }
 
 #[test]
@@ -246,7 +239,7 @@ fn option_none_writes_the_null_handle_and_some_stores_the_bytes() {
 
     assert_eq!(bffi_maybe_word(true, &mut handle), ErrorCode::Ok);
     assert_ne!(handle, 0);
-    assert_eq!(read_buffer(bffi_core::Handle::from_raw(handle)), b"yes");
+    assert_eq!(read_buffer(bffi::Handle::from_raw(handle)), b"yes");
 }
 
 #[test]
@@ -322,10 +315,7 @@ fn buffer_view_param_roundtrips_bytes_through_a_copiedbuf_handle() {
     assert_ne!(handle, 0);
     // `CopiedBuf::from_slice` copies: the returned bytes outlive the
     // (already dead) borrow.
-    assert_eq!(
-        read_buffer(bffi_core::Handle::from_raw(handle)),
-        [10, 250, 0, 7]
-    );
+    assert_eq!(read_buffer(bffi::Handle::from_raw(handle)), [10, 250, 0, 7]);
 }
 
 #[test]
@@ -364,5 +354,5 @@ fn crate_option_shim_walks_the_string_and_buffer_paths() {
     let hey = cstring(b"hey");
     assert_eq!(bffi_probe_shout(hey, &mut handle), ErrorCode::Ok);
     assert_ne!(handle, 0);
-    assert_eq!(read_buffer(bffi_core::Handle::from_raw(handle)), b"hey!");
+    assert_eq!(read_buffer(bffi::Handle::from_raw(handle)), b"hey!");
 }

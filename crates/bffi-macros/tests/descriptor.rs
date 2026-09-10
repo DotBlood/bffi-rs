@@ -8,39 +8,39 @@
 // generated descriptors carry the docs.
 #![allow(missing_docs)]
 
-use bffi_dts::{AbiOut, AbiPrim, AbiSig, AbiType, FunctionDef, ModuleDef, ParamDef, TsType};
+use bffi::{AbiOut, AbiPrim, AbiSig, AbiType, FunctionDef, ModuleDef, ParamDef, TsType};
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Adds two numbers.
 fn add(a: u32, b: u32) -> u32 {
     a + b
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Handles a name.
 fn greet(who: &str) -> u32 {
     who.len() as u32
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Builds a greeting.
 fn build_greeting(who: &str) -> String {
     format!("hello {who}")
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Reads a payload.
 fn payload() -> Option<Vec<u8>> {
     None
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Finds a name.
 fn find_name(hit: bool) -> Option<String> {
     if hit { Some("ada".to_owned()) } else { None }
 }
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 /// Sums the bytes.
 fn byte_sum(data: &[u8]) -> u32 {
     data.iter().map(|byte| u32::from(*byte)).sum()
@@ -55,16 +55,16 @@ fn byte_sum(data: &[u8]) -> u32 {
 extern crate self as bffi_macros_probe;
 
 pub mod core {
-    pub use bffi_core::*;
+    pub use bffi::core::*;
 }
 pub mod types {
-    pub use bffi_types::*;
+    pub use bffi::types::*;
 }
 pub mod dts {
-    pub use bffi_dts::*;
+    pub use bffi::dts::*;
 }
 pub mod build {
-    pub use bffi_build::*;
+    pub use bffi::build::*;
 }
 
 #[bffi_macros::bffi(crate = "bffi_macros_probe")]
@@ -230,7 +230,7 @@ fn descriptors_render_through_bffi_dts() {
         fns: FNS,
         classes: &[],
     };
-    let rendered = bffi_dts::render(&module);
+    let rendered = bffi::render(&module);
     assert!(rendered.contains("/** Adds two numbers. */"));
     assert!(rendered.contains("export function add(a: number, b: number): number;"));
     assert!(rendered.contains("export function greet(who: string): number;"));
