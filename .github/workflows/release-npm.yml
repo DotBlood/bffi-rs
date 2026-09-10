@@ -67,6 +67,11 @@ jobs:
 
       - name: Build the release cdylib
         shell: bash
+        env:
+          # musl targets default to crt-static, and rustc drops the
+          # cdylib for a statically-linked musl target; dynamic musl
+          # linking is exactly what a platform .so needs.
+          RUSTFLAGS: ${{ matrix.musl == 'true' && '-C target-feature=-crt-static' || '' }}
         run: |
           if [ -n "${{ matrix.target }}" ]; then
             cargo build --release -p bffi-native --target ${{ matrix.target }}
