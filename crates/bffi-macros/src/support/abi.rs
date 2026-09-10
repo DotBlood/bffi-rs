@@ -9,12 +9,12 @@
 //! table-driven tests at the bottom pin the two sides together.
 //!
 //! The `bffi-dts` variants are quoted through the
-//! [`PathCtx`](crate::paths::PathCtx) `dts` root, exactly like the
+//! [`PathCtx`](crate::support::paths::PathCtx) `dts` root, exactly like the
 //! [`TsKind`] tokens: this crate holds no runtime dependency on the
 //! descriptor IR.
 
-use crate::kind::{BigIntTy, PrimTy, RetKind, ShimKind};
-use crate::paths::PathCtx;
+use crate::support::kind::{BigIntTy, PrimTy, RetKind, ShimKind};
+use crate::support::paths::PathCtx;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -134,9 +134,9 @@ pub fn abi_sig_task(params: impl IntoIterator<Item = ShimKind>, ctx: &PathCtx) -
 #[cfg(test)]
 mod tests {
     use super::{abi_out, abi_param, abi_sig, abi_sig_task, bigint_out, prim_out};
-    use crate::codegen::{out_param, shim_param};
-    use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
-    use crate::paths::PathCtx;
+    use crate::support::codegen::{out_param, shim_param};
+    use crate::support::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
+    use crate::support::paths::PathCtx;
     use proc_macro2::TokenStream;
     use quote::quote;
 

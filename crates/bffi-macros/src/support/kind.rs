@@ -7,7 +7,7 @@
 //! typed bridge to the `bffi-dts` IR - its [`TsKind::tokens`] quote
 //! the IR variants directly, no string round-trip.
 
-use crate::paths::PathCtx;
+use crate::support::paths::PathCtx;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -155,7 +155,7 @@ impl TsKind {
 #[cfg(test)]
 mod tests {
     use super::TsKind;
-    use crate::paths::PathCtx;
+    use crate::support::paths::PathCtx;
 
     #[test]
     fn ts_kind_tokens_quote_the_ir_variant() {

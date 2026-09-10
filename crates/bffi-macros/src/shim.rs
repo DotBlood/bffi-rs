@@ -13,14 +13,14 @@
 //! thread-local last error.
 //!
 //! The transport-level token generators (out-parameters, return tails,
-//! cstring conversions) live in `bffi_macro_support::codegen`; this
+//! cstring conversions) live in `crate::support::codegen`; this
 //! module assembles them into the `#[bffi]`-specific shim pair.
 
 use crate::model::FnModel;
-use bffi_macro_support::codegen::{
+use crate::support::codegen::{
     has_out, out_param, param_conversions, param_ident, ret_body, shim_param,
 };
-use bffi_macro_support::kind::ShimKind;
+use crate::support::kind::ShimKind;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -126,7 +126,7 @@ fn body(model: &FnModel) -> TokenStream {
 mod tests {
     use super::expand;
     use crate::model::FnModel;
-    use bffi_macro_support::codegen::param_ident;
+    use crate::support::codegen::param_ident;
     use quote::quote;
 
     #[test]

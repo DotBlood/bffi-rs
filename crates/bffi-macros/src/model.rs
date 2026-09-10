@@ -6,15 +6,15 @@
 //! the P1 boundary rules is rejected here with a spanned error, so the
 //! downstream stages can rely on the shape being valid.
 //!
-//! The boundary kind model lives in `bffi_macro_support::kind`; this
+//! The boundary kind model lives in `crate::support::kind`; this
 //! crate keeps the `ItemFn` parsing and its own `E001`-anchored shape
 //! diagnostics.
 
 use crate::errors::{attr_options, fn_shape, param_pattern};
 use crate::mapping;
-use bffi_macro_support::kind::{RetKind, ShimKind};
-use bffi_macro_support::paths::{PathCtx, is_crate_name};
-use bffi_macro_support::util::extract_docs;
+use crate::support::kind::{RetKind, ShimKind};
+use crate::support::paths::{PathCtx, is_crate_name};
+use crate::support::util::extract_docs;
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;
 use syn::{FnArg, ItemFn, Pat, ReturnType};

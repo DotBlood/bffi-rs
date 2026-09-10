@@ -12,10 +12,12 @@
 //! `bffi_macro_support`; this crate keeps the `ItemStruct`/`ItemImpl`
 //! parsing and its own `E005`-`E008` diagnostics.
 
-use crate::errors::{attr_options, class_shape, field_type, impl_binding, method_shape, tag};
-use crate::mapping::{self, RetKind};
-use bffi_macro_support::paths::{PathCtx, is_crate_name};
-use bffi_macro_support::util::{extract_docs, to_snake_case};
+use crate::class::errors::{
+    attr_options, class_shape, field_type, impl_binding, method_shape, tag,
+};
+use crate::class::mapping::{self, RetKind};
+use crate::support::paths::{PathCtx, is_crate_name};
+use crate::support::util::{extract_docs, to_snake_case};
 use proc_macro2::TokenStream;
 use syn::spanned::Spanned;
 use syn::{Fields, ItemImpl, ItemStruct, ReturnType, Visibility};

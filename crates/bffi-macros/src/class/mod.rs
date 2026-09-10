@@ -52,7 +52,6 @@ mod meta;
 mod model;
 mod shim;
 
-use proc_macro::TokenStream;
 use quote::quote;
 
 /// Declares a native class over a named struct.
@@ -68,18 +67,18 @@ use quote::quote;
 /// Expands to: the struct unchanged, the `ObjectWrap` accessor, the
 /// `bffi_<name>_release` destructor export, the field getters, and the
 /// `bffi_meta_<name>` metadata module.
-#[proc_macro_attribute]
-pub fn bffi_class(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    let attrs = proc_macro2::TokenStream::from(attrs);
-    let item = proc_macro2::TokenStream::from(item);
+pub(crate) fn bffi_class(
+    attrs: proc_macro2::TokenStream,
+    item: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
     let item2 = item.clone();
     match model::ClassModel::parse(&attrs, item) {
         Ok(model) => {
             let shims = shim::class_shims(&model);
             let meta = meta::class_meta(&model);
-            quote! { #item2 #shims #meta }.into()
+            quote! { #item2 #shims #meta }
         }
-        Err(err) => err.to_compile_error().into(),
+        Err(err) => err.to_compile_error(),
     }
 }
 
@@ -93,25 +92,27 @@ pub fn bffi_class(attrs: TokenStream, item: TokenStream) -> TokenStream {
 /// model). An optional `crate = "<name>"` switches the generated
 /// paths to the facade namespaces (facade-only mode) - use the same
 /// value as on the matching `#[bffi_class]`.
-#[proc_macro_attribute]
-pub fn bffi_impl(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    let attrs = proc_macro2::TokenStream::from(attrs);
-    let item = proc_macro2::TokenStream::from(item);
+pub(crate) fn bffi_impl(
+    attrs: proc_macro2::TokenStream,
+    item: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
     let item2 = item.clone();
     match model::ImplModel::parse(&attrs, item) {
         Ok(model) => {
             let shims = shim::impl_shims(&model);
             let meta = meta::impl_meta(&model);
-            quote! { #item2 #shims #meta }.into()
+            quote! { #item2 #shims #meta }
         }
-        Err(err) => err.to_compile_error().into(),
+        Err(err) => err.to_compile_error(),
     }
 }
 
 /// Marks the constructor inside a `#[bffi_impl]` block. A pure marker:
 /// the impl macro reads the attribute; this macro echoes the item
 /// unchanged so the annotation can also stand alone.
-#[proc_macro_attribute]
-pub fn bffi_constructor(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+pub(crate) fn bffi_constructor(
+    _attrs: proc_macro2::TokenStream,
+    item: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
     item
 }

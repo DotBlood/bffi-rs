@@ -1,16 +1,16 @@
 //! Type classification and TypeScript kind mapping.
 //!
-//! The pure classification lives in `bffi_macro_support::classify`;
+//! The pure classification lives in `crate::support::classify`;
 //! this module keeps the local signatures the model stage uses and
 //! maps neutral rejections onto this crate's `E007` diagnostics
 //! (exact texts locked by the `tests/ui` goldens).
 
-use crate::errors::{method_param, method_return};
-use bffi_macro_support::classify as support;
+use crate::class::errors::{method_param, method_return};
+use crate::support::classify as support;
 
-pub(crate) use bffi_macro_support::abi;
-pub(crate) use bffi_macro_support::classify::{PathKind, path_kind, ts_return, ts_type};
-pub(crate) use bffi_macro_support::kind::{BigIntTy, PrimTy, RetKind, ShimKind, TsKind};
+pub(crate) use crate::support::abi;
+pub(crate) use crate::support::classify::{PathKind, path_kind, ts_return, ts_type};
+pub(crate) use crate::support::kind::{BigIntTy, PrimTy, RetKind, ShimKind, TsKind};
 
 /// Classifies a parameter type (the `#[bffi]` parameter matrix).
 pub(crate) fn classify_param(ty: &syn::Type, name: &str) -> syn::Result<ShimKind> {

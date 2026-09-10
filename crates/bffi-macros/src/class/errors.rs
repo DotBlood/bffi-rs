@@ -1,7 +1,7 @@
 //! Structured diagnostics for the `bffi-class` macros.
 //!
 //! Every diagnostic is rendered by the shared
-//! [`bffi_macro_support::diagnostics::MacroDiagnostic`]; this module
+//! [`crate::support::diagnostics::MacroDiagnostic`]; this module
 //! keeps this crate's constructors with their stable codes and exact
 //! message texts. Same scheme as `bffi-macros` (`bffi[E0XX]:` +
 //! ` = help: ` + ` = note: `); the numbering CONTINUES after the
@@ -20,7 +20,7 @@ use quote::ToTokens;
 
 // Re-exported so the model/codegen stages can name the shared
 // diagnostic type; the constructors below carry this crate's codes.
-pub(crate) use bffi_macro_support::diagnostics::{DESIGN_NOTE, MacroDiagnostic};
+pub(crate) use crate::support::diagnostics::{DESIGN_NOTE, MacroDiagnostic};
 
 /// The field/method parameter set accepted by `bffi-class` v1.
 const FIELD_TYPES: &str = "supported fields: i8|i16|i32|u8|u16|u32|f32|f64|bool (getters only)";

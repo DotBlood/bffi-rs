@@ -55,11 +55,13 @@
 extern crate proc_macro;
 
 mod async_fn;
+mod class;
 mod errors;
 mod mapping;
 mod meta;
 mod model;
 mod shim;
+mod support;
 
 use proc_macro::TokenStream;
 
@@ -247,4 +249,40 @@ pub fn bffi_async(attrs: TokenStream, item: TokenStream) -> TokenStream {
         }
         Err(err) => err.to_compile_error().into(),
     }
+}
+
+/// Declares a native class over a named struct: read-only getters for
+/// `pub` primitive fields, the `bffi_<name>_release` destructor export,
+/// and the `bffi_meta_<name>` metadata module.
+///
+/// Syntax: `#[bffi_class(tag = 0x01xx)]` with a literal tag in the
+/// bffi-object range (`0x0100..=0x01FF`); one tag = one type per
+/// process. An optional `crate = "<name>"` switches the generated paths
+/// to the facade namespaces (facade-only mode).
+#[proc_macro_attribute]
+pub fn bffi_class(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    class::bffi_class(attrs.into(), item.into()).into()
+}
+
+/// Marks the `impl` block of a `#[bffi_class]` struct: generates the
+/// constructor and `&self`-method shims plus the
+/// `bffi_meta_<name>_impl::CLASS` descriptor.
+///
+/// Exactly one `#[bffi_constructor] pub fn new(...) -> Self` is
+/// required; every other `fn` must take `&self` (methods with `&mut
+/// self`/`self` cannot be served through the `Arc<T>` ownership
+/// model). An optional `crate = "<name>"` switches the generated paths
+/// to the facade namespaces (facade-only mode) - use the same value as
+/// on the matching `#[bffi_class]`.
+#[proc_macro_attribute]
+pub fn bffi_impl(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    class::bffi_impl(attrs.into(), item.into()).into()
+}
+
+/// Marks the constructor inside a `#[bffi_impl]` block. A pure marker:
+/// the impl macro reads the attribute; this macro echoes the item
+/// unchanged so the annotation can also stand alone.
+#[proc_macro_attribute]
+pub fn bffi_constructor(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+    class::bffi_constructor(_attrs.into(), item.into()).into()
 }

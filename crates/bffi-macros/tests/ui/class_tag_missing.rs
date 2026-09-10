@@ -1,5 +1,5 @@
 #![allow(unused)]
-use bffi_class::bffi_class;
+use bffi_macros::bffi_class;
 
 #[bffi_class]
 struct NoTag {

@@ -3,7 +3,7 @@ error: bffi[E007]: unsupported member shape: methods take `&self` only (`&mut se
          = help: supported fields: i8|i16|i32|u8|u16|u32|f32|f64|bool (getters only)
          = note: ObjectWrap stores Arc<T>: mutation goes through interior mutability
          = note: boundary rules: DESIGN.md (https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md)
-  --> tests/ui/method_mut_self.rs:16:17
-   |
-16 |     pub fn bump(&mut self) -> u32 {
-   |                 ^
+ --> tests/ui/method_mut_self.rs:1:244
+  |
+1 | ...fn new() -> Self {        Self { value: 0 }    }    pub fn bump(&mut self) -> u32 {        self.value + 1    }}fn main() {}
+  |                                                                    ^

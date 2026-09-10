@@ -67,7 +67,6 @@ pub use bffi_callback::{
     CallbackError, CallbackSig, JsCallbackInfo, Value, ValueType, bind_js_callback,
     ensure_js_thread, invoke, js_callback, register, revoke, set_js_thread,
 };
-pub use bffi_class::{bffi_class, bffi_constructor, bffi_impl};
 pub use bffi_core::{
     BffiError, ErrorCode, Handle, MAX_GENERATION, MAX_INDEX, Registry, RegistryError, TableError,
     TypeTag, catch_panic, panic_message, run_extern_body, run_extern_body_or, set_last_error,
@@ -81,7 +80,7 @@ pub use bffi_error::{JsErrorExt, JsErrorName, JsErrorShape, js_error_name, take_
 pub use bffi_event_loop::{
     EventLoopError, Job, enqueue, executed_total, is_running, marshal, pending, pump, run, stop,
 };
-pub use bffi_macros::bffi;
+pub use bffi_macros::{bffi, bffi_class, bffi_constructor, bffi_impl};
 pub use bffi_object::{ObjectError, ObjectWrap, TAG_MAX, TAG_MIN, tag_in_range};
 pub use bffi_types::{
     ConversionError, CopiedBuf, JsNumber, buf_view, bytes_to_string, str_view, string_to_bytes,

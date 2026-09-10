@@ -15,7 +15,6 @@ workspace = true
 [dependencies]
 bffi-build = { path = "../bffi-build" }
 bffi-callback = { path = "../bffi-callback" }
-bffi-class = { path = "../bffi-class" }
 bffi-core = { path = "../bffi-core" }
 bffi-dts = { path = "../bffi-dts" }
 bffi-error = { path = "../bffi-error" }

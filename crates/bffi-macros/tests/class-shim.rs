@@ -11,7 +11,7 @@
 
 use bffi_core::{ErrorCode, Handle, take_last_error};
 
-#[bffi_class::bffi_class(tag = 0x0150)]
+#[bffi_macros::bffi_class(tag = 0x0150)]
 /// A counter.
 pub struct Counter {
     /// The current value.
@@ -21,9 +21,9 @@ pub struct Counter {
     secret: u8,
 }
 
-#[bffi_class::bffi_impl]
+#[bffi_macros::bffi_impl]
 impl Counter {
-    #[bffi_class::bffi_constructor]
+    #[bffi_macros::bffi_constructor]
     /// Creates a counter.
     pub fn new(start: u32) -> Self {
         Self {
@@ -73,16 +73,16 @@ impl std::fmt::Display for DivError {
 impl std::error::Error for DivError {}
 
 /// A second class for wrong-tag tests (its own tag, own table).
-#[bffi_class::bffi_class(tag = 0x0151)]
+#[bffi_macros::bffi_class(tag = 0x0151)]
 /// A gate.
 pub struct Gate {
     /// Open or closed.
     pub open: bool,
 }
 
-#[bffi_class::bffi_impl]
+#[bffi_macros::bffi_impl]
 impl Gate {
-    #[bffi_class::bffi_constructor]
+    #[bffi_macros::bffi_constructor]
     /// Creates a gate.
     pub fn new(open: bool) -> Self {
         Self { open }
@@ -113,16 +113,16 @@ pub mod build {
     pub use bffi_build::*;
 }
 
-#[bffi_class::bffi_class(tag = 0x0152, crate = "bffi_class_probe")]
+#[bffi_macros::bffi_class(tag = 0x0152, crate = "bffi_class_probe")]
 /// A meter.
 pub struct Meter {
     /// The level.
     pub level: u32,
 }
 
-#[bffi_class::bffi_impl(crate = "bffi_class_probe")]
+#[bffi_macros::bffi_impl(crate = "bffi_class_probe")]
 impl Meter {
-    #[bffi_class::bffi_constructor]
+    #[bffi_macros::bffi_constructor]
     /// Creates a meter.
     pub fn new(level: u32) -> Self {
         Self { level }

@@ -8,7 +8,7 @@
 //!
 //! The transport-level token generators (out-parameters, return tails,
 //! cstring conversions, small type renderers) live in
-//! `bffi_macro_support::codegen`; this module assembles them into the
+//! `crate::support::codegen`; this module assembles them into the
 //! class-specific shims.
 //!
 //! Generated code never `expect`s or `panic!`s: a tag collision is
@@ -16,12 +16,12 @@
 //! runtime error code - user crates compile under the same
 //! `-D warnings` lints as the framework.
 
-use crate::mapping::ShimKind;
-use crate::model::{ClassModel, ConstructorModel, FieldTy, ImplModel, MethodModel};
-use bffi_macro_support::codegen::{
+use crate::class::mapping::ShimKind;
+use crate::class::model::{ClassModel, ConstructorModel, FieldTy, ImplModel, MethodModel};
+use crate::support::codegen::{
     bigint_ty, out_param, param_conversions, param_ident, prim_ty, ret_body, shim_param,
 };
-use bffi_macro_support::paths::PathCtx;
+use crate::support::paths::PathCtx;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -115,7 +115,7 @@ fn release_body(ctx: &PathCtx, wrap_fn: &proc_macro2::Ident) -> TokenStream {
 }
 
 /// Renders one field-getter shim pair.
-fn field_getter(model: &ClassModel, field: &crate::model::FieldModel) -> TokenStream {
+fn field_getter(model: &ClassModel, field: &crate::class::model::FieldModel) -> TokenStream {
     let core = &model.paths.core;
     let getter_ident = format_ident!("bffi_{}_{}_get", model.js_name, field.name);
     let field_ident = format_ident!("{}", field.name);

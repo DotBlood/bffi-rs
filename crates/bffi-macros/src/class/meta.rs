@@ -8,8 +8,8 @@
 //!   the former by absolute path. The user aggregates
 //!   `classes: &[bffi_meta_<name>_impl::CLASS]` into a `ModuleDef`.
 
-use crate::mapping;
-use crate::model::{ClassModel, FieldTy, ImplModel};
+use crate::class::mapping;
+use crate::class::model::{ClassModel, FieldTy, ImplModel};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -50,7 +50,7 @@ pub(crate) fn class_meta(model: &ClassModel) -> TokenStream {
 
 /// The getter's out-slot tokens of a field type: the exact width the
 /// generated `bffi_<class>_<field>_get` shim writes.
-fn field_out(ty: FieldTy, paths: &bffi_macro_support::paths::PathCtx) -> TokenStream {
+fn field_out(ty: FieldTy, paths: &crate::support::paths::PathCtx) -> TokenStream {
     match ty {
         FieldTy::Prim(prim) => mapping::abi::prim_out(prim, paths),
         FieldTy::BigInt(big) => mapping::abi::bigint_out(big, paths),

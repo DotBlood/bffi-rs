@@ -1,5 +1,5 @@
 #![allow(unused)]
-use bffi_class::{bffi_class, bffi_impl};
+use bffi_macros::{bffi_class, bffi_impl};
 
 #[bffi_class(tag = 0x0155)]
 struct NoCtor {

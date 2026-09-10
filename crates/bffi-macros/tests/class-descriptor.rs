@@ -9,16 +9,16 @@ use bffi_dts::{
     AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, MethodDef, ModuleDef, ParamDef, TsType,
 };
 
-#[bffi_class::bffi_class(tag = 0x0160)]
+#[bffi_macros::bffi_class(tag = 0x0160)]
 /// A wallet.
 pub struct Wallet {
     /// The balance.
     pub balance: u64,
 }
 
-#[bffi_class::bffi_impl]
+#[bffi_macros::bffi_impl]
 impl Wallet {
-    #[bffi_class::bffi_constructor]
+    #[bffi_macros::bffi_constructor]
     /// Creates a wallet.
     pub fn new(start: u64) -> Self {
         Self { balance: start }

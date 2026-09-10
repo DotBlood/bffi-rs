@@ -1,7 +1,7 @@
 //! Type classification: `syn::Type` -> boundary kinds.
 //!
 //! [`classify_param`] and [`classify_return`] turn a `syn::Type` into
-//! the boundary kinds from [`crate::kind`], rejecting anything outside
+//! the boundary kinds from [`crate::support::kind`], rejecting anything outside
 //! the accepted set. Rejections are neutral: the classifiers return an
 //! [`Unsupported`] carrying the span and the offending type, and each
 //! proc-macro crate converts it into its own diagnostic (its own
@@ -9,7 +9,7 @@
 //! ([`ts_prim`]/[`ts_type`]/[`ts_return`]) complements the
 //! classifiers for the descriptor generators.
 
-use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind, TsKind};
+use crate::support::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind, TsKind};
 use proc_macro2::Span;
 use syn::spanned::Spanned;
 
@@ -305,7 +305,7 @@ mod tests {
         PathKind, classify_param, classify_return, is_str_type, is_u8, path_ident, path_kind,
         ts_prim, ts_return, ts_type,
     };
-    use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind, TsKind};
+    use crate::support::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind, TsKind};
 
     /// Parses a type source, panicking in tests only (allowed by the
     /// crate-root `cfg_attr(test)` escape hatch).

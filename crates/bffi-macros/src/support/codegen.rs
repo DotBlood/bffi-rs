@@ -5,13 +5,13 @@
 //! the borrowed-parameter conversions (`&str` cstrings, `&[u8]`
 //! ptr+len views), and the small Rust-type renderers. The generated
 //! code names the runtime crates through a
-//! [`PathCtx`](crate::paths::PathCtx): the default context emits the
+//! [`PathCtx`](crate::support::paths::PathCtx): the default context emits the
 //! direct-dependency absolute paths (`::bffi_core`, `::bffi_types`,
 //! `::bffi_build`), the `crate = "..."` context emits the facade
 //! namespaces.
 
-use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
-use crate::paths::PathCtx;
+use crate::support::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
+use crate::support::paths::PathCtx;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
@@ -288,8 +288,8 @@ mod tests {
         bigint_ty, buffer_conv, has_out, out_param, param_conversions, param_ident, prim_ty,
         ret_body, shim_param, value_tail,
     };
-    use crate::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
-    use crate::paths::PathCtx;
+    use crate::support::kind::{BigIntTy, BufferTy, PrimTy, RetKind, ShimKind};
+    use crate::support::paths::PathCtx;
     use quote::quote;
 
     #[test]
