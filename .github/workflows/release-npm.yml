@@ -9,6 +9,10 @@
 #   3. @z2net/bffi (the loader/pipeline);
 #   4. @z2net/bffi-cli (depends on @z2net/bffi).
 #
+# Every publish is IDEMPOTENT: a version that already exists on the
+# registry is skipped with a green check, so a re-run never fails on
+# an already-published package.
+#
 # One-time setup (repository settings):
 #   Secrets -> Actions -> NPM_TOKEN : an npm automation token with
 #   access to the @z2net scope. npm authentication follows the
@@ -30,21 +34,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest,   triple: win32-x64-msvc,   artifact: bffi_native.dll }
-          - { os: ubuntu-latest,    triple: linux-x64-gnu,    artifact: libbffi_native.so }
-          - { os: ubuntu-latest,    triple: linux-x64-musl,   artifact: libbffi_native.so,  target: x86_64-unknown-linux-musl }
-          - { os: ubuntu-24.04-arm, triple: linux-arm64-gnu,  artifact: libbffi_native.so }
-          - { os: ubuntu-24.04-arm, triple: linux-arm64-musl, artifact: libbffi_native.so,  target: aarch64-unknown-linux-musl }
-          - { os: macos-13,         triple: darwin-x64,       artifact: libbffi_native.dylib }
-          - { os: macos-latest,     triple: darwin-aarch64,   artifact: libbffi_native.dylib }
+          - { os: windows-latest,   triple: win32-x64-msvc,   artifact: bffi_native.dll,   pkg: bffi-native-win32-x64-msvc }
+          - { os: ubuntu-latest,    triple: linux-x64-gnu,    artifact: libbffi_native.so, pkg: bffi-native-linux-x64-gnu }
+          - { os: ubuntu-latest,    triple: linux-x64-musl,   artifact: libbffi_native.so, pkg: bffi-native-linux-x64-musl,   target: x86_64-unknown-linux-musl, musl: "true" }
+          - { os: ubuntu-24.04-arm, triple: linux-arm64-gnu,  artifact: libbffi_native.so, pkg: bffi-native-linux-arm64-gnu }
+          - { os: ubuntu-24.04-arm, triple: linux-arm64-musl, artifact: libbffi_native.so, pkg: bffi-native-linux-arm64-musl, target: aarch64-unknown-linux-musl, musl: "true" }
+          - { os: macos-latest,     triple: darwin-aarch64,   artifact: libbffi_native.dylib, pkg: bffi-native-darwin-aarch64 }
+          # darwin-x64 is CROSS-COMPILED on the arm64 runner: the
+          # Xcode toolchain links x86_64-apple-darwin natively, and
+          # the macos-13 (x64) runner pool is too starved to rely on.
+          - { os: macos-latest,     triple: darwin-x64,       artifact: libbffi_native.dylib, pkg: bffi-native-darwin-x64, target: x86_64-apple-darwin }
+    name: build-platform (${{ matrix.triple }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up the pinned Rust toolchain
         run: rustup toolchain install
 
-      - name: Add the cross target (musl triples)
+      - name: Install musl tools (musl cdylib linker)
+        if: matrix.musl == 'true'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Add the cross target
         if: matrix.target != ''
         run: rustup target add ${{ matrix.target }}
 
@@ -83,7 +96,7 @@ jobs:
           node-version: "22.x"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish the platform package
+      - name: Publish the platform package (skip if the version exists)
         shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -92,12 +105,20 @@ jobs:
             echo "NPM_TOKEN is not configured - add the repository secret to enable publishing."
             exit 1
           fi
-          cd platform/bffi-native-${{ matrix.triple }}
-          npm publish --access public
+          cd platform/${{ matrix.pkg }}
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+            echo "$PKG_NAME@$PKG_VERSION is already published - skipping."
+          else
+            npm publish --access public
+          fi
 
   publish-native-main:
+    name: publish @z2net/bffi-native
     needs: build-platform
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -106,7 +127,7 @@ jobs:
           node-version: "22.x"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish @z2net/bffi-native
+      - name: Publish @z2net/bffi-native (skip if the version exists)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -115,11 +136,19 @@ jobs:
             exit 1
           fi
           cd packages/native
-          npm publish --access public
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+            echo "$PKG_NAME@$PKG_VERSION is already published - skipping."
+          else
+            npm publish --access public
+          fi
 
   publish-bffi:
+    name: publish @z2net/bffi
     needs: publish-native-main
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -128,7 +157,7 @@ jobs:
           node-version: "22.x"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish @z2net/bffi
+      - name: Publish @z2net/bffi (skip if the version exists)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -137,11 +166,19 @@ jobs:
             exit 1
           fi
           cd packages/bffi
-          npm publish --access public
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+            echo "$PKG_NAME@$PKG_VERSION is already published - skipping."
+          else
+            npm publish --access public
+          fi
 
   publish-bffi-cli:
+    name: publish @z2net/bffi-cli
     needs: publish-bffi
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -150,7 +187,7 @@ jobs:
           node-version: "22.x"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish @z2net/bffi-cli
+      - name: Publish @z2net/bffi-cli (skip if the version exists)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -159,4 +196,10 @@ jobs:
             exit 1
           fi
           cd packages/bffi-cli
-          npm publish --access public
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+            echo "$PKG_NAME@$PKG_VERSION is already published - skipping."
+          else
+            npm publish --access public
+          fi
