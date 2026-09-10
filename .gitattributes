@@ -1,3 +1,3 @@
 *.d.ts text eol=lf
 *.stderr text eol=lf
-crates/bffi-build/tests/loader_json/golden.json text eol=lf
+crates/bffi/tests/loader_json/golden.json text eol=lf
