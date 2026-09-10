@@ -1,6 +1,6 @@
 [package]
 name = "bffi"
-description = "The public facade of the bffi-rs Bun binding framework: one crate re-exporting the whole stack, with unsafe_zero_copy as the only zero-copy door."
+description = "The public facade of the bffi-rs Bun binding framework: one crate containing the whole stack, with unsafe_zero_copy as the only zero-copy door."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,18 +8,39 @@ repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true
 
+[features]
+default = [
+    "core",
+    "types",
+    "error",
+    "dts",
+    "object",
+    "build",
+    "callback",
+    "event-loop",
+    "async",
+    "macros",
+    "class",
+]
+core = []
+types = ["core"]
+error = ["core"]
+dts = []
+object = ["core"]
+build = ["core", "types", "error", "dts"]
+callback = ["core", "types", "build"]
+event-loop = ["core", "callback"]
+async = ["core", "types", "build", "event-loop"]
+macros = ["dep:bffi-macros", "core", "types", "build", "dts"]
+class = ["macros", "object"]
+tokio = ["async", "dep:tokio"]
+
 [dependencies]
-bffi-build = { path = "../bffi-build" }
-bffi-callback = { path = "../bffi-callback" }
-bffi-class = { path = "../bffi-class" }
-bffi-core = { path = "../bffi-core" }
-bffi-dts = { path = "../bffi-dts" }
-bffi-error = { path = "../bffi-error" }
-bffi-event-loop = { path = "../bffi-event-loop" }
-bffi-macros = { path = "../bffi-macros" }
-bffi-object = { path = "../bffi-object" }
-bffi-types = { path = "../bffi-types" }
+bffi-macros = { path = "../bffi-macros", optional = true }
+tokio = { version = "1", optional = true, features = ["rt-multi-thread", "time", "sync"] }

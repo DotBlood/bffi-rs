@@ -1,24 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/bffi-core",
-    "crates/bffi-error",
-    "crates/bffi-types",
-    "crates/bffi-object",
-    "crates/bffi-callback",
-    "crates/bffi-dts",
+    "crates/bffi",
     "crates/bffi-macros",
-    "crates/bffi-macro-support",
-    "crates/bffi-build",
+    "crates/bffi-native",
     "examples/sqlite",
     "examples/async",
     "examples/event-loop",
     "examples/callbacks",
-    "crates/bffi-event-loop",
-    "crates/bffi-class",
-    "crates/bffi",
-    "crates/bffi-async",
-    "crates/bffi-native",
 ]
 
 [workspace.package]
@@ -28,6 +17,9 @@ license = "MIT"
 repository = "https://github.com/z2net/bffi-rs"
 authors = ["DotBlood"]
 rust-version = "1.98.0"
+readme = "README.md"
+keywords = ["bffi", "bun", "ffi", "native", "rust"]
+categories = ["development-tools::ffi", "api-bindings"]
 
 [workspace.dependencies]
 syn = { version = "2", features = ["full"] }

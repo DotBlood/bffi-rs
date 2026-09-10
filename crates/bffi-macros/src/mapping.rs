@@ -1,16 +1,16 @@
 //! Type classification and TypeScript kind mapping.
 //!
-//! The pure classification lives in `bffi_macro_support::classify`;
+//! The pure classification lives in `crate::support::classify`;
 //! this module keeps the local signatures the model stage uses and
 //! maps neutral rejections onto this crate's `E002`/`E003`
 //! diagnostics (exact texts locked by the `tests/ui` goldens).
 
 use crate::errors::{param_type, return_type};
-use bffi_macro_support::classify as support;
-use bffi_macro_support::kind::{RetKind, ShimKind};
+use crate::support::classify as support;
+use crate::support::kind::{RetKind, ShimKind};
 
-pub(crate) use bffi_macro_support::abi;
-pub(crate) use bffi_macro_support::classify::{ts_return, ts_type};
+pub(crate) use crate::support::abi;
+pub(crate) use crate::support::classify::{ts_return, ts_type};
 
 /// Classifies a parameter type: plain primitives and `i64`/`u64` as
 /// their kinds, `&str` (borrowed, not `mut`; lifetimes ignored) as
@@ -31,8 +31,8 @@ pub(crate) fn classify_return(ty: &syn::Type) -> syn::Result<RetKind> {
 mod tests {
     use super::{RetKind, ShimKind, classify_param, classify_return, ts_return, ts_type};
     use crate::model::FnModel;
-    use bffi_macro_support::classify::ts_prim;
-    use bffi_macro_support::kind::{BigIntTy, BufferTy, PrimTy, TsKind};
+    use crate::support::classify::ts_prim;
+    use crate::support::kind::{BigIntTy, BufferTy, PrimTy, TsKind};
     use quote::quote;
 
     /// Parses a type source, panicking in tests only (allowed by the
@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn ts_kind_tokens_quote_the_ir_variant() {
-        let ctx = bffi_macro_support::paths::PathCtx::default();
+        let ctx = crate::support::paths::PathCtx::default();
         assert_eq!(
             TsKind::Number.tokens(&ctx).to_string(),
             ":: bffi_dts :: TsType :: Number"

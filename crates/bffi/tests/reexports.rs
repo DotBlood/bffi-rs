@@ -124,7 +124,7 @@ fn dts_names_are_reexported() {
 
 // The proc macros must resolve through the facade: a plain function
 // annotated with `#[bffi]` proves `bffi::bffi` resolves.
-#[bffi::bffi]
+#[bffi::bffi(crate = "bffi")]
 fn facade_probe(a: u32) -> u32 {
     a + 1
 }

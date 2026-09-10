@@ -22,24 +22,34 @@
 // restriction.
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
+// The `#[bffi_async]` spawn shims name the pre-merge crate roots
+// (`::bffi_core`, `::bffi_types`, `::bffi_dts`, `::bffi_async`)
+// regardless of facade mode: alias the facade crate under those
+// names so the expansion paths resolve through the facade root.
+extern crate bffi as bffi_async;
+extern crate bffi as bffi_core;
+extern crate bffi as bffi_dts;
+extern crate bffi as bffi_types;
+
 // The runtime ABI exports (bffi_error_*, the bffi_buffer pair,
 // bffi_types_free): the JS pipeline drains errors and reads buffers
 // through them.
-bffi_build::bffi_runtime_abi!();
+bffi::bffi_runtime_abi!();
 
 // The two JS-facing async exports (bffi_async_attach/bffi_async_cancel):
 // attach the resolve/reject trampolines, request cancellation.
-bffi_async::bffi_async_abi!();
+bffi::bffi_async_abi!();
 
 pub mod module_def;
 
 use std::time::Duration;
 
 use bffi::Handle;
-use bffi_async::{
+use bffi::bffi;
+use bffi::bffi_async::{
     AsyncValue, sleep as async_sleep, spawn as async_spawn, timeout as async_timeout,
 };
-use bffi_macros::{bffi, bffi_async};
+use bffi_macros::bffi_async;
 
 /// The domain error of the module: a plain message wrapper.
 #[derive(Debug)]
@@ -56,7 +66,7 @@ impl std::error::Error for ExampleError {}
 /// Doubles `x` after a short sleep: the `#[bffi_async]` macro turns
 /// this into a spawn shim returning a task handle; JS awaits
 /// `Promise<bigint>`.
-#[bffi_async]
+#[bffi_async(crate = "bffi")]
 pub async fn double_async(x: u64) -> u64 {
     async_sleep(Duration::from_millis(15)).await;
     x * 2
@@ -65,21 +75,21 @@ pub async fn double_async(x: u64) -> u64 {
 /// Returns an uppercased greeting: string results are delivered
 /// through the transient-buffer payload (the same transport as the
 /// sync `String` returns, encoded into the wire record).
-#[bffi_async]
+#[bffi_async(crate = "bffi")]
 pub async fn shout_async(name: String) -> String {
     format!("HELLO {name}!")
 }
 
 /// A failing task: `Result` rejects the promise with the domain
 /// message.
-#[bffi_async]
+#[bffi_async(crate = "bffi")]
 pub async fn fail_async() -> Result<u64, ExampleError> {
     Err(ExampleError("domain failure".to_owned()))
 }
 
 /// A panicking task: the executor's `catch_unwind` converts the panic
 /// into a rejection with the panic message.
-#[bffi_async]
+#[bffi_async(crate = "bffi")]
 #[allow(clippy::panic)]
 pub async fn panic_async() -> u64 {
     panic!("async boom")
@@ -87,7 +97,7 @@ pub async fn panic_async() -> u64 {
 
 /// A task that never completes on its own: a 50 ms deadline drops the
 /// inner future and rejects the promise with "task timed out".
-#[bffi_async]
+#[bffi_async(crate = "bffi")]
 pub async fn timed_async() -> Result<u64, ExampleError> {
     let outcome = async_timeout(Duration::from_millis(50), async {
         async_sleep(Duration::from_secs(60)).await;
@@ -107,7 +117,7 @@ pub async fn timed_async() -> Result<u64, ExampleError> {
 /// Spawns a slow task by hand (no macro): the RAW task handle comes
 /// back as a plain `u64`, so JS can cancel it through [`cancel_task`]
 /// before wrapping it into a promise with `wrapTask`.
-#[bffi]
+#[bffi(crate = "bffi")]
 pub fn spawn_slow(ms: u64) -> Result<u64, ExampleError> {
     let task = async_spawn(async move {
         async_sleep(Duration::from_millis(ms)).await;
@@ -120,22 +130,22 @@ pub fn spawn_slow(ms: u64) -> Result<u64, ExampleError> {
 /// Requests cooperative cancellation of a task: `1` = a running task
 /// was cancelled (the attached promise rejects with "task
 /// cancelled"), `0` = invalid/stale handle or already finished.
-#[bffi]
+#[bffi(crate = "bffi")]
 pub fn cancel_task(task: u64) -> u32 {
-    u32::from(bffi_async::cancel(Handle::from_raw(task)))
+    u32::from(bffi::bffi_async::cancel(Handle::from_raw(task)))
 }
 
 /// The number of spawned-but-unfinished tasks (a probe for tests).
-#[bffi]
+#[bffi(crate = "bffi")]
 pub fn async_pending() -> u64 {
-    bffi_async::pending_tasks()
+    bffi::bffi_async::pending_tasks()
 }
 
 /// Drains the event loop without blocking: the JS side calls this in
 /// a loop (`pumpUntil` from `@z2net/bffi`) while a task promise is
 /// pending - the resolution job executes on the JS thread during the
 /// drain, and THAT is what settles the promise.
-#[bffi]
+#[bffi(crate = "bffi")]
 pub fn loop_pump() -> u64 {
-    bffi_event_loop::pump()
+    bffi::bffi_event_loop::pump()
 }

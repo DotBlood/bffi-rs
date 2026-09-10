@@ -22,10 +22,3 @@ workspace = true
 
 [dependencies]
 bffi = { path = "../../crates/bffi" }
-bffi-core = { path = "../../crates/bffi-core" }
-bffi-types = { path = "../../crates/bffi-types" }
-bffi-dts = { path = "../../crates/bffi-dts" }
-bffi-macros = { path = "../../crates/bffi-macros" }
-bffi-build = { path = "../../crates/bffi-build" }
-bffi-callback = { path = "../../crates/bffi-callback" }
-bffi-event-loop = { path = "../../crates/bffi-event-loop" }

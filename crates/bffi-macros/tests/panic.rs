@@ -5,9 +5,9 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 #![cfg(not(debug_assertions))] // debug aborts by design (DESIGN §6.5)
 
-use bffi_core::{ErrorCode, take_last_error};
+use bffi::{ErrorCode, take_last_error};
 
-#[bffi_macros::bffi]
+#[bffi_macros::bffi(crate = "bffi")]
 fn boom() -> u32 {
     panic!("boundary!");
 }

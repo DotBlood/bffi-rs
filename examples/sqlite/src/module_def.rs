@@ -3,7 +3,7 @@
 //! materializes `.bffi/bffi.api.json` for the `@z2net/bffi`
 //! pipeline).
 
-use bffi_dts::{FunctionDef, ModuleDef};
+use bffi::{FunctionDef, ModuleDef};
 
 /// The `#[bffi]` functions of this example, in declaration order.
 pub const FUNCTIONS: &[FunctionDef] = &[

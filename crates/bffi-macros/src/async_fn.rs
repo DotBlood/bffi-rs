@@ -18,12 +18,10 @@ use quote::{format_ident, quote};
 use syn::spanned::Spanned;
 
 use crate::errors;
-use bffi_macro_support as support;
-use bffi_macro_support::classify::{
-    generic_args, is_u8, path_ident, path_kind, ts_prim, ts_promise,
-};
-use bffi_macro_support::kind::{BigIntTy, PrimTy, RetKind, TsKind};
-use bffi_macro_support::paths::{PathCtx, is_crate_name};
+use crate::support;
+use crate::support::classify::{generic_args, is_u8, path_ident, path_kind, ts_prim, ts_promise};
+use crate::support::kind::{BigIntTy, PrimTy, RetKind, TsKind};
+use crate::support::paths::{PathCtx, is_crate_name};
 
 /// One validated async parameter kind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -147,7 +145,7 @@ impl AsyncFnModel {
             }
         };
 
-        let docs = bffi_macro_support::util::extract_docs(&func.attrs);
+        let docs = crate::support::util::extract_docs(&func.attrs);
 
         Ok(Self {
             ident: func.sig.ident.clone(),
@@ -316,12 +314,12 @@ pub(crate) fn expand(model: &AsyncFnModel) -> TokenStream {
 /// The boundary kind of an owned async parameter at the ABI level:
 /// `String` crosses as a cstring pointer, `Vec<u8>` as a `(ptr, len)`
 /// view (the shim copies both into the future before the spawn).
-fn abi_kind(kind: AsyncParam) -> bffi_macro_support::kind::ShimKind {
+fn abi_kind(kind: AsyncParam) -> crate::support::kind::ShimKind {
     match kind {
-        AsyncParam::Prim(prim) => bffi_macro_support::kind::ShimKind::Prim(prim),
-        AsyncParam::BigInt(big) => bffi_macro_support::kind::ShimKind::BigInt(big),
-        AsyncParam::OwnedStr => bffi_macro_support::kind::ShimKind::Str,
-        AsyncParam::OwnedBytes => bffi_macro_support::kind::ShimKind::BufferView,
+        AsyncParam::Prim(prim) => crate::support::kind::ShimKind::Prim(prim),
+        AsyncParam::BigInt(big) => crate::support::kind::ShimKind::BigInt(big),
+        AsyncParam::OwnedStr => crate::support::kind::ShimKind::Str,
+        AsyncParam::OwnedBytes => crate::support::kind::ShimKind::BufferView,
     }
 }
 

@@ -62,30 +62,65 @@
 // code; tests assert invariants and intentionally trigger panics.
 #![cfg_attr(test, allow(clippy::expect_used, clippy::panic, clippy::unwrap_used))]
 
-pub use bffi_build::{BuildError, bffi_runtime_abi};
-pub use bffi_callback::{
+// The merged library modules (pre-merge crate names; the facade
+// re-exports below resolve through them). Feature-gated per slice.
+#[cfg(feature = "async")]
+#[path = "async/mod.rs"]
+pub mod bffi_async;
+#[cfg(feature = "build")]
+#[path = "build/mod.rs"]
+pub mod bffi_build;
+#[cfg(feature = "callback")]
+#[path = "callback/mod.rs"]
+pub mod bffi_callback;
+#[cfg(feature = "core")]
+#[path = "core/mod.rs"]
+pub mod bffi_core;
+#[cfg(feature = "dts")]
+#[path = "dts/mod.rs"]
+pub mod bffi_dts;
+#[cfg(feature = "error")]
+#[path = "error/mod.rs"]
+pub mod bffi_error;
+#[cfg(feature = "event-loop")]
+#[path = "event_loop/mod.rs"]
+pub mod bffi_event_loop;
+#[cfg(feature = "object")]
+#[path = "object/mod.rs"]
+pub mod bffi_object;
+#[cfg(feature = "types")]
+#[path = "types/mod.rs"]
+pub mod bffi_types;
+
+pub use crate::bffi_async::{
+    AsyncError, AsyncValue, Sleep, Timeout, TimeoutError, attach, cancel, pending_tasks, sleep,
+    spawn,
+};
+pub use crate::bffi_build::BuildError;
+pub use crate::bffi_callback::{
     CallbackError, CallbackSig, JsCallbackInfo, Value, ValueType, bind_js_callback,
     ensure_js_thread, invoke, js_callback, register, revoke, set_js_thread,
 };
-pub use bffi_class::{bffi_class, bffi_constructor, bffi_impl};
-pub use bffi_core::{
+pub use crate::bffi_core::{
     BffiError, ErrorCode, Handle, MAX_GENERATION, MAX_INDEX, Registry, RegistryError, TableError,
-    TypeTag, catch_panic, panic_message, run_extern_body, run_extern_body_or, set_last_error,
-    take_last_error,
+    TypeTag, boundary, catch_panic, panic_message, run_extern_body, run_extern_body_or,
+    set_last_error, take_last_error,
 };
-pub use bffi_dts::{
+pub use crate::bffi_dts::{
     AbiOut, AbiPrim, AbiSig, AbiType, ClassDef, FieldDef, FunctionDef, MethodDef, ModuleDef,
     ParamDef, TsType, render, sanitize,
 };
-pub use bffi_error::{JsErrorExt, JsErrorName, JsErrorShape, js_error_name, take_last_error_shape};
-pub use bffi_event_loop::{
+pub use crate::bffi_error::{
+    JsErrorExt, JsErrorName, JsErrorShape, js_error_name, take_last_error_shape,
+};
+pub use crate::bffi_event_loop::{
     EventLoopError, Job, enqueue, executed_total, is_running, marshal, pending, pump, run, stop,
 };
-pub use bffi_macros::bffi;
-pub use bffi_object::{ObjectError, ObjectWrap, TAG_MAX, TAG_MIN, tag_in_range};
-pub use bffi_types::{
+pub use crate::bffi_object::{ObjectError, ObjectWrap, TAG_MAX, TAG_MIN, tag_in_range};
+pub use crate::bffi_types::{
     ConversionError, CopiedBuf, JsNumber, buf_view, bytes_to_string, str_view, string_to_bytes,
 };
+pub use bffi_macros::{bffi, bffi_class, bffi_constructor, bffi_impl};
 
 /// THE single zero-copy door (DESIGN §6.3). Zero-copy is allowed only
 /// through `bffi::unsafe_zero_copy`; everything else in this facade
@@ -114,50 +149,52 @@ pub mod unsafe_zero_copy {
     // The view TYPES are exported only through this module - the
     // module name is the warning label. The constructor functions
     // (`str_view`/`buf_view`) are also available at the facade root
-    // alongside the copying converters.
-    pub use bffi_types::unsafe_zero_copy::{ZeroCopyBuf, ZeroCopyStr};
+    // alongside the copying converters; they are re-exported here as
+    // well because the `#[bffi_async]` shims name the pre-merge
+    // `::bffi_types::unsafe_zero_copy::` path.
+    pub use crate::bffi_types::unsafe_zero_copy::{ZeroCopyBuf, ZeroCopyStr, buf_view, str_view};
 }
 
 /// Namespaced re-export of [`bffi-core`]: `bffi::core::*` mirrors
-/// `bffi_core::*` 1:1. These are the paths the `crate = "bffi"`
+/// `bffi::core::*` 1:1. These are the paths the `crate = "bffi"`
 /// macros emit for the core roots (`::bffi::core::ErrorCode`, ...).
 ///
 /// [`bffi-core`]: https://github.com/z2net/bffi-rs/blob/main/crates/bffi-core
 pub mod core {
-    pub use bffi_core::*;
+    pub use crate::bffi_core::*;
 }
 
 /// Namespaced re-export of [`bffi-types`]: `bffi::types::*` mirrors
-/// `bffi_types::*` 1:1, including `unsafe_zero_copy`.
+/// `bffi::types::*` 1:1, including `unsafe_zero_copy`.
 ///
 /// [`bffi-types`]: https://github.com/z2net/bffi-rs/blob/main/crates/bffi-types
 pub mod types {
-    pub use bffi_types::*;
+    pub use crate::bffi_types::*;
 }
 
 /// Namespaced re-export of [`bffi-dts`]: `bffi::dts::*` mirrors
-/// `bffi_dts::*` 1:1. The descriptor consts the macros emit resolve
+/// `bffi::dts::*` 1:1. The descriptor consts the macros emit resolve
 /// here in facade-only mode (`::bffi::dts::FunctionDef`, ...).
 ///
 /// [`bffi-dts`]: https://github.com/z2net/bffi-rs/blob/main/crates/bffi-dts
 pub mod dts {
-    pub use bffi_dts::*;
+    pub use crate::bffi_dts::*;
 }
 
 /// Namespaced re-export of [`bffi-object`]: `bffi::object::*` mirrors
-/// `bffi_object::*` 1:1. The class shims resolve here in facade-only
+/// `bffi::object::*` 1:1. The class shims resolve here in facade-only
 /// mode (`::bffi::object::ObjectWrap`, ...).
 ///
 /// [`bffi-object`]: https://github.com/z2net/bffi-rs/blob/main/crates/bffi-object
 pub mod object {
-    pub use bffi_object::*;
+    pub use crate::bffi_object::*;
 }
 
 /// Namespaced re-export of [`bffi-build`]: `bffi::build::*` mirrors
-/// `bffi_build::*` 1:1. The buffer-return shims resolve here in
+/// `bffi::build::*` 1:1. The buffer-return shims resolve here in
 /// facade-only mode (`::bffi::build::runtime::store_bytes`, ...).
 ///
 /// [`bffi-build`]: https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build
 pub mod build {
-    pub use bffi_build::*;
+    pub use crate::bffi_build::*;
 }

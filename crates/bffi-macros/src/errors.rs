@@ -1,7 +1,7 @@
 //! Structured diagnostics for `#[bffi]` rejections.
 //!
 //! Every diagnostic is rendered by the shared
-//! [`bffi_macro_support::diagnostics::MacroDiagnostic`]; this module
+//! [`crate::support::diagnostics::MacroDiagnostic`]; this module
 //! keeps this crate's constructors with their stable codes and exact
 //! message texts. Stable codes (do not renumber; UI goldens in
 //! `tests/ui` lock them):
@@ -13,7 +13,7 @@
 //! | `E003` | unsupported return type                                 |
 //! | `E004` | unsupported attribute options (only `crate = "..."`)    |
 
-use bffi_macro_support::diagnostics::{DESIGN_NOTE, MacroDiagnostic};
+use crate::support::diagnostics::{DESIGN_NOTE, MacroDiagnostic};
 use proc_macro2::Span;
 use quote::ToTokens;
 
