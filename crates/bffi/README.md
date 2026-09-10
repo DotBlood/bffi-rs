@@ -1,116 +1,128 @@
 # bffi
 
+[![Crates.io](https://img.shields.io/crates/v/bffi)](https://crates.io/crates/bffi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3DA639)](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://github.com/z2net/bffi-rs/blob/main/rust-toolchain.toml)
+[![Rust](https://img.shields.io/badge/Rust-1.98.0-DEA584?logo=rust&logoColor=white)](https://www.rust-lang.org)
 
-The public facade of [bffi-rs](https://github.com/z2net/bffi-rs/blob/main/README.md) - the Bun-only native
-binding framework. One dependency re-exporting the whole stack
-(DESIGN.md §5), with
-[`bffi::unsafe_zero_copy`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi/src/lib.rs)
-as the single zero-copy door (DESIGN.md §6.3).
+The single Rust crate of [bffi-rs](https://github.com/z2net/bffi-rs) -
+a native-binding framework for [Bun](https://bun.sh), the `napi-rs`
+equivalent built on `bun:ffi` and a thin C ABI.
 
-**Status:** P2 complete - flat re-exports of core/types/error/object/
-callback/dts/event-loop/build, the `#[bffi]`, `#[bffi_class]`,
-`#[bffi_impl]`, `#[bffi_constructor]` macros and the
-`bffi_runtime_abi!` generator, plus the `core`/`types`/`dts`/
-`object`/`build` namespaces for facade-only mode.
-
----
-
-## Usage
-
-Default mode (direct dependencies; the macro expansions name
-`::bffi_core` / `::bffi_types` / `::bffi_dts` / `::bffi_object` /
-`::bffi_build` absolute paths, which resolve only through DIRECT
-dependencies):
+Write a Rust module, annotate it, and import fully typed functions
+from TypeScript. One dependency, feature-gated:
 
 ```toml
 [dependencies]
-bffi = { path = "../crates/bffi" }
-
-bffi-core = { path = "../crates/bffi-core" }
-bffi-types = { path = "../crates/bffi-types" }
-bffi-dts = { path = "../crates/bffi-dts" }
-bffi-object = { path = "../crates/bffi-object" }   # classes
-bffi-build = { path = "../crates/bffi-build" }     # buffer/Result returns, runtime ABI
+bffi = "0.1.0"
+bffi-macros = "0.1.0"   # the #[bffi] / #[bffi_async] / class macros
 ```
 
-Facade-only mode (one dependency): annotate with
-`#[bffi(crate = "bffi")]` (and `crate = "bffi"` on `#[bffi_class]` /
-`#[bffi_impl]`) - the expansions then name `::bffi::core`,
-`::bffi::types`, `::bffi::dts`, `::bffi::object`, `::bffi::build`,
-the namespaces re-exported by this crate:
-
-```toml
-[dependencies]
-bffi = { path = "../crates/bffi" }
-```
-
-Note: `bffi_runtime_abi!` always needs `bffi-build` as a direct
-dependency (its paths are `$crate`-relative to `bffi-build`).
+## Quick start
 
 ```rust
-use bffi::{CopiedBuf, ErrorCode, Handle, ObjectWrap, TypeTag};
+use bffi::bffi;
 
-const SESSION: TypeTag = TypeTag(0x0160);
-
-let wrap = ObjectWrap::<u32>::new(SESSION).expect("tag claimed once");
-let handle = wrap.wrap(42).expect("room");
-assert_eq!(*wrap.get(handle).expect("live"), 42);
-let copied = CopiedBuf::from_slice(b"copy by default");
-let _ = (handle, copied.as_slice(), ErrorCode::Ok);
+/// Adds two numbers.
+#[bffi(crate = "bffi")]
+pub fn add(a: u32, b: u32) -> u32 {
+    a.wrapping_add(b)
+}
 ```
 
-## The zero-copy door
+The `#[bffi]` macro generates the C ABI shim (status + out-parameter,
+copy by default, panics converted to JS errors) plus a const
+descriptor consumed by the `@z2net/bffi` TypeScript loader - no
+hand-written bindings anywhere.
 
-Everything in the facade copies by default. Zero-copy exists only as:
+## Features
 
-- `bffi::str_view(bytes) -> Result<ZeroCopyStr, BffiError>` and
-  `bffi::buf_view(bytes) -> ZeroCopyBuf` at the root, next to the
-  copying converters;
-- the view TYPES (`ZeroCopyStr`/`ZeroCopyBuf`) only through
-  `bffi::unsafe_zero_copy` - the module name is the warning label.
+| Feature | Unlocks | Enables |
+| --- | --- | --- |
+| `core` *(default)* | generational handles, Registry, boundary policy | - |
+| `types` *(default)* | conversions, SIMD UTF-8, the wire codec | `core` |
+| `error` *(default)* | `BffiError` -> JS Error mapping | `core` |
+| `dts` *(default)* | descriptor IR + renderers | - |
+| `object` *(default)* | `ObjectWrap<T>` ownership | `core` |
+| `build` *(default)* | runtime ABI exports, loader JSON, d.ts emitters | core/types/error/dts |
+| `callback` *(default)* | two-direction callbacks + generic ABI | core/types/build |
+| `event-loop` *(default)* | the job queue (`pump`/`run`/`marshal`) | core/callback |
+| `async` *(default)* | Rust futures as JS Promises | core/types/build/event-loop |
+| `macros` *(default)* | `#[bffi]`, `#[bffi_async]` (dep: `bffi-macros`) | core/types/build/dts |
+| `class` *(default)* | `#[bffi_class]`, `#[bffi_impl]` | macros/object |
+| `tokio` | poll async tasks on a tokio runtime | async |
 
-The genuinely unsafe `(ptr, len) -> &[u8]` step at the ABI belongs to
-the generated shims (`bffi-macros` / `bffi-class` / `bffi_runtime_abi!`
-in `bffi-build`), never to user code.
+Everything is on by default; trim with `default-features = false` +
+the slices you need.
 
-## What does _not_ belong here
+## Async
 
-| Concern | Home crate |
-| ------- | ---------- |
-| any new functionality | the individual `bffi-*` crates |
-| runtime tables / ABI exports | `bffi-build` |
-| event loop implementation | `bffi-event-loop` |
+Annotate an `async fn` and await it from JavaScript as a `Promise`:
 
-The facade re-exports; it does not implement. A name missing here is a
-bug in the audit (`tests/reexports.rs`), not an invitation to add
-logic.
+```rust
+use bffi::bffi_async::sleep;
+use std::time::Duration;
 
-## Testing
-
-```sh
-cargo test -p bffi
+/// Doubles after a short delay.
+#[bffi::bffi_async(crate = "bffi")]
+pub async fn double_async(x: u64) -> u64 {
+    sleep(Duration::from_millis(15)).await;
+    x * 2
+}
 ```
 
-`tests/reexports.rs` is the surface audit: every documented name,
-both proc macros in use, and the zero-copy door.
+Cancellation is cooperative, timeouts are first-class combinators,
+and tokio is an opt-in executor (`features = ["tokio"]`).
+
+## Classes
+
+```rust
+use bffi::{bffi_class, bffi_impl, bffi_constructor};
+
+/// A counter.
+#[bffi_class(tag = 0x0150)]
+pub struct Counter {
+    pub value: u32,
+}
+
+#[bffi_impl]
+impl Counter {
+    /// Creates a counter.
+    #[bffi_constructor]
+    pub fn new(start: u32) -> Self {
+        Self { value: start }
+    }
+}
+```
+
+The JS side gets a constructor with methods and a `release()`
+(`FinalizationRegistry` covers GC).
 
 ## The JS side
 
-JavaScript consumes this stack through
-[`packages/bffi`](https://github.com/z2net/bffi-rs/blob/main/packages/bffi)
-(`@z2net/bffi`): the `bffi codegen` CLI (packages/bffi-cli) turns the
-aggregated `ModuleDef` (canonical loader JSON from
-`bffi_build::loader_json`) into a typed TS module whose `ApiOf<>`
-derives exact signatures from the descriptors - see the root README,
-"Generated TypeScript API".
+The TypeScript integration ships separately:
+[`@z2net/bffi`](https://www.npmjs.com/package/@z2net/bffi) (the
+pipeline + typed loader), [`@z2net/bffi-cli`](https://www.npmjs.com/package/@z2net/bffi-cli)
+(scaffold/build/publish) and
+[`@z2net/bffi-native`](https://www.npmjs.com/package/@z2net/bffi-native)
+(the published reference module). One JS call takes a crate from
+`cargo build` to a fully typed API - see the
+[bffi-rs repo](https://github.com/z2net/bffi-rs) for the complete
+documentation and examples.
 
-## Requirements
+## Safety model
 
-- Rust 1.98.0 (pinned via `rust-toolchain.toml`)
-- Bun >= 1.4.0 for anything that loads a cdylib
+- Copy by default across the FFI boundary; zero-copy only through
+  the explicit `bffi::unsafe_zero_copy` door.
+- Generational handles + type tags: a stale handle can never reach a
+  reused slot.
+- Panics never cross as undefined behavior: release builds convert
+  them into JS errors.
+- The public API is 100% safe.
+
+## Minimum Bun version
+
+The TypeScript side requires Bun >= 1.4.0 (enforced at runtime).
 
 ## License
 
-[MIT](https://github.com/z2net/bffi-rs/blob/main/LICENSE)
+MIT - see [LICENSE](./LICENSE).

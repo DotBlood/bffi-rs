@@ -63,7 +63,7 @@ jobs:
           set -e
           echo "$out"
           if [ $code -ne 0 ] && echo "$out" | grep -q "already exists"; then
-            echo "bffi 0.1.0 is already published - skipping."
+            echo "bffi 0.1.1 is already published - skipping."
             exit 0
           fi
           exit $code

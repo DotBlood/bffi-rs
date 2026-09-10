@@ -10,7 +10,7 @@ codec), driven by the `@z2net/bffi` helpers.
 
 ```
 examples/callbacks/
-├── Cargo.toml            # the bffi stack + bffi-callback + bffi-event-loop
+├── Cargo.toml            # the bffi stack (features: callbacks)
 ├── .bffi/                # bffi.json (features: runtime + callbacks), loader JSON, api.gen.ts
 ├── src/
 │   ├── lib.rs            # the surface + bffi_callback_abi!() expansion

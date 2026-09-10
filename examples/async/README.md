@@ -11,7 +11,7 @@ test.
 
 ```
 examples/async/
-├── Cargo.toml            # the bffi stack + bffi-async + bffi-event-loop
+├── Cargo.toml            # the bffi stack (features: async)
 ├── .bffi/                # bffi.json (features: runtime + async), loader JSON, api.gen.ts
 ├── src/
 │   ├── lib.rs            # #[bffi_async] fns + the manual spawn/cancel exports
