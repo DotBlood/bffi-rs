@@ -22,19 +22,20 @@
 //! ## Macros: two modes
 //!
 //! The generated code of `#[bffi]` / `#[bffi_class]` names runtime
-//! crates by absolute path, which resolve through the DIRECT
-//! dependencies of the user crate:
+//! paths that resolve in one of two ways:
 //!
-//! - **Default mode** - the expansion names `::bffi_core`,
-//!   `::bffi_types`, `::bffi_dts`, `::bffi_object` and
-//!   `::bffi_build`; keep those crates in your `Cargo.toml` (the
-//!   flat re-exports below are still the runtime umbrella).
-//! - **Facade-only mode** - annotate with `#[bffi(crate = "bffi")]`
-//!   (and `#[bffi_class(tag = ..., crate = "bffi")]` /
+//! - **Facade mode (recommended; required when depending on this
+//!   crate from crates.io)** - annotate with
+//!   `#[bffi(crate = "bffi")]` (and
+//!   `#[bffi_class(tag = ..., crate = "bffi")]` /
 //!   `#[bffi_impl(crate = "bffi")]` for classes): the expansion names
 //!   `::bffi::core`, `::bffi::types`, `::bffi::dts`, `::bffi::object`
 //!   and `::bffi::build` - the namespaces re-exported below - so the
 //!   `bffi` facade alone suffices.
+//! - **Direct-dependencies mode (in-workspace development)** - the
+//!   expansion names `::bffi_core`, `::bffi_types`, `::bffi_dts`,
+//!   `::bffi_object` and `::bffi_build`; keep those crates in your
+//!   `Cargo.toml` as path dependencies of your checkout.
 //!
 //! Note that `bffi_runtime_abi!` keeps its `$crate`-relative paths in
 //! `bffi-build` and always needs that crate as a direct dependency.

@@ -11,7 +11,7 @@ machinery itself.
 
 ```
 examples/event-loop/
-├── Cargo.toml            # the bffi stack + bffi-event-loop (features: runtime only)
+├── Cargo.toml            # the bffi stack (features: event-loop)
 ├── .bffi/                # bffi.json, loader JSON, api.gen.ts
 ├── src/
 │   ├── lib.rs            # the eight exports over bffi-event-loop

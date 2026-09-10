@@ -39,19 +39,8 @@ See [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) 
 
 | Part | Purpose |
 | ---- | ------- |
-| `crates/bffi-core` | Generational handles, lock-free tables, catch_unwind boundary |
-| `crates/bffi-types` | Number/string/buffer conversion, SIMD UTF-8, the shared wire codec |
-| `crates/bffi-error` | Unified `BffiError` -> JS Error mapping |
-| `crates/bffi-object` | `ObjectWrap<T>` ownership over the global `Registry` |
-| `crates/bffi-callback` | Callbacks in both directions + the generic callback ABI |
-| `crates/bffi-dts` | TypeScript IR + deterministic `.d.ts` renderer |
-| `crates/bffi-macros` | `#[bffi]` / `#[bffi_async]` (shims + descriptors) |
-| `crates/bffi-class` | `#[bffi_class]` / `#[bffi_impl]` over `ObjectWrap` |
-| `crates/bffi-macro-support` | Shared macro internals (kinds, classification, codegen) |
-| `crates/bffi-event-loop` | `run()` / `pump()` job queue on the JS thread |
-| `crates/bffi-build` | Runtime ABI exports, transient buffers, `.d.ts`/loader-JSON emitters |
-| `crates/bffi-async` | `#[bffi_async]`: Rust futures as JS Promises (cancel, timeout, tokio opt-in) |
-| `crates/bffi` | The facade: one dependency re-exporting the whole stack |
+| `crates/bffi` | **The published crate** ([crates.io/crates/bffi](https://crates.io/crates/bffi)): the whole stack as feature-gated modules + the facade + macros re-exports |
+| `crates/bffi-macros` | The proc-macro crate ([crates.io/crates/bffi-macros](https://crates.io/crates/bffi-macros)): `#[bffi]`, `#[bffi_async]`, `#[bffi_class]`, `#[bffi_impl]`, `#[bffi_constructor]` |
 | `crates/bffi-native` | The reference cdylib (`add`/`shout`/`version` + runtime ABI); source of the `@z2net/bffi-native` platform package family |
 | `packages/bffi` | Bun-only JS integration package: config, full pipeline (build → json → api.gen), typed loader (npm: `@z2net/bffi`) |
 | `packages/bffi-cli` | The `bffi` CLI: init, build, codegen, pack, fetch, check, doctor (npm: `@z2net/bffi-cli`) |
@@ -66,10 +55,13 @@ bun run check        # oxlint + tsc + cargo check
 bun run ci           # full CI parity: lint, typecheck, fmt, clippy, tests
 ```
 
-For a native module, depend on [`bffi`](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
-(the facade: one dependency for the whole stack) and - when using the
-attribute macros - on the individual `bffi-core`/`bffi-types`/
-`bffi-dts` crates their expansions name.
+The internal modules (core, types, error, object, dts, build,
+callback, event-loop, async) live inside `crates/bffi/src/` as
+feature-gated modules - the published crate `bffi` is the single
+dependency covering the whole stack. The crates.io packages are
+published from this repository; see
+[crates/bffi](https://github.com/z2net/bffi-rs/blob/main/crates/bffi)
+and the [crates.io page](https://crates.io/crates/bffi).
 
 ## Generated TypeScript API
 
