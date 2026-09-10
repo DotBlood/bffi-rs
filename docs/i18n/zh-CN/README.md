@@ -19,7 +19,7 @@ Bun 的绑定框架 - [Bun](https://bun.sh) 的 napi-rs 等价物,构建于 `bun
 ## 文档
 
 - [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) - 架构与决策
-- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - C ABI 契约(每一次跨界,含回调导出)
+- [crates/bffi/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi/CALLING-CONVENTION.md) - C ABI 契约(每一次跨界,含回调导出)
 - [docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) - 如何贡献(分支、提交、PR)
 - [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) - 面向人类与 AI 代理的工程规则
 - [packages/bffi](https://github.com/z2net/bffi-rs/blob/main/packages/bffi) - `@z2net/bffi`:类型化加载器 + 构建流水线(见其 README)

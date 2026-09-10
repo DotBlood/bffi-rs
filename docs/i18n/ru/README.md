@@ -19,7 +19,7 @@
 ## Документация
 
 - [docs/DESIGN.md](https://github.com/z2net/bffi-rs/blob/main/docs/DESIGN.md) - архитектура и принятые решения
-- [crates/bffi-build/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi-build/CALLING-CONVENTION.md) - контракт C ABI (все пересечения границы, включая callback-экспорты)
+- [crates/bffi/CALLING-CONVENTION.md](https://github.com/z2net/bffi-rs/blob/main/crates/bffi/CALLING-CONVENTION.md) - контракт C ABI (все пересечения границы, включая callback-экспорты)
 - [docs/CONTRIBUTING.md](https://github.com/z2net/bffi-rs/blob/main/docs/CONTRIBUTING.md) - как вносить изменения (ветки, коммиты, PR)
 - [AGENTS.md](https://github.com/z2net/bffi-rs/blob/main/AGENTS.md) - правила для людей и ИИ-агентов
 - [packages/bffi](https://github.com/z2net/bffi-rs/blob/main/packages/bffi) - `@z2net/bffi`: типизированный лоадер + пайплайн сборки (подробности в его README)

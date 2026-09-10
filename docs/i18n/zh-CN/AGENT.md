@@ -219,7 +219,7 @@ chore: pin rust-toolchain to 1.98.0
 | 异步         | `#[bffi_async]`:spawn 包装函数(shim)返回任务句柄;N-worker 执行器;协作式取消 + 超时;经 event-loop 入队交付;tokio opt-in;标签 0x0500-0x05FF |
 | 对象所有权 | 基于全局 `Registry` 的 `ObjectWrap<T>`(标签 0x0100-0x01FF);release 释放槽位 |
 | 回调 | `register`/`revoke` + `bind_js_callback`;标签 0x0200-0x0201;错误线程 - 拒绝 |
-| 构建 ABI | 运行时导出（`bffi_error_*`、`bffi_buffer` 对、`bffi_types_free`）通过在用户 crate 中展开的 `bffi_runtime_abi!()` 生成；标签 0x0400-0x04FF；规范契约：bffi-build/CALLING-CONVENTION.md |
+| 构建 ABI | 运行时导出（`bffi_error_*`、`bffi_buffer` 对、`bffi_types_free`）通过在用户 crate 中展开的 `bffi_runtime_abi!()` 生成；标签 0x0400-0x04FF；规范契约：bffi/CALLING-CONVENTION.md |
 | 描述符 ABI | `FunctionDef`/`MethodDef` 携带 `AbiSig`（精确 C 宽度 + out 槽）；`FieldDef` 携带 getter 的 `export_name` + out；`ClassDef` 携带 `release_export` |
 | Wire 编解码 | `bffi_types::wire`:统一的 `[tag][payload]` 表,服务异步负载与回调签名/参数/结果 |
 | 回调 ABI | 通过 `bffi_callback_abi!()`（`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`）在用户 crate 生成的泛型导出；wire 编码；CALLING-CONVENTION.md §9 |
