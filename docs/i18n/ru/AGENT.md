@@ -219,7 +219,7 @@ chore: pin rust-toolchain to 1.98.0
 | Async         | `#[bffi_async]`: функция запуска возвращает дескриптор задачи; пул потоков-исполнителей; кооперативная отмена + таймауты; разрешение промиса доставляется через event-loop enqueue; tokio подключается опционально; теги 0x0500-0x05FF |
 | Владение объектами | `ObjectWrap<T>` поверх глобального `Registry` (тег 0x0100-0x01FF); release освобождает слот |
 | Колбэки | `register`/`revoke` + `bind_js_callback`; теги 0x0200-0x0201; вызов не из того потока - отказ |
-| Runtime ABI | Экспорты времени выполнения (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в крейте пользователя; теги 0x0400-0x04FF; канонический контракт: bffi-build/CALLING-CONVENTION.md |
+| Runtime ABI | Экспорты времени выполнения (`bffi_error_*`, пара `bffi_buffer`, `bffi_types_free`) через `bffi_runtime_abi!()` в крейте пользователя; теги 0x0400-0x04FF; канонический контракт: bffi/CALLING-CONVENTION.md |
 | ABI дескрипторов | `AbiSig` (точные C-ширины + выходной слот) в `FunctionDef`/`MethodDef`; `export_name` геттера + выходной слот в `FieldDef`; `release_export` в `ClassDef` |
 | Формат обмена (wire) | `bffi_types::wire`: одна таблица `[tag][payload]` для async-результатов и сигнатур/аргументов/результатов колбэков |
 | Callback ABI | Универсальные экспорты через `bffi_callback_abi!()` (`bffi_callback_set_thread`/`_bind`/`_invoke`/`_revoke`) в крейте пользователя; wire-кодирование; CALLING-CONVENTION.md §9 |

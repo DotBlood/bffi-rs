@@ -78,10 +78,8 @@ name = "${emitJsonName}"
 path = "src/bin/emit_json.rs"
 
 [dependencies]
-bffi = { path = "CHANGE_ME/path/to/bffi" }
-bffi-core = { path = "CHANGE_ME/path/to/bffi-core" }
-bffi-dts = { path = "CHANGE_ME/path/to/bffi-dts" }
-bffi-build = { path = "CHANGE_ME/path/to/bffi-build" }
+bffi = "0.1.0"
+bffi-macros = "0.1.0"
 `;
   await Bun.write(joinOut(crateRoot, "Cargo.toml"), cargoToml);
 
