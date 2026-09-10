@@ -1,0 +1,59 @@
+# Publishes the two crates.io packages of the repository when a GitHub
+# release is published (a release implies the v* tag), in the
+# dependency-safe order: `bffi-macros` first (the `bffi` facade has an
+# optional dependency on it), then the `bffi` facade.
+#
+# Publishes are IDEMPOTENT: a version that already exists on crates.io
+# is skipped (crates.io versions are immutable - re-publishing fails
+# with "already exists", which the pipeline treats as skip).
+#
+# One-time setup (repository settings):
+#   Secrets -> Actions -> CRATES_TOKEN : a crates.io API token with
+#   publish access (crates.io -> Account Settings -> API Tokens).
+name: release-crates
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-crates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the pinned Rust toolchain
+        run: rustup toolchain install
+
+      - name: Publish bffi-macros (skip if the version exists)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "CRATES_TOKEN is not configured - add the repository secret to enable publishing."
+            exit 1
+          fi
+          if curl -s -o /dev/null -w "%{http_code}" https://crates.io/api/v1/crates/bffi-macros/0.1.0 | grep -q 200; then
+            echo "bffi-macros 0.1.0 is already published - skipping."
+          else
+            cargo publish -p bffi-macros --token "$CARGO_REGISTRY_TOKEN"
+          fi
+
+      - name: Publish bffi (skip if the version exists)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "CRATES_TOKEN is not configured - add the repository secret to enable publishing."
+            exit 1
+          fi
+          if curl -s -o /dev/null -w "%{http_code}" https://crates.io/api/v1/crates/bffi/0.1.0 | grep -q 200; then
+            echo "bffi 0.1.0 is already published - skipping."
+          else
+            cargo publish -p bffi --token "$CARGO_REGISTRY_TOKEN"
+          fi
