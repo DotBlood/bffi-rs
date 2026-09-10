@@ -1,11 +1,19 @@
-# Publishes the @z2net/bffi-native-* platform packages when a GitHub
-# release is published (a release implies the v* tag). The cdylibs are
-# built per-platform, assembled with `bffi pack`, and published with
-# the NPM_TOKEN repository secret.
+# Publishes every npm package of the repository when a GitHub release
+# is published (a release implies the v* tag), in the dependency-safe
+# order:
+#
+#   1. the seven @z2net/bffi-native-<triple> platform packages
+#      (cdylib built per-OS, assembled with `bffi pack`);
+#   2. the @z2net/bffi-native main package (its optionalDependencies
+#      point at the platform packages above);
+#   3. @z2net/bffi (the loader/pipeline);
+#   4. @z2net/bffi-cli (depends on @z2net/bffi).
 #
 # One-time setup (repository settings):
 #   Secrets -> Actions -> NPM_TOKEN : an npm automation token with
-#   access to the @z2net scope.
+#   access to the @z2net scope. npm authentication follows the
+#   canonical pattern: actions/setup-node with registry-url writes
+#   the .npmrc, npm publish authenticates through NODE_AUTH_TOKEN.
 name: release-npm
 
 on:
@@ -17,7 +25,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-platform:
     strategy:
       fail-fast: false
       matrix:
@@ -45,6 +53,7 @@ jobs:
           bun-version: "1.4.0"
 
       - name: Build the release cdylib
+        shell: bash
         run: |
           if [ -n "${{ matrix.target }}" ]; then
             cargo build --release -p bffi-native --target ${{ matrix.target }}
@@ -53,6 +62,7 @@ jobs:
           fi
 
       - name: Assemble the platform package (bffi pack)
+        shell: bash
         run: |
           if [ -n "${{ matrix.target }}" ]; then
             ARTIFACT="target/${{ matrix.target }}/release/${{ matrix.artifact }}"
@@ -66,37 +76,87 @@ jobs:
             --binary bffi_native \
             --out platform
 
+      # Canonical npm authentication: setup-node + registry-url writes
+      # the .npmrc, NODE_AUTH_TOKEN authenticates the publish.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Publish the platform package
-        if: matrix.triple != ''
+        shell: bash
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "NPM_TOKEN is not configured - skipping the publish (configure the repository secret to enable it)."
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not configured - add the repository secret to enable publishing."
             exit 1
           fi
           cd platform/bffi-native-${{ matrix.triple }}
           npm publish --access public
 
-  publish-main:
-    # The @z2net/bffi-native main package: pinned optionalDependencies
-    # point at the platform packages above, so it goes LAST.
-    needs: build
+  publish-native-main:
+    needs: build-platform
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
         with:
-          bun-version: "1.4.0"
+          node-version: "22.x"
+          registry-url: "https://registry.npmjs.org"
 
-      - name: Publish the main package
+      - name: Publish @z2net/bffi-native
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "NPM_TOKEN is not configured - skipping the publish (configure the repository secret to enable it)."
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not configured - add the repository secret to enable publishing."
             exit 1
           fi
           cd packages/native
+          npm publish --access public
+
+  publish-bffi:
+    needs: publish-native-main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish @z2net/bffi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not configured - add the repository secret to enable publishing."
+            exit 1
+          fi
+          cd packages/bffi
+          npm publish --access public
+
+  publish-bffi-cli:
+    needs: publish-bffi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish @z2net/bffi-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not configured - add the repository secret to enable publishing."
+            exit 1
+          fi
+          cd packages/bffi-cli
           npm publish --access public
